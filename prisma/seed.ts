@@ -1,6 +1,7 @@
 // prisma/seed.ts
 import { readFileSync } from "fs";
 import { parse } from "dotenv";
+import bcrypt from "bcryptjs";
 import { PrismaClient } from "../generated/prisma";
 import { PrismaLibSql } from "@prisma/adapter-libsql";
 
@@ -45,7 +46,19 @@ const PEOPLE: { name: string; roles: ("SPONSOR" | "CURATOR" | "MAKER")[]; balanc
   { name: "Ryan",     roles: ["MAKER"],              balance: 30 },
 ];
 
+// Everyone starts with the same shared default password for this pilot.
+const passwordHash = bcrypt.hashSync("rose2026", 10);
+
 async function main() {
+  // Clear dependent records first — Member can't be deleted while
+  // Transactions, Rewards, Evaluations, Relationships, or Wallets still
+  // reference it (foreign key constraints correctly prevent that).
+  await prisma.relationshipStrength.deleteMany();
+  await prisma.evaluation.deleteMany();
+  await prisma.reward.deleteMany();
+  await prisma.transaction.deleteMany();
+  await prisma.wallet.deleteMany();
+  await prisma.memberRole.deleteMany();
   await prisma.member.deleteMany();
 
   const byIndex: { id: string; name: string }[] = [];
@@ -55,6 +68,7 @@ async function main() {
     const member = await prisma.member.create({
       data: {
         name: p.name,
+        passwordHash,
         roles: { create: p.roles.map((role) => ({ role })) },
         wallet: { create: { currency: "ROSE", balance: p.balance } },
       },
