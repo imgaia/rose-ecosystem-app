@@ -1,0 +1,20 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif,
+    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+
+  --color-rose-accent: #f74f00;
+  --color-rose-accent-dark: #c43f00;
+  --color-rose-bg: #0d0d0d;
+  --color-rose-surface: #1b1b1b;
+  --color-rose-border: #2a2a2a;
+  --color-rose-text: #f5f5f5;
+  --color-rose-muted: #a3a3a3;
+  --color-rose-blush: #e8c9cc;
+}
+
+body {
+  background-color: var(--color-rose-bg);
+  color: var(--color-rose-text);
+}

@@ -1,0 +1,102 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SPONSOR
+  CURATOR
+  MAKER
+}
+
+model Member {
+  id           String   @id @default(cuid())
+  name         String
+  passwordHash String?
+  createdAt    DateTime @default(now())
+
+  roles  MemberRole[]
+  wallet Wallet?
+
+  transactionsSent     Transaction[] @relation("TxSender")
+  transactionsReceived Transaction[] @relation("TxRecipient")
+
+  rewardsSent     Reward[] @relation("RewardSender")
+  rewardsReceived Reward[] @relation("RewardRecipient")
+
+  evaluationsGiven Evaluation[] @relation("Curator")
+
+  relationshipsFrom RelationshipStrength[] @relation("MemberA")
+  relationshipsTo   RelationshipStrength[] @relation("MemberB")
+}
+
+model MemberRole {
+  id       String @id @default(cuid())
+  member   Member @relation(fields: [memberId], references: [id])
+  memberId String
+  role     Role
+
+  @@unique([memberId, role])
+}
+
+model Wallet {
+  id       String @id @default(cuid())
+  member   Member @relation(fields: [memberId], references: [id])
+  memberId String @unique
+  currency String @default("ROSE")
+  balance  Float  @default(0)
+}
+
+model Transaction {
+  id          String   @id @default(cuid())
+  sender      Member   @relation("TxSender", fields: [senderId], references: [id])
+  senderId    String
+  recipient   Member   @relation("TxRecipient", fields: [recipientId], references: [id])
+  recipientId String
+  amount      Float
+  currency    String   @default("ROSE")
+  note        String?
+  isPrivate   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+}
+
+model Reward {
+  id          String   @id @default(cuid())
+  sender      Member   @relation("RewardSender", fields: [senderId], references: [id])
+  senderId    String
+  recipient   Member   @relation("RewardRecipient", fields: [recipientId], references: [id])
+  recipientId String
+  amount      Float
+  currency    String   @default("ROSE")
+  note        String?
+  isRecurring Boolean  @default(false)
+  createdAt   DateTime @default(now())
+}
+
+model Evaluation {
+  id        String   @id @default(cuid())
+  curator   Member   @relation("Curator", fields: [curatorId], references: [id])
+  curatorId String
+  subject   String
+  note      String?
+  createdAt DateTime @default(now())
+}
+
+model RelationshipStrength {
+  id        String @id @default(cuid())
+  memberA   Member @relation("MemberA", fields: [memberAId], references: [id])
+  memberAId String
+  memberB   Member @relation("MemberB", fields: [memberBId], references: [id])
+  memberBId String
+  strength  Float  @default(0.5)
+
+  @@unique([memberAId, memberBId])
+}
