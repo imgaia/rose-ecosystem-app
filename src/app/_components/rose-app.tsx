@@ -457,7 +457,7 @@ function EvaluateScreen() {
       await createEvaluation.mutateAsync({
         curatorId: currentMember.id,
         subject: item.subject,
-        note: noteText || undefined,
+        note: noteText ?? undefined,
       });
 
       let reward: number | undefined;
@@ -466,7 +466,7 @@ function EvaluateScreen() {
           senderId: currentMember.id,
           recipientId: associated.id,
           amount: parsedReward,
-          note: noteText || `Evaluation: ${item.subject}`,
+          note: noteText ?? `Evaluation: ${item.subject}`,
         });
         reward = parsedReward;
       }
