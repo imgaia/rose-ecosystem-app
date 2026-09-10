@@ -12,11 +12,15 @@ import { parse } from "dotenv";
 import { PrismaClient } from "../generated/prisma";
 import { PrismaLibSql } from "@prisma/adapter-libsql";
 
-const backupFile = process.argv[2];
-if (!backupFile) {
+const backupFileArg = process.argv[2];
+if (!backupFileArg) {
   console.error("Usage: npx tsx scripts/restore.ts <path-to-backup.json>");
   process.exit(1);
 }
+// Passed explicitly into main() below as a typed parameter, rather than
+// relying on TypeScript to narrow the module-level const across the
+// function boundary (it doesn't, reliably).
+const backupFile: string = backupFileArg;
 
 let tursoUrl: string | undefined;
 let tursoAuthToken: string | undefined;
@@ -34,8 +38,8 @@ const prisma = tursoUrl
   ? new PrismaClient({ adapter: new PrismaLibSql({ url: tursoUrl, authToken: tursoAuthToken }) })
   : new PrismaClient();
 
-async function main() {
-  const data = JSON.parse(readFileSync(backupFile, "utf-8"));
+async function main(file: string) {
+  const data = JSON.parse(readFileSync(file, "utf-8"));
 
   // Clear existing data first, respecting foreign key order (children first).
   await prisma.relationshipStrength.deleteMany();
@@ -82,7 +86,7 @@ async function main() {
   console.log("Restore complete.");
 }
 
-main()
+main(backupFile)
   .then(() => prisma.$disconnect())
   .catch(async (e) => {
     console.error(e);
