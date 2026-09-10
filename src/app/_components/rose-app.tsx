@@ -979,6 +979,279 @@ function OnboardScreen() {
   );
 }
 
+function getInitials(name: string) {
+  return name
+    .split(" ")
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
+
+function ProfileOverlay({
+  memberName,
+  onClose,
+}: {
+  memberName: string;
+  onClose: () => void;
+}) {
+  const memberId = useCurrentMemberId();
+  const currentMember = useCurrentMember();
+  const utils = api.useUtils();
+
+  // ---- Section 1: Personal profile ----
+  const [email, setEmail] = useState(currentMember?.email ?? "");
+  const [phoneNumber, setPhoneNumber] = useState(currentMember?.phoneNumber ?? "");
+  const [profileSaved, setProfileSaved] = useState(false);
+
+  const updateProfile = api.rose.updateProfile.useMutation({
+    onSuccess: async () => {
+      setProfileSaved(true);
+      await utils.rose.listMembers.invalidate();
+      setTimeout(() => setProfileSaved(false), 2500);
+    },
+  });
+
+  // ---- Section 2: Community roles ----
+  const currentRoleValues = (currentMember?.roles.map((r) => r.role) ?? []) as Role[];
+  const [selectedRoles, setSelectedRoles] = useState<Role[]>(currentRoleValues);
+  const [rolesSaved, setRolesSaved] = useState(false);
+
+  function toggleRole(role: Role) {
+    setSelectedRoles((prev) =>
+      prev.includes(role) ? prev.filter((r) => r !== role) : [...prev, role],
+    );
+  }
+
+  const updateRoles = api.rose.updateRoles.useMutation({
+    onSuccess: async () => {
+      setRolesSaved(true);
+      await utils.rose.listMembers.invalidate();
+      setTimeout(() => setRolesSaved(false), 2500);
+    },
+  });
+
+  // ---- Section 3: Security (change password) ----
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [passwordSaved, setPasswordSaved] = useState(false);
+  const [changingPassword, setChangingPassword] = useState(false);
+
+  async function submitPasswordChange() {
+    setPasswordError(null);
+    setPasswordSaved(false);
+
+    if (newPassword !== confirmPassword) {
+      setPasswordError("New passwords don't match.");
+      return;
+    }
+    if (newPassword.length < 4) {
+      setPasswordError("New password is too short.");
+      return;
+    }
+
+    setChangingPassword(true);
+    try {
+      const res = await fetch("/api/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+      const data = (await res.json()) as { error?: string; success?: boolean };
+      if (!res.ok) {
+        setPasswordError(data.error ?? "Something went wrong.");
+        return;
+      }
+      setPasswordSaved(true);
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setTimeout(() => setPasswordSaved(false), 2500);
+    } finally {
+      setChangingPassword(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 bg-rose-bg">
+      <div className="mx-auto flex h-dvh max-w-lg flex-col">
+        <header className="flex shrink-0 items-center gap-3 border-b border-rose-border bg-rose-surface px-4 py-3">
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close profile"
+            className="flex h-8 w-8 items-center justify-center rounded-full text-rose-muted transition-colors hover:text-rose-text"
+          >
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+            </svg>
+          </button>
+          <h1 className="text-sm font-semibold text-rose-text">Profile</h1>
+        </header>
+
+        <main className="min-h-0 flex-1 overflow-y-auto p-4">
+          <div className="flex flex-col gap-8">
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-rose-accent text-base font-semibold text-white">
+                {getInitials(memberName)}
+              </div>
+              <div>
+                <p className="font-medium text-rose-text">{memberName}</p>
+                {currentMember && (
+                  <p className="text-xs text-rose-muted">{formatRoles(currentMember.roles)}</p>
+                )}
+              </div>
+            </div>
+
+            {/* ---------------- Section 1: Personal profile ---------------- */}
+            <section className={cardClassName}>
+              <h2 className={sectionHeadingClassName}>Personal profile</h2>
+              <div className="flex flex-col gap-4">
+                <label className="flex flex-col gap-2">
+                  <span className={labelClassName}>Name</span>
+                  <input
+                    type="text"
+                    disabled
+                    value={memberName}
+                    className={`${fieldClassName} cursor-not-allowed opacity-60`}
+                  />
+                </label>
+                <label className="flex flex-col gap-2">
+                  <span className={labelClassName}>Email</span>
+                  <input
+                    type="email"
+                    placeholder="you@example.com"
+                    className={fieldClassName}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
+                </label>
+                <label className="flex flex-col gap-2">
+                  <span className={labelClassName}>Phone number</span>
+                  <input
+                    type="tel"
+                    placeholder="+41 ..."
+                    className={fieldClassName}
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                  />
+                </label>
+
+                {updateProfile.error && (
+                  <p className="text-sm text-red-400">{updateProfile.error.message}</p>
+                )}
+                {profileSaved && <p className="text-sm text-emerald-400">Saved.</p>}
+
+                <button
+                  type="button"
+                  disabled={updateProfile.isPending}
+                  onClick={() => updateProfile.mutate({ memberId, email, phoneNumber })}
+                  className={`self-start ${btnPrimarySmClassName}`}
+                >
+                  {updateProfile.isPending ? "Saving…" : "Save"}
+                </button>
+              </div>
+            </section>
+
+            {/* ---------------- Section 2: Community roles ---------------- */}
+            <section className={cardClassName}>
+              <h2 className={sectionHeadingClassName}>Community roles</h2>
+              <p className="mb-3 text-xs text-rose-muted">
+                Choose the role(s) you take on in ROSE. You can hold more than one.
+              </p>
+              <div className="flex flex-col gap-4">
+                <div className="flex flex-wrap gap-2">
+                  {ROLES.map((role) => {
+                    const active = selectedRoles.includes(role);
+                    const label = role.charAt(0) + role.slice(1).toLowerCase();
+                    return (
+                      <button
+                        key={role}
+                        type="button"
+                        onClick={() => toggleRole(role)}
+                        className={`rounded-xl px-4 py-2 text-sm font-medium transition-colors ${
+                          active
+                            ? "bg-rose-accent text-white shadow-sm"
+                            : "border border-rose-border bg-rose-surface text-rose-muted hover:border-rose-accent/50"
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {updateRoles.error && (
+                  <p className="text-sm text-red-400">{updateRoles.error.message}</p>
+                )}
+                {rolesSaved && <p className="text-sm text-emerald-400">Roles updated.</p>}
+
+                <button
+                  type="button"
+                  disabled={selectedRoles.length === 0 || updateRoles.isPending}
+                  onClick={() => updateRoles.mutate({ memberId, roles: selectedRoles })}
+                  className={`self-start ${btnPrimarySmClassName}`}
+                >
+                  {updateRoles.isPending ? "Saving…" : "Save roles"}
+                </button>
+              </div>
+            </section>
+
+            {/* ---------------- Section 3: Security ---------------- */}
+            <section className={cardClassName}>
+              <h2 className={sectionHeadingClassName}>Security</h2>
+              <div className="flex flex-col gap-4">
+                <label className="flex flex-col gap-2">
+                  <span className={labelClassName}>Current password</span>
+                  <input
+                    type="password"
+                    className={fieldClassName}
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                  />
+                </label>
+                <label className="flex flex-col gap-2">
+                  <span className={labelClassName}>New password</span>
+                  <input
+                    type="password"
+                    className={fieldClassName}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                  />
+                </label>
+                <label className="flex flex-col gap-2">
+                  <span className={labelClassName}>Confirm new password</span>
+                  <input
+                    type="password"
+                    className={fieldClassName}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                  />
+                </label>
+
+                {passwordError && <p className="text-sm text-red-400">{passwordError}</p>}
+                {passwordSaved && <p className="text-sm text-emerald-400">Password changed.</p>}
+
+                <button
+                  type="button"
+                  disabled={changingPassword}
+                  onClick={() => void submitPasswordChange()}
+                  className={`self-start ${btnPrimarySmClassName}`}
+                >
+                  {changingPassword ? "Changing…" : "Change password"}
+                </button>
+              </div>
+            </section>
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+}
+
+
 export function RoseApp({
   memberId,
   memberName,
@@ -987,6 +1260,7 @@ export function RoseApp({
   memberName: string;
 }) {
   const [activeTab, setActiveTab] = useState<Tab>("wallet");
+  const [showProfile, setShowProfile] = useState(false);
 
   async function handleLogout() {
     await fetch("/api/logout", { method: "POST" });
@@ -1008,6 +1282,14 @@ export function RoseApp({
           />
           <div className="flex items-center gap-3">
             <span className="text-sm text-rose-muted">{memberName}</span>
+            <button
+              type="button"
+              onClick={() => setShowProfile(true)}
+              aria-label="Open profile"
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-rose-accent text-xs font-semibold text-white transition-opacity hover:opacity-90"
+            >
+              {getInitials(memberName)}
+            </button>
             <button
               type="button"
               onClick={() => void handleLogout()}
@@ -1049,6 +1331,10 @@ export function RoseApp({
         </ul>
       </nav>
     </div>
+
+    {showProfile && (
+      <ProfileOverlay memberName={memberName} onClose={() => setShowProfile(false)} />
+    )}
     </CurrentMemberIdContext.Provider>
   );
 }

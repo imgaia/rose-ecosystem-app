@@ -22,10 +22,13 @@ model Member {
   id        String   @id @default(cuid())
   name      String
   passwordHash String?
+  email        String?  @unique
+  phoneNumber  String?  @unique
   createdAt DateTime @default(now())
 
   roles  MemberRole[]
   wallet Wallet?
+  passwordResetTokens PasswordResetToken[]
 
   transactionsSent     Transaction[] @relation("TxSender")
   transactionsReceived Transaction[] @relation("TxRecipient")
@@ -37,6 +40,16 @@ model Member {
 
   relationshipsFrom RelationshipStrength[] @relation("MemberA")
   relationshipsTo   RelationshipStrength[] @relation("MemberB")
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  member    Member   @relation(fields: [memberId], references: [id])
+  memberId  String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
 }
 
 model MemberRole {

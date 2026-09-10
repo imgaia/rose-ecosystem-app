@@ -104,4 +104,43 @@ export const roseRouter = createTRPCRouter({
         },
       })
     ),
+
+  updateProfile: publicProcedure
+    .input(z.object({
+      memberId: z.string(),
+      email: z.string().email().optional().or(z.literal("")),
+      phoneNumber: z.string().optional().or(z.literal("")),
+    }))
+    .mutation(({ ctx, input }) =>
+      ctx.db.member.update({
+        where: { id: input.memberId },
+        data: {
+          // Store blank fields as null, not empty string — two members
+          // both leaving email blank would otherwise violate the unique
+          // constraint the moment a second person also submits "".
+          email: input.email === "" ? null : input.email,
+          phoneNumber: input.phoneNumber === "" ? null : input.phoneNumber,
+        },
+      })
+    ),
+
+  updateRoles: publicProcedure
+    .input(z.object({
+      memberId: z.string(),
+      roles: z.array(z.enum(["SPONSOR", "CURATOR", "MAKER"])).min(1),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      // Clear existing roles and recreate from the submitted set — simpler
+      // and less error-prone than diffing which roles were added/removed.
+      await ctx.db.$transaction([
+        ctx.db.memberRole.deleteMany({ where: { memberId: input.memberId } }),
+        ctx.db.memberRole.createMany({
+          data: input.roles.map((role) => ({ memberId: input.memberId, role })),
+        }),
+      ]);
+      return ctx.db.member.findUnique({
+        where: { id: input.memberId },
+        include: { roles: true },
+      });
+    }),
 });

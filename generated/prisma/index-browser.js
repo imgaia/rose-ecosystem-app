@@ -122,6 +122,17 @@ exports.Prisma.MemberScalarFieldEnum = {
   id: 'id',
   name: 'name',
   passwordHash: 'passwordHash',
+  email: 'email',
+  phoneNumber: 'phoneNumber',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.PasswordResetTokenScalarFieldEnum = {
+  id: 'id',
+  token: 'token',
+  memberId: 'memberId',
+  expiresAt: 'expiresAt',
+  used: 'used',
   createdAt: 'createdAt'
 };
 
@@ -192,6 +203,7 @@ exports.Role = exports.$Enums.Role = {
 
 exports.Prisma.ModelName = {
   Member: 'Member',
+  PasswordResetToken: 'PasswordResetToken',
   MemberRole: 'MemberRole',
   Wallet: 'Wallet',
   Transaction: 'Transaction',
