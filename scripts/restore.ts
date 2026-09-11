@@ -17,9 +17,6 @@ if (!backupFileArg) {
   console.error("Usage: npx tsx scripts/restore.ts <path-to-backup.json>");
   process.exit(1);
 }
-// Passed explicitly into main() below as a typed parameter, rather than
-// relying on TypeScript to narrow the module-level const across the
-// function boundary (it doesn't, reliably).
 const backupFile: string = backupFileArg;
 
 let tursoUrl: string | undefined;
@@ -38,10 +35,32 @@ const prisma = tursoUrl
   ? new PrismaClient({ adapter: new PrismaLibSql({ url: tursoUrl, authToken: tursoAuthToken }) })
   : new PrismaClient();
 
-async function main(file: string) {
-  const data = JSON.parse(readFileSync(file, "utf-8"));
+// A backup member row might be in the old shape (just `name`, from before
+// today's firstName/lastName/username migration) or the new shape. Handle
+// both so old backup files stay restorable, not just recent ones.
+interface BackupMember {
+  id: string;
+  name?: string;
+  firstName?: string;
+  lastName?: string;
+  username?: string;
+  email?: string | null;
+  phoneNumber?: string | null;
+  passwordHash?: string | null;
+  createdAt: string;
+}
 
-  // Clear existing data first, respecting foreign key order (children first).
+async function main(file: string) {
+  const data = JSON.parse(readFileSync(file, "utf-8")) as {
+    members: BackupMember[];
+    memberRoles: { id: string; memberId: string; role: "SPONSOR" | "CURATOR" | "MAKER" }[];
+    wallets: { id: string; memberId: string; currency: string; balance: number }[];
+    transactions: Record<string, unknown>[];
+    rewards: Record<string, unknown>[];
+    evaluations: Record<string, unknown>[];
+    relationshipStrengths: { id: string; memberAId: string; memberBId: string; strength: number }[];
+  };
+
   await prisma.relationshipStrength.deleteMany();
   await prisma.evaluation.deleteMany();
   await prisma.reward.deleteMany();
@@ -50,13 +69,14 @@ async function main(file: string) {
   await prisma.memberRole.deleteMany();
   await prisma.member.deleteMany();
 
-  // Restore in parent-first order, preserving original IDs so relationships
-  // between records stay intact exactly as they were.
   for (const m of data.members) {
+    const fallback = m.name ?? "Unknown";
     await prisma.member.create({
       data: {
         id: m.id,
-        name: m.name,
+        firstName: m.firstName ?? fallback,
+        lastName: m.lastName ?? fallback,
+        username: m.username ?? fallback,
         email: m.email ?? null,
         phoneNumber: m.phoneNumber ?? null,
         passwordHash: m.passwordHash ?? null,
@@ -71,13 +91,13 @@ async function main(file: string) {
     await prisma.wallet.create({ data: { id: w.id, memberId: w.memberId, currency: w.currency, balance: w.balance } });
   }
   for (const t of data.transactions) {
-    await prisma.transaction.create({ data: { ...t, createdAt: new Date(t.createdAt) } });
+    await prisma.transaction.create({ data: { ...t, createdAt: new Date(t.createdAt as string) } as never });
   }
   for (const r of data.rewards) {
-    await prisma.reward.create({ data: { ...r, createdAt: new Date(r.createdAt) } });
+    await prisma.reward.create({ data: { ...r, createdAt: new Date(r.createdAt as string) } as never });
   }
   for (const e of data.evaluations) {
-    await prisma.evaluation.create({ data: { ...e, createdAt: new Date(e.createdAt) } });
+    await prisma.evaluation.create({ data: { ...e, createdAt: new Date(e.createdAt as string) } as never });
   }
   for (const rs of data.relationshipStrengths) {
     await prisma.relationshipStrength.create({ data: rs });
