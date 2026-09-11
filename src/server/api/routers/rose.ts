@@ -75,6 +75,13 @@ export const roseRouter = createTRPCRouter({
     }))
     .mutation(async ({ ctx, input }) => {
       return ctx.db.$transaction(async (tx) => {
+        const senderWallet = await tx.wallet.findUnique({ where: { memberId: input.senderId } });
+        if (!senderWallet || senderWallet.balance < input.amount) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Not enough funds to complete this transaction.",
+          });
+        }
         await tx.wallet.update({ where: { memberId: input.senderId }, data: { balance: { decrement: input.amount } } });
         await tx.wallet.update({ where: { memberId: input.recipientId }, data: { balance: { increment: input.amount } } });
         return tx.transaction.create({ data: input });
@@ -95,6 +102,13 @@ export const roseRouter = createTRPCRouter({
     }))
     .mutation(async ({ ctx, input }) => {
       return ctx.db.$transaction(async (tx) => {
+        const senderWallet = await tx.wallet.findUnique({ where: { memberId: input.senderId } });
+        if (!senderWallet || senderWallet.balance < input.amount) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Not enough funds to send this reward.",
+          });
+        }
         await tx.wallet.update({ where: { memberId: input.senderId }, data: { balance: { decrement: input.amount } } });
         await tx.wallet.update({ where: { memberId: input.recipientId }, data: { balance: { increment: input.amount } } });
         return tx.reward.create({ data: input });
