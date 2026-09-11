@@ -21,6 +21,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@libsql/client": "^0.17.4",
     "@prisma/adapter-libsql": "^7.10.0",
     "@prisma/client": "^6.6.0",
     "@t3-oss/env-nextjs": "^0.12.0",
