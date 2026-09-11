@@ -18,5 +18,6 @@ export default async function Home() {
     redirect("/login");
   }
 
-  return <RoseApp memberId={member.id} memberName={member.name} />;
+  const displayName = member.lastName ? `${member.firstName} ${member.lastName}` : member.firstName;
+  return <RoseApp memberId={member.id} memberName={displayName} />;
 }
