@@ -10,6 +10,28 @@ function displayName(member: { firstName: string; lastName: string }) {
   return member.lastName ? `${member.firstName} ${member.lastName}` : member.firstName;
 }
 
+// Detects a duplicate-value error and, where possible, which field caused
+// it — checked two different ways, because the two database connections
+// we use surface this differently: Prisma's plain SQLite connector (local
+// dev) gives a typed error with code "P2002" and a `meta.target` listing
+// the field, while the Turso/libSQL driver adapter (production) passes
+// through a raw, untyped error whose message contains
+// "UNIQUE constraint failed: Member.email" instead. Returns the field
+// name if detected (or "value" if a constraint failed but the specific
+// field couldn't be parsed out), otherwise null.
+function getUniqueConstraintField(err: unknown): string | null {
+  if (!err || typeof err !== "object") return null;
+  if ("code" in err && err.code === "P2002") {
+    const meta = "meta" in err ? (err.meta as { target?: string[] } | undefined) : undefined;
+    return meta?.target?.[0] ?? "value";
+  }
+  if ("message" in err && typeof err.message === "string" && err.message.includes("UNIQUE constraint failed")) {
+    const match = /UNIQUE constraint failed: \w+\.(\w+)/.exec(err.message);
+    return match?.[1] ?? "value";
+  }
+  return null;
+}
+
 export const roseRouter = createTRPCRouter({
   listMembers: publicProcedure.query(async ({ ctx }) => {
     const members = await ctx.db.member.findMany({
@@ -120,7 +142,7 @@ export const roseRouter = createTRPCRouter({
         });
         return { ...member, name: displayName(member) };
       } catch (err: unknown) {
-        if (err && typeof err === "object" && "code" in err && err.code === "P2002") {
+        if (getUniqueConstraintField(err)) {
           throw new TRPCError({
             code: "CONFLICT",
             message: `"${input.firstName}" is already taken as a username — ask the new member to pick a different first name for now, they can adjust it in their profile.`,
@@ -139,19 +161,33 @@ export const roseRouter = createTRPCRouter({
       phoneNumber: z.string().optional().or(z.literal("")),
     }))
     .mutation(async ({ ctx, input }) => {
-      const member = await ctx.db.member.update({
-        where: { id: input.memberId },
-        data: {
-          firstName: input.firstName,
-          lastName: input.lastName ?? "",
-          // Store blank fields as null, not empty string — two members
-          // both leaving email blank would otherwise violate the unique
-          // constraint the moment a second person also submits "".
-          email: input.email === "" ? null : input.email,
-          phoneNumber: input.phoneNumber === "" ? null : input.phoneNumber,
-        },
-      });
-      return { ...member, name: displayName(member) };
+      try {
+        const member = await ctx.db.member.update({
+          where: { id: input.memberId },
+          data: {
+            firstName: input.firstName,
+            lastName: input.lastName ?? "",
+            // Store blank fields as null, not empty string — two members
+            // both leaving email blank would otherwise violate the unique
+            // constraint the moment a second person also submits "".
+            email: input.email === "" ? null : input.email,
+            phoneNumber: input.phoneNumber === "" ? null : input.phoneNumber,
+          },
+        });
+        return { ...member, name: displayName(member) };
+      } catch (err: unknown) {
+        const field = getUniqueConstraintField(err);
+        if (field === "email") {
+          throw new TRPCError({ code: "CONFLICT", message: "That email is already in use by another member." });
+        }
+        if (field === "phoneNumber") {
+          throw new TRPCError({ code: "CONFLICT", message: "That phone number is already in use by another member." });
+        }
+        if (field) {
+          throw new TRPCError({ code: "CONFLICT", message: "That value is already in use by another member." });
+        }
+        throw err;
+      }
     }),
 
   updateUsername: publicProcedure
@@ -163,7 +199,7 @@ export const roseRouter = createTRPCRouter({
           data: { username: input.username },
         });
       } catch (err: unknown) {
-        if (err && typeof err === "object" && "code" in err && err.code === "P2002") {
+        if (getUniqueConstraintField(err)) {
           throw new TRPCError({
             code: "CONFLICT",
             message: "That username is already taken.",
