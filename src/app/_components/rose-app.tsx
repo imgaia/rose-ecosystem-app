@@ -844,7 +844,7 @@ function RelateScreen() {
 
 function OnboardScreen() {
   const utils = api.useUtils();
-  const [name, setName] = useState("");
+  const [firstName, setFirstName] = useState("");
   const [selectedRoles, setSelectedRoles] = useState<Role[]>([]);
   const [addedThisSession, setAddedThisSession] = useState<
     { name: string; roles: Role[] }[]
@@ -856,10 +856,10 @@ function OnboardScreen() {
     onSuccess: async (member, variables) => {
       await utils.rose.listMembers.invalidate();
       setAddedThisSession((prev) => [
-        { name: variables.name, roles: variables.roles },
+        { name: variables.firstName, roles: variables.roles },
         ...prev,
       ]);
-      setName("");
+      setFirstName("");
       setSelectedRoles([]);
     },
   });
@@ -871,7 +871,7 @@ function OnboardScreen() {
   }
 
   const canAdd =
-    name.trim().length > 0 && selectedRoles.length > 0 && !addMember.isPending;
+    firstName.trim().length > 0 && selectedRoles.length > 0 && !addMember.isPending;
 
   if (isLoading) return <ScreenLoading />;
 
@@ -889,17 +889,17 @@ function OnboardScreen() {
         onSubmit={(e) => {
           e.preventDefault();
           if (!canAdd) return;
-          addMember.mutate({ name: name.trim(), roles: selectedRoles });
+          addMember.mutate({ firstName: firstName.trim(), roles: selectedRoles });
         }}
       >
         <label className="flex flex-col gap-2">
-          <span className={labelClassName}>Name</span>
+          <span className={labelClassName}>First name</span>
           <input
             type="text"
-            placeholder="Member name"
+            placeholder="Member's first name"
             className={fieldClassName}
-            value={name}
-            onChange={(e) => setName(e.target.value)}
+            value={firstName}
+            onChange={(e) => setFirstName(e.target.value)}
           />
         </label>
 
@@ -979,6 +979,7 @@ function OnboardScreen() {
   );
 }
 
+
 function getInitials(name: string) {
   return name
     .split(" ")
@@ -1000,6 +1001,8 @@ function ProfileOverlay({
   const utils = api.useUtils();
 
   // ---- Section 1: Personal profile ----
+  const [firstName, setFirstName] = useState(currentMember?.firstName ?? "");
+  const [lastName, setLastName] = useState(currentMember?.lastName ?? "");
   const [email, setEmail] = useState(currentMember?.email ?? "");
   const [phoneNumber, setPhoneNumber] = useState(currentMember?.phoneNumber ?? "");
   const [profileSaved, setProfileSaved] = useState(false);
@@ -1031,7 +1034,18 @@ function ProfileOverlay({
     },
   });
 
-  // ---- Section 3: Security (change password) ----
+  // ---- Section 3: Security (username + change password) ----
+  const [username, setUsername] = useState(currentMember?.username ?? "");
+  const [usernameSaved, setUsernameSaved] = useState(false);
+
+  const updateUsername = api.rose.updateUsername.useMutation({
+    onSuccess: async () => {
+      setUsernameSaved(true);
+      await utils.rose.listMembers.invalidate();
+      setTimeout(() => setUsernameSaved(false), 2500);
+    },
+  });
+
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -1110,12 +1124,21 @@ function ProfileOverlay({
               <h2 className={sectionHeadingClassName}>Personal profile</h2>
               <div className="flex flex-col gap-4">
                 <label className="flex flex-col gap-2">
-                  <span className={labelClassName}>Name</span>
+                  <span className={labelClassName}>First name</span>
                   <input
                     type="text"
-                    disabled
-                    value={memberName}
-                    className={`${fieldClassName} cursor-not-allowed opacity-60`}
+                    className={fieldClassName}
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                  />
+                </label>
+                <label className="flex flex-col gap-2">
+                  <span className={labelClassName}>Last name</span>
+                  <input
+                    type="text"
+                    className={fieldClassName}
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
                   />
                 </label>
                 <label className="flex flex-col gap-2">
@@ -1146,8 +1169,10 @@ function ProfileOverlay({
 
                 <button
                   type="button"
-                  disabled={updateProfile.isPending}
-                  onClick={() => updateProfile.mutate({ memberId, email, phoneNumber })}
+                  disabled={updateProfile.isPending || !firstName.trim()}
+                  onClick={() =>
+                    updateProfile.mutate({ memberId, firstName, lastName, email, phoneNumber })
+                  }
                   className={`self-start ${btnPrimarySmClassName}`}
                 >
                   {updateProfile.isPending ? "Saving…" : "Save"}
@@ -1204,6 +1229,30 @@ function ProfileOverlay({
               <h2 className={sectionHeadingClassName}>Security</h2>
               <div className="flex flex-col gap-4">
                 <label className="flex flex-col gap-2">
+                  <span className={labelClassName}>Username</span>
+                  <input
+                    type="text"
+                    className={fieldClassName}
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                  />
+                </label>
+                {updateUsername.error && (
+                  <p className="text-sm text-red-400">{updateUsername.error.message}</p>
+                )}
+                {usernameSaved && <p className="text-sm text-emerald-400">Username updated.</p>}
+                <button
+                  type="button"
+                  disabled={updateUsername.isPending || !username.trim()}
+                  onClick={() => updateUsername.mutate({ memberId, username })}
+                  className={`self-start ${btnPrimarySmClassName}`}
+                >
+                  {updateUsername.isPending ? "Saving…" : "Save username"}
+                </button>
+
+                <div className="my-2 border-t border-rose-border" />
+
+                <label className="flex flex-col gap-2">
                   <span className={labelClassName}>Current password</span>
                   <input
                     type="password"
@@ -1250,6 +1299,7 @@ function ProfileOverlay({
     </div>
   );
 }
+
 
 
 export function RoseApp({

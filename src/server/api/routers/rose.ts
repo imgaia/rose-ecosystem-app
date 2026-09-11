@@ -1,12 +1,22 @@
 import { z } from "zod";
+import { TRPCError } from "@trpc/server";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 
+// Single source of truth for how a member's name is displayed. Change
+// this one function later (e.g. to firstName + last initial, or a
+// separate "screen name" field) and every part of the app that shows a
+// name picks up the change automatically.
+function displayName(member: { firstName: string; lastName: string }) {
+  return member.lastName ? `${member.firstName} ${member.lastName}` : member.firstName;
+}
+
 export const roseRouter = createTRPCRouter({
-  listMembers: publicProcedure.query(({ ctx }) => {
-    return ctx.db.member.findMany({
+  listMembers: publicProcedure.query(async ({ ctx }) => {
+    const members = await ctx.db.member.findMany({
       include: { roles: true, wallet: true },
       orderBy: { createdAt: "asc" },
     });
+    return members.map((m) => ({ ...m, name: displayName(m) }));
   }),
 
   getWallet: publicProcedure
@@ -23,10 +33,10 @@ export const roseRouter = createTRPCRouter({
       ]);
 
       const activity = [
-        ...sent.map((t) => ({ type: "transaction" as const, direction: "out", withName: t.recipient.name, amount: t.amount, note: t.note, createdAt: t.createdAt })),
-        ...received.map((t) => ({ type: "transaction" as const, direction: "in", withName: t.sender.name, amount: t.amount, note: t.note, createdAt: t.createdAt })),
-        ...rewardsSent.map((r) => ({ type: "reward" as const, direction: "out", withName: r.recipient.name, amount: r.amount, note: r.note, createdAt: r.createdAt })),
-        ...rewardsReceived.map((r) => ({ type: "reward" as const, direction: "in", withName: r.sender.name, amount: r.amount, note: r.note, createdAt: r.createdAt })),
+        ...sent.map((t) => ({ type: "transaction" as const, direction: "out", withName: displayName(t.recipient), amount: t.amount, note: t.note, createdAt: t.createdAt })),
+        ...received.map((t) => ({ type: "transaction" as const, direction: "in", withName: displayName(t.sender), amount: t.amount, note: t.note, createdAt: t.createdAt })),
+        ...rewardsSent.map((r) => ({ type: "reward" as const, direction: "out", withName: displayName(r.recipient), amount: r.amount, note: r.note, createdAt: r.createdAt })),
+        ...rewardsReceived.map((r) => ({ type: "reward" as const, direction: "in", withName: displayName(r.sender), amount: r.amount, note: r.note, createdAt: r.createdAt })),
         ...evaluations.map((e) => ({ type: "evaluation" as const, direction: "out", withName: e.subject, amount: null, note: e.note, createdAt: e.createdAt })),
       ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
@@ -75,8 +85,8 @@ export const roseRouter = createTRPCRouter({
       const asA = await ctx.db.relationshipStrength.findMany({ where: { memberAId: input.memberId }, include: { memberB: true } });
       const asB = await ctx.db.relationshipStrength.findMany({ where: { memberBId: input.memberId }, include: { memberA: true } });
       return [
-        ...asA.map((r) => ({ otherId: r.memberB.id, otherName: r.memberB.name, strength: r.strength })),
-        ...asB.map((r) => ({ otherId: r.memberA.id, otherName: r.memberA.name, strength: r.strength })),
+        ...asA.map((r) => ({ otherId: r.memberB.id, otherName: displayName(r.memberB), strength: r.strength })),
+        ...asB.map((r) => ({ otherId: r.memberA.id, otherName: displayName(r.memberA), strength: r.strength })),
       ];
     }),
 
@@ -92,37 +102,76 @@ export const roseRouter = createTRPCRouter({
 
   addMember: publicProcedure
     .input(z.object({
-      name: z.string().min(1),
+      firstName: z.string().min(1),
       roles: z.array(z.enum(["SPONSOR", "CURATOR", "MAKER"])),
     }))
-    .mutation(({ ctx, input }) =>
-      ctx.db.member.create({
-        data: {
-          name: input.name,
-          roles: { create: input.roles.map((role) => ({ role })) },
-          wallet: { create: { currency: "ROSE", balance: 0 } },
-        },
-      })
-    ),
+    .mutation(async ({ ctx, input }) => {
+      try {
+        const member = await ctx.db.member.create({
+          data: {
+            firstName: input.firstName,
+            // Placeholder, same convention as the original migration —
+            // the new member corrects both in their own profile later.
+            lastName: input.firstName,
+            username: input.firstName,
+            roles: { create: input.roles.map((role) => ({ role })) },
+            wallet: { create: { currency: "ROSE", balance: 0 } },
+          },
+        });
+        return { ...member, name: displayName(member) };
+      } catch (err: unknown) {
+        if (err && typeof err === "object" && "code" in err && err.code === "P2002") {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: `"${input.firstName}" is already taken as a username — ask the new member to pick a different first name for now, they can adjust it in their profile.`,
+          });
+        }
+        throw err;
+      }
+    }),
 
   updateProfile: publicProcedure
     .input(z.object({
       memberId: z.string(),
+      firstName: z.string().min(1),
+      lastName: z.string().optional().or(z.literal("")),
       email: z.string().email().optional().or(z.literal("")),
       phoneNumber: z.string().optional().or(z.literal("")),
     }))
-    .mutation(({ ctx, input }) =>
-      ctx.db.member.update({
+    .mutation(async ({ ctx, input }) => {
+      const member = await ctx.db.member.update({
         where: { id: input.memberId },
         data: {
+          firstName: input.firstName,
+          lastName: input.lastName ?? "",
           // Store blank fields as null, not empty string — two members
           // both leaving email blank would otherwise violate the unique
           // constraint the moment a second person also submits "".
           email: input.email === "" ? null : input.email,
           phoneNumber: input.phoneNumber === "" ? null : input.phoneNumber,
         },
-      })
-    ),
+      });
+      return { ...member, name: displayName(member) };
+    }),
+
+  updateUsername: publicProcedure
+    .input(z.object({ memberId: z.string(), username: z.string().min(1) }))
+    .mutation(async ({ ctx, input }) => {
+      try {
+        return await ctx.db.member.update({
+          where: { id: input.memberId },
+          data: { username: input.username },
+        });
+      } catch (err: unknown) {
+        if (err && typeof err === "object" && "code" in err && err.code === "P2002") {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "That username is already taken.",
+          });
+        }
+        throw err;
+      }
+    }),
 
   updateRoles: publicProcedure
     .input(z.object({

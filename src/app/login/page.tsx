@@ -9,7 +9,7 @@ const fieldClassName =
 
 export default function LoginPage() {
   const router = useRouter();
-  const [name, setName] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -23,7 +23,7 @@ export default function LoginPage() {
       const res = await fetch("/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, password }),
+        body: JSON.stringify({ username, password }),
       });
 
       if (!res.ok) {
@@ -63,15 +63,15 @@ export default function LoginPage() {
         <form onSubmit={(e) => void handleSubmit(e)} className="mt-6 flex flex-col gap-4">
           <label className="flex flex-col gap-2">
             <span className="text-sm font-semibold uppercase tracking-wide text-rose-muted">
-              Name
+              Username
             </span>
             <input
               type="text"
               autoComplete="username"
-              placeholder="Your member name"
+              placeholder="Your username"
               className={fieldClassName}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
               required
             />
           </label>
@@ -95,7 +95,7 @@ export default function LoginPage() {
 
           <button
             type="submit"
-            disabled={isSubmitting || !name.trim() || !password}
+            disabled={isSubmitting || !username.trim() || !password}
             className="mt-2 rounded-xl bg-rose-accent px-4 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isSubmitting ? "Signing in…" : "Sign in"}

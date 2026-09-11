@@ -4,25 +4,25 @@ import { NextResponse } from "next/server";
 import { db } from "~/server/db";
 
 export async function POST(request: Request) {
-  const body = (await request.json()) as { name?: string; password?: string };
-  const name = body.name?.trim();
+  const body = (await request.json()) as { username?: string; password?: string };
+  const username = body.username?.trim();
   const password = body.password;
 
-  if (!name || !password) {
+  if (!username || !password) {
     return NextResponse.json(
-      { error: "Name and password are required." },
+      { error: "Username and password are required." },
       { status: 400 },
     );
   }
 
   const members = await db.member.findMany();
   const member = members.find(
-    (m) => m.name.toLowerCase() === name.toLowerCase(),
+    (m) => m.username.toLowerCase() === username.toLowerCase(),
   );
 
   if (!member?.passwordHash || !bcrypt.compareSync(password, member.passwordHash)) {
     return NextResponse.json(
-      { error: "Invalid name or password." },
+      { error: "Invalid username or password." },
       { status: 401 },
     );
   }

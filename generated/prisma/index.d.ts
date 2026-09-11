@@ -1631,6 +1631,9 @@ export namespace Prisma {
   export type MemberMinAggregateOutputType = {
     id: string | null
     name: string | null
+    firstName: string | null
+    lastName: string | null
+    username: string | null
     passwordHash: string | null
     email: string | null
     phoneNumber: string | null
@@ -1640,6 +1643,9 @@ export namespace Prisma {
   export type MemberMaxAggregateOutputType = {
     id: string | null
     name: string | null
+    firstName: string | null
+    lastName: string | null
+    username: string | null
     passwordHash: string | null
     email: string | null
     phoneNumber: string | null
@@ -1649,6 +1655,9 @@ export namespace Prisma {
   export type MemberCountAggregateOutputType = {
     id: number
     name: number
+    firstName: number
+    lastName: number
+    username: number
     passwordHash: number
     email: number
     phoneNumber: number
@@ -1660,6 +1669,9 @@ export namespace Prisma {
   export type MemberMinAggregateInputType = {
     id?: true
     name?: true
+    firstName?: true
+    lastName?: true
+    username?: true
     passwordHash?: true
     email?: true
     phoneNumber?: true
@@ -1669,6 +1681,9 @@ export namespace Prisma {
   export type MemberMaxAggregateInputType = {
     id?: true
     name?: true
+    firstName?: true
+    lastName?: true
+    username?: true
     passwordHash?: true
     email?: true
     phoneNumber?: true
@@ -1678,6 +1693,9 @@ export namespace Prisma {
   export type MemberCountAggregateInputType = {
     id?: true
     name?: true
+    firstName?: true
+    lastName?: true
+    username?: true
     passwordHash?: true
     email?: true
     phoneNumber?: true
@@ -1760,6 +1778,9 @@ export namespace Prisma {
   export type MemberGroupByOutputType = {
     id: string
     name: string
+    firstName: string
+    lastName: string
+    username: string
     passwordHash: string | null
     email: string | null
     phoneNumber: string | null
@@ -1786,6 +1807,9 @@ export namespace Prisma {
   export type MemberSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     name?: boolean
+    firstName?: boolean
+    lastName?: boolean
+    username?: boolean
     passwordHash?: boolean
     email?: boolean
     phoneNumber?: boolean
@@ -1806,6 +1830,9 @@ export namespace Prisma {
   export type MemberSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     name?: boolean
+    firstName?: boolean
+    lastName?: boolean
+    username?: boolean
     passwordHash?: boolean
     email?: boolean
     phoneNumber?: boolean
@@ -1815,6 +1842,9 @@ export namespace Prisma {
   export type MemberSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     name?: boolean
+    firstName?: boolean
+    lastName?: boolean
+    username?: boolean
     passwordHash?: boolean
     email?: boolean
     phoneNumber?: boolean
@@ -1824,13 +1854,16 @@ export namespace Prisma {
   export type MemberSelectScalar = {
     id?: boolean
     name?: boolean
+    firstName?: boolean
+    lastName?: boolean
+    username?: boolean
     passwordHash?: boolean
     email?: boolean
     phoneNumber?: boolean
     createdAt?: boolean
   }
 
-  export type MemberOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "passwordHash" | "email" | "phoneNumber" | "createdAt", ExtArgs["result"]["member"]>
+  export type MemberOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "firstName" | "lastName" | "username" | "passwordHash" | "email" | "phoneNumber" | "createdAt", ExtArgs["result"]["member"]>
   export type MemberInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     roles?: boolean | Member$rolesArgs<ExtArgs>
     wallet?: boolean | Member$walletArgs<ExtArgs>
@@ -1864,6 +1897,9 @@ export namespace Prisma {
     scalars: $Extensions.GetPayloadResult<{
       id: string
       name: string
+      firstName: string
+      lastName: string
+      username: string
       passwordHash: string | null
       email: string | null
       phoneNumber: string | null
@@ -2303,6 +2339,9 @@ export namespace Prisma {
   interface MemberFieldRefs {
     readonly id: FieldRef<"Member", 'String'>
     readonly name: FieldRef<"Member", 'String'>
+    readonly firstName: FieldRef<"Member", 'String'>
+    readonly lastName: FieldRef<"Member", 'String'>
+    readonly username: FieldRef<"Member", 'String'>
     readonly passwordHash: FieldRef<"Member", 'String'>
     readonly email: FieldRef<"Member", 'String'>
     readonly phoneNumber: FieldRef<"Member", 'String'>
@@ -10551,6 +10590,9 @@ export namespace Prisma {
   export const MemberScalarFieldEnum: {
     id: 'id',
     name: 'name',
+    firstName: 'firstName',
+    lastName: 'lastName',
+    username: 'username',
     passwordHash: 'passwordHash',
     email: 'email',
     phoneNumber: 'phoneNumber',
@@ -10712,6 +10754,9 @@ export namespace Prisma {
     NOT?: MemberWhereInput | MemberWhereInput[]
     id?: StringFilter<"Member"> | string
     name?: StringFilter<"Member"> | string
+    firstName?: StringFilter<"Member"> | string
+    lastName?: StringFilter<"Member"> | string
+    username?: StringFilter<"Member"> | string
     passwordHash?: StringNullableFilter<"Member"> | string | null
     email?: StringNullableFilter<"Member"> | string | null
     phoneNumber?: StringNullableFilter<"Member"> | string | null
@@ -10731,6 +10776,9 @@ export namespace Prisma {
   export type MemberOrderByWithRelationInput = {
     id?: SortOrder
     name?: SortOrder
+    firstName?: SortOrder
+    lastName?: SortOrder
+    username?: SortOrder
     passwordHash?: SortOrderInput | SortOrder
     email?: SortOrderInput | SortOrder
     phoneNumber?: SortOrderInput | SortOrder
@@ -10749,12 +10797,15 @@ export namespace Prisma {
 
   export type MemberWhereUniqueInput = Prisma.AtLeast<{
     id?: string
+    username?: string
     email?: string
     phoneNumber?: string
     AND?: MemberWhereInput | MemberWhereInput[]
     OR?: MemberWhereInput[]
     NOT?: MemberWhereInput | MemberWhereInput[]
     name?: StringFilter<"Member"> | string
+    firstName?: StringFilter<"Member"> | string
+    lastName?: StringFilter<"Member"> | string
     passwordHash?: StringNullableFilter<"Member"> | string | null
     createdAt?: DateTimeFilter<"Member"> | Date | string
     roles?: MemberRoleListRelationFilter
@@ -10767,11 +10818,14 @@ export namespace Prisma {
     evaluationsGiven?: EvaluationListRelationFilter
     relationshipsFrom?: RelationshipStrengthListRelationFilter
     relationshipsTo?: RelationshipStrengthListRelationFilter
-  }, "id" | "email" | "phoneNumber">
+  }, "id" | "username" | "email" | "phoneNumber">
 
   export type MemberOrderByWithAggregationInput = {
     id?: SortOrder
     name?: SortOrder
+    firstName?: SortOrder
+    lastName?: SortOrder
+    username?: SortOrder
     passwordHash?: SortOrderInput | SortOrder
     email?: SortOrderInput | SortOrder
     phoneNumber?: SortOrderInput | SortOrder
@@ -10787,6 +10841,9 @@ export namespace Prisma {
     NOT?: MemberScalarWhereWithAggregatesInput | MemberScalarWhereWithAggregatesInput[]
     id?: StringWithAggregatesFilter<"Member"> | string
     name?: StringWithAggregatesFilter<"Member"> | string
+    firstName?: StringWithAggregatesFilter<"Member"> | string
+    lastName?: StringWithAggregatesFilter<"Member"> | string
+    username?: StringWithAggregatesFilter<"Member"> | string
     passwordHash?: StringNullableWithAggregatesFilter<"Member"> | string | null
     email?: StringNullableWithAggregatesFilter<"Member"> | string | null
     phoneNumber?: StringNullableWithAggregatesFilter<"Member"> | string | null
@@ -11215,6 +11272,9 @@ export namespace Prisma {
   export type MemberCreateInput = {
     id?: string
     name: string
+    firstName?: string
+    lastName?: string
+    username: string
     passwordHash?: string | null
     email?: string | null
     phoneNumber?: string | null
@@ -11234,6 +11294,9 @@ export namespace Prisma {
   export type MemberUncheckedCreateInput = {
     id?: string
     name: string
+    firstName?: string
+    lastName?: string
+    username: string
     passwordHash?: string | null
     email?: string | null
     phoneNumber?: string | null
@@ -11253,6 +11316,9 @@ export namespace Prisma {
   export type MemberUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
+    firstName?: StringFieldUpdateOperationsInput | string
+    lastName?: StringFieldUpdateOperationsInput | string
+    username?: StringFieldUpdateOperationsInput | string
     passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
@@ -11272,6 +11338,9 @@ export namespace Prisma {
   export type MemberUncheckedUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
+    firstName?: StringFieldUpdateOperationsInput | string
+    lastName?: StringFieldUpdateOperationsInput | string
+    username?: StringFieldUpdateOperationsInput | string
     passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
@@ -11291,6 +11360,9 @@ export namespace Prisma {
   export type MemberCreateManyInput = {
     id?: string
     name: string
+    firstName?: string
+    lastName?: string
+    username: string
     passwordHash?: string | null
     email?: string | null
     phoneNumber?: string | null
@@ -11300,6 +11372,9 @@ export namespace Prisma {
   export type MemberUpdateManyMutationInput = {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
+    firstName?: StringFieldUpdateOperationsInput | string
+    lastName?: StringFieldUpdateOperationsInput | string
+    username?: StringFieldUpdateOperationsInput | string
     passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
@@ -11309,6 +11384,9 @@ export namespace Prisma {
   export type MemberUncheckedUpdateManyInput = {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
+    firstName?: StringFieldUpdateOperationsInput | string
+    lastName?: StringFieldUpdateOperationsInput | string
+    username?: StringFieldUpdateOperationsInput | string
     passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
@@ -11830,6 +11908,9 @@ export namespace Prisma {
   export type MemberCountOrderByAggregateInput = {
     id?: SortOrder
     name?: SortOrder
+    firstName?: SortOrder
+    lastName?: SortOrder
+    username?: SortOrder
     passwordHash?: SortOrder
     email?: SortOrder
     phoneNumber?: SortOrder
@@ -11839,6 +11920,9 @@ export namespace Prisma {
   export type MemberMaxOrderByAggregateInput = {
     id?: SortOrder
     name?: SortOrder
+    firstName?: SortOrder
+    lastName?: SortOrder
+    username?: SortOrder
     passwordHash?: SortOrder
     email?: SortOrder
     phoneNumber?: SortOrder
@@ -11848,6 +11932,9 @@ export namespace Prisma {
   export type MemberMinOrderByAggregateInput = {
     id?: SortOrder
     name?: SortOrder
+    firstName?: SortOrder
+    lastName?: SortOrder
+    username?: SortOrder
     passwordHash?: SortOrder
     email?: SortOrder
     phoneNumber?: SortOrder
@@ -13409,6 +13496,9 @@ export namespace Prisma {
   export type MemberCreateWithoutPasswordResetTokensInput = {
     id?: string
     name: string
+    firstName?: string
+    lastName?: string
+    username: string
     passwordHash?: string | null
     email?: string | null
     phoneNumber?: string | null
@@ -13427,6 +13517,9 @@ export namespace Prisma {
   export type MemberUncheckedCreateWithoutPasswordResetTokensInput = {
     id?: string
     name: string
+    firstName?: string
+    lastName?: string
+    username: string
     passwordHash?: string | null
     email?: string | null
     phoneNumber?: string | null
@@ -13461,6 +13554,9 @@ export namespace Prisma {
   export type MemberUpdateWithoutPasswordResetTokensInput = {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
+    firstName?: StringFieldUpdateOperationsInput | string
+    lastName?: StringFieldUpdateOperationsInput | string
+    username?: StringFieldUpdateOperationsInput | string
     passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
@@ -13479,6 +13575,9 @@ export namespace Prisma {
   export type MemberUncheckedUpdateWithoutPasswordResetTokensInput = {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
+    firstName?: StringFieldUpdateOperationsInput | string
+    lastName?: StringFieldUpdateOperationsInput | string
+    username?: StringFieldUpdateOperationsInput | string
     passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
@@ -13497,6 +13596,9 @@ export namespace Prisma {
   export type MemberCreateWithoutRolesInput = {
     id?: string
     name: string
+    firstName?: string
+    lastName?: string
+    username: string
     passwordHash?: string | null
     email?: string | null
     phoneNumber?: string | null
@@ -13515,6 +13617,9 @@ export namespace Prisma {
   export type MemberUncheckedCreateWithoutRolesInput = {
     id?: string
     name: string
+    firstName?: string
+    lastName?: string
+    username: string
     passwordHash?: string | null
     email?: string | null
     phoneNumber?: string | null
@@ -13549,6 +13654,9 @@ export namespace Prisma {
   export type MemberUpdateWithoutRolesInput = {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
+    firstName?: StringFieldUpdateOperationsInput | string
+    lastName?: StringFieldUpdateOperationsInput | string
+    username?: StringFieldUpdateOperationsInput | string
     passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
@@ -13567,6 +13675,9 @@ export namespace Prisma {
   export type MemberUncheckedUpdateWithoutRolesInput = {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
+    firstName?: StringFieldUpdateOperationsInput | string
+    lastName?: StringFieldUpdateOperationsInput | string
+    username?: StringFieldUpdateOperationsInput | string
     passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
@@ -13585,6 +13696,9 @@ export namespace Prisma {
   export type MemberCreateWithoutWalletInput = {
     id?: string
     name: string
+    firstName?: string
+    lastName?: string
+    username: string
     passwordHash?: string | null
     email?: string | null
     phoneNumber?: string | null
@@ -13603,6 +13717,9 @@ export namespace Prisma {
   export type MemberUncheckedCreateWithoutWalletInput = {
     id?: string
     name: string
+    firstName?: string
+    lastName?: string
+    username: string
     passwordHash?: string | null
     email?: string | null
     phoneNumber?: string | null
@@ -13637,6 +13754,9 @@ export namespace Prisma {
   export type MemberUpdateWithoutWalletInput = {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
+    firstName?: StringFieldUpdateOperationsInput | string
+    lastName?: StringFieldUpdateOperationsInput | string
+    username?: StringFieldUpdateOperationsInput | string
     passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
@@ -13655,6 +13775,9 @@ export namespace Prisma {
   export type MemberUncheckedUpdateWithoutWalletInput = {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
+    firstName?: StringFieldUpdateOperationsInput | string
+    lastName?: StringFieldUpdateOperationsInput | string
+    username?: StringFieldUpdateOperationsInput | string
     passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
@@ -13673,6 +13796,9 @@ export namespace Prisma {
   export type MemberCreateWithoutTransactionsSentInput = {
     id?: string
     name: string
+    firstName?: string
+    lastName?: string
+    username: string
     passwordHash?: string | null
     email?: string | null
     phoneNumber?: string | null
@@ -13691,6 +13817,9 @@ export namespace Prisma {
   export type MemberUncheckedCreateWithoutTransactionsSentInput = {
     id?: string
     name: string
+    firstName?: string
+    lastName?: string
+    username: string
     passwordHash?: string | null
     email?: string | null
     phoneNumber?: string | null
@@ -13714,6 +13843,9 @@ export namespace Prisma {
   export type MemberCreateWithoutTransactionsReceivedInput = {
     id?: string
     name: string
+    firstName?: string
+    lastName?: string
+    username: string
     passwordHash?: string | null
     email?: string | null
     phoneNumber?: string | null
@@ -13732,6 +13864,9 @@ export namespace Prisma {
   export type MemberUncheckedCreateWithoutTransactionsReceivedInput = {
     id?: string
     name: string
+    firstName?: string
+    lastName?: string
+    username: string
     passwordHash?: string | null
     email?: string | null
     phoneNumber?: string | null
@@ -13766,6 +13901,9 @@ export namespace Prisma {
   export type MemberUpdateWithoutTransactionsSentInput = {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
+    firstName?: StringFieldUpdateOperationsInput | string
+    lastName?: StringFieldUpdateOperationsInput | string
+    username?: StringFieldUpdateOperationsInput | string
     passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
@@ -13784,6 +13922,9 @@ export namespace Prisma {
   export type MemberUncheckedUpdateWithoutTransactionsSentInput = {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
+    firstName?: StringFieldUpdateOperationsInput | string
+    lastName?: StringFieldUpdateOperationsInput | string
+    username?: StringFieldUpdateOperationsInput | string
     passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
@@ -13813,6 +13954,9 @@ export namespace Prisma {
   export type MemberUpdateWithoutTransactionsReceivedInput = {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
+    firstName?: StringFieldUpdateOperationsInput | string
+    lastName?: StringFieldUpdateOperationsInput | string
+    username?: StringFieldUpdateOperationsInput | string
     passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
@@ -13831,6 +13975,9 @@ export namespace Prisma {
   export type MemberUncheckedUpdateWithoutTransactionsReceivedInput = {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
+    firstName?: StringFieldUpdateOperationsInput | string
+    lastName?: StringFieldUpdateOperationsInput | string
+    username?: StringFieldUpdateOperationsInput | string
     passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
@@ -13849,6 +13996,9 @@ export namespace Prisma {
   export type MemberCreateWithoutRewardsSentInput = {
     id?: string
     name: string
+    firstName?: string
+    lastName?: string
+    username: string
     passwordHash?: string | null
     email?: string | null
     phoneNumber?: string | null
@@ -13867,6 +14017,9 @@ export namespace Prisma {
   export type MemberUncheckedCreateWithoutRewardsSentInput = {
     id?: string
     name: string
+    firstName?: string
+    lastName?: string
+    username: string
     passwordHash?: string | null
     email?: string | null
     phoneNumber?: string | null
@@ -13890,6 +14043,9 @@ export namespace Prisma {
   export type MemberCreateWithoutRewardsReceivedInput = {
     id?: string
     name: string
+    firstName?: string
+    lastName?: string
+    username: string
     passwordHash?: string | null
     email?: string | null
     phoneNumber?: string | null
@@ -13908,6 +14064,9 @@ export namespace Prisma {
   export type MemberUncheckedCreateWithoutRewardsReceivedInput = {
     id?: string
     name: string
+    firstName?: string
+    lastName?: string
+    username: string
     passwordHash?: string | null
     email?: string | null
     phoneNumber?: string | null
@@ -13942,6 +14101,9 @@ export namespace Prisma {
   export type MemberUpdateWithoutRewardsSentInput = {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
+    firstName?: StringFieldUpdateOperationsInput | string
+    lastName?: StringFieldUpdateOperationsInput | string
+    username?: StringFieldUpdateOperationsInput | string
     passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
@@ -13960,6 +14122,9 @@ export namespace Prisma {
   export type MemberUncheckedUpdateWithoutRewardsSentInput = {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
+    firstName?: StringFieldUpdateOperationsInput | string
+    lastName?: StringFieldUpdateOperationsInput | string
+    username?: StringFieldUpdateOperationsInput | string
     passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
@@ -13989,6 +14154,9 @@ export namespace Prisma {
   export type MemberUpdateWithoutRewardsReceivedInput = {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
+    firstName?: StringFieldUpdateOperationsInput | string
+    lastName?: StringFieldUpdateOperationsInput | string
+    username?: StringFieldUpdateOperationsInput | string
     passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
@@ -14007,6 +14175,9 @@ export namespace Prisma {
   export type MemberUncheckedUpdateWithoutRewardsReceivedInput = {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
+    firstName?: StringFieldUpdateOperationsInput | string
+    lastName?: StringFieldUpdateOperationsInput | string
+    username?: StringFieldUpdateOperationsInput | string
     passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
@@ -14025,6 +14196,9 @@ export namespace Prisma {
   export type MemberCreateWithoutEvaluationsGivenInput = {
     id?: string
     name: string
+    firstName?: string
+    lastName?: string
+    username: string
     passwordHash?: string | null
     email?: string | null
     phoneNumber?: string | null
@@ -14043,6 +14217,9 @@ export namespace Prisma {
   export type MemberUncheckedCreateWithoutEvaluationsGivenInput = {
     id?: string
     name: string
+    firstName?: string
+    lastName?: string
+    username: string
     passwordHash?: string | null
     email?: string | null
     phoneNumber?: string | null
@@ -14077,6 +14254,9 @@ export namespace Prisma {
   export type MemberUpdateWithoutEvaluationsGivenInput = {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
+    firstName?: StringFieldUpdateOperationsInput | string
+    lastName?: StringFieldUpdateOperationsInput | string
+    username?: StringFieldUpdateOperationsInput | string
     passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
@@ -14095,6 +14275,9 @@ export namespace Prisma {
   export type MemberUncheckedUpdateWithoutEvaluationsGivenInput = {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
+    firstName?: StringFieldUpdateOperationsInput | string
+    lastName?: StringFieldUpdateOperationsInput | string
+    username?: StringFieldUpdateOperationsInput | string
     passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
@@ -14113,6 +14296,9 @@ export namespace Prisma {
   export type MemberCreateWithoutRelationshipsFromInput = {
     id?: string
     name: string
+    firstName?: string
+    lastName?: string
+    username: string
     passwordHash?: string | null
     email?: string | null
     phoneNumber?: string | null
@@ -14131,6 +14317,9 @@ export namespace Prisma {
   export type MemberUncheckedCreateWithoutRelationshipsFromInput = {
     id?: string
     name: string
+    firstName?: string
+    lastName?: string
+    username: string
     passwordHash?: string | null
     email?: string | null
     phoneNumber?: string | null
@@ -14154,6 +14343,9 @@ export namespace Prisma {
   export type MemberCreateWithoutRelationshipsToInput = {
     id?: string
     name: string
+    firstName?: string
+    lastName?: string
+    username: string
     passwordHash?: string | null
     email?: string | null
     phoneNumber?: string | null
@@ -14172,6 +14364,9 @@ export namespace Prisma {
   export type MemberUncheckedCreateWithoutRelationshipsToInput = {
     id?: string
     name: string
+    firstName?: string
+    lastName?: string
+    username: string
     passwordHash?: string | null
     email?: string | null
     phoneNumber?: string | null
@@ -14206,6 +14401,9 @@ export namespace Prisma {
   export type MemberUpdateWithoutRelationshipsFromInput = {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
+    firstName?: StringFieldUpdateOperationsInput | string
+    lastName?: StringFieldUpdateOperationsInput | string
+    username?: StringFieldUpdateOperationsInput | string
     passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
@@ -14224,6 +14422,9 @@ export namespace Prisma {
   export type MemberUncheckedUpdateWithoutRelationshipsFromInput = {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
+    firstName?: StringFieldUpdateOperationsInput | string
+    lastName?: StringFieldUpdateOperationsInput | string
+    username?: StringFieldUpdateOperationsInput | string
     passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
@@ -14253,6 +14454,9 @@ export namespace Prisma {
   export type MemberUpdateWithoutRelationshipsToInput = {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
+    firstName?: StringFieldUpdateOperationsInput | string
+    lastName?: StringFieldUpdateOperationsInput | string
+    username?: StringFieldUpdateOperationsInput | string
     passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
@@ -14271,6 +14475,9 @@ export namespace Prisma {
   export type MemberUncheckedUpdateWithoutRelationshipsToInput = {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
+    firstName?: StringFieldUpdateOperationsInput | string
+    lastName?: StringFieldUpdateOperationsInput | string
+    username?: StringFieldUpdateOperationsInput | string
     passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null

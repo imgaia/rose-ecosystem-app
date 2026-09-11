@@ -34,7 +34,11 @@ async function main() {
   const data = {
     exportedAt: new Date().toISOString(),
     target,
-    members: await prisma.member.findMany(),
+    // Member fetched via raw SQL, not the typed Prisma model — this makes
+    // the backup script resilient to schema differences between what's
+    // currently in schema.prisma and what columns actually exist on the
+    // target database (e.g. running this just before a migration).
+    members: await prisma.$queryRawUnsafe(`SELECT * FROM "Member"`),
     memberRoles: await prisma.memberRole.findMany(),
     wallets: await prisma.wallet.findMany(),
     transactions: await prisma.transaction.findMany(),
@@ -49,9 +53,10 @@ async function main() {
   const filename = `backups/backup-${target}-${new Date().toISOString().replace(/[:.]/g, "-")}.json`;
   writeFileSync(filename, JSON.stringify(data, null, 2));
 
+  const members = data.members as unknown[];
   console.log(`Backup written to ${filename}`);
   console.log(
-    `Members: ${data.members.length}, Transactions: ${data.transactions.length}, ` +
+    `Members: ${members.length}, Transactions: ${data.transactions.length}, ` +
     `Rewards: ${data.rewards.length}, Evaluations: ${data.evaluations.length}, ` +
     `Relationships: ${data.relationshipStrengths.length}`
   );

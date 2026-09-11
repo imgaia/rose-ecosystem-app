@@ -21,6 +21,9 @@ enum Role {
 model Member {
   id        String   @id @default(cuid())
   name      String
+  firstName    String   @default("")
+  lastName     String   @default("")
+  username     String   @unique
   passwordHash String?
   email        String?  @unique
   phoneNumber  String?  @unique
