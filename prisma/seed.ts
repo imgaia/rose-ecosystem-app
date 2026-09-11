@@ -7,9 +7,7 @@ import { PrismaLibSql } from "@prisma/adapter-libsql";
 
 // Only load production credentials when explicitly requested — this keeps
 // a plain `npx prisma db seed` always safely targeting your local database
-// by default. We read and parse the file directly ourselves (rather than
-// relying on it being auto-injected into process.env) so there's no
-// ambiguity about whether the values actually made it through.
+// by default, with no risk of accidentally reseeding production.
 let tursoUrl: string | undefined;
 let tursoAuthToken: string | undefined;
 
@@ -33,17 +31,17 @@ const prisma = tursoUrl
     })
   : new PrismaClient();
 
-const PEOPLE: { name: string; roles: ("SPONSOR" | "CURATOR" | "MAKER")[]; balance: number }[] = [
-  { name: "Nimesh",   roles: ["SPONSOR", "CURATOR"], balance: 340 },
-  { name: "Theo",     roles: ["SPONSOR"],            balance: 220 },
-  { name: "Richard",  roles: ["CURATOR"],            balance: 90 },
-  { name: "Annie",    roles: ["CURATOR", "MAKER"],   balance: 60 },
-  { name: "Reiner",   roles: ["MAKER"],              balance: 15 },
-  { name: "James",    roles: ["SPONSOR"],            balance: 180 },
-  { name: "Thibault", roles: ["CURATOR"],            balance: 75 },
-  { name: "Adam",     roles: ["MAKER"],              balance: 0 },
-  { name: "Pierre",   roles: ["SPONSOR"],            balance: 150 },
-  { name: "Ryan",     roles: ["MAKER"],              balance: 30 },
+const PEOPLE: { firstName: string; roles: ("SPONSOR" | "CURATOR" | "MAKER")[]; balance: number }[] = [
+  { firstName: "Nimesh",   roles: ["SPONSOR", "CURATOR"], balance: 340 },
+  { firstName: "Theo",     roles: ["SPONSOR"],            balance: 220 },
+  { firstName: "Richard",  roles: ["CURATOR"],            balance: 90 },
+  { firstName: "Annie",    roles: ["CURATOR", "MAKER"],   balance: 60 },
+  { firstName: "Reiner",   roles: ["MAKER"],              balance: 15 },
+  { firstName: "James",    roles: ["SPONSOR"],            balance: 180 },
+  { firstName: "Thibault", roles: ["CURATOR"],            balance: 75 },
+  { firstName: "Adam",     roles: ["MAKER"],              balance: 0 },
+  { firstName: "Pierre",   roles: ["SPONSOR"],            balance: 150 },
+  { firstName: "Ryan",     roles: ["MAKER"],              balance: 30 },
 ];
 
 // Everyone starts with the same shared default password for this pilot.
@@ -61,20 +59,24 @@ async function main() {
   await prisma.memberRole.deleteMany();
   await prisma.member.deleteMany();
 
-  const byIndex: { id: string; name: string }[] = [];
+  const byIndex: { id: string; firstName: string }[] = [];
   const members: Record<string, { id: string }> = {};
 
   for (const p of PEOPLE) {
     const member = await prisma.member.create({
       data: {
-        name: p.name,
+        firstName: p.firstName,
+        // Same placeholder convention used in the production migration —
+        // each person corrects both in their own profile later.
+        lastName: p.firstName,
+        username: p.firstName,
         passwordHash,
         roles: { create: p.roles.map((role) => ({ role })) },
         wallet: { create: { currency: "ROSE", balance: p.balance } },
       },
     });
-    if (!members[p.name]) members[p.name] = member;
-    byIndex.push({ id: member.id, name: p.name });
+    if (!members[p.firstName]) members[p.firstName] = member;
+    byIndex.push({ id: member.id, firstName: p.firstName });
   }
 
   const nimesh = byIndex[0]!;
@@ -108,7 +110,7 @@ async function main() {
 
   console.log(
     "Seeded members:",
-    byIndex.map((m) => `${m.name} (${m.id.slice(0, 8)})`).join(", ")
+    byIndex.map((m) => `${m.firstName} (${m.id.slice(0, 8)})`).join(", ")
   );
 }
 
