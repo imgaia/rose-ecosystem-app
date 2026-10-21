@@ -1,35 +1,12 @@
 // prisma/seed.ts
-import { readFileSync } from "fs";
-import { parse } from "dotenv";
 import bcrypt from "bcryptjs";
-import { PrismaClient } from "../generated/prisma";
-import { PrismaLibSql } from "@prisma/adapter-libsql";
+import { getDbTarget, createPrismaFor } from "../scripts/db-target";
 
-// Only load production credentials when explicitly requested — this keeps
-// a plain `npx prisma db seed` always safely targeting your local database
-// by default, with no risk of accidentally reseeding production.
-let tursoUrl: string | undefined;
-let tursoAuthToken: string | undefined;
-
-if (process.env.SEED_TARGET === "production") {
-  const parsed = parse(readFileSync(".env.production.local", "utf-8"));
-  tursoUrl = parsed.TURSO_DATABASE_URL;
-  tursoAuthToken = parsed.TURSO_AUTH_TOKEN;
-  console.log(
-    "Seeding PRODUCTION (Turso). URL found:",
-    tursoUrl ? tursoUrl.slice(0, 30) + "..." : "MISSING",
-    "| Auth token found:",
-    tursoAuthToken ? "yes" : "MISSING",
-  );
-} else {
-  console.log("Seeding LOCAL database (no SEED_TARGET=production set).");
-}
-
-const prisma = tursoUrl
-  ? new PrismaClient({
-      adapter: new PrismaLibSql({ url: tursoUrl, authToken: tursoAuthToken }),
-    })
-  : new PrismaClient();
+// A plain `npx prisma db seed` always targets your local database.
+// SEED_TARGET=dev or SEED_TARGET=production must be set explicitly.
+const target = getDbTarget("SEED_TARGET");
+console.log(`Seeding the ${target.toUpperCase()} database.`);
+const prisma = createPrismaFor(target);
 
 const PEOPLE: { firstName: string; roles: ("SPONSOR" | "CURATOR" | "MAKER")[]; balance: number }[] = [
   { firstName: "Nimesh",   roles: ["SPONSOR", "CURATOR"], balance: 340 },

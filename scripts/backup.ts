@@ -1,36 +1,21 @@
 // scripts/backup.ts
 // Dumps the full database (every table) to a timestamped JSON file under
-// backups/. Run locally by default; add DB_TARGET=production to back up
-// the live Turso database instead.
+// backups/. Runs against the local database by default; set DB_TARGET to
+// back up the dev or the live Turso database instead.
 //
 // Usage:
 //   npx tsx scripts/backup.ts                          (local)
+//   DB_TARGET=dev npx tsx scripts/backup.ts            (dev)
 //   DB_TARGET=production npx tsx scripts/backup.ts     (production)
 
-import { readFileSync, writeFileSync, mkdirSync } from "fs";
-import { parse } from "dotenv";
-import { PrismaClient } from "../generated/prisma";
-import { PrismaLibSql } from "@prisma/adapter-libsql";
+import { writeFileSync, mkdirSync } from "fs";
+import { getDbTarget, createPrismaFor } from "./db-target";
 
-let tursoUrl: string | undefined;
-let tursoAuthToken: string | undefined;
-
-if (process.env.DB_TARGET === "production") {
-  const parsed = parse(readFileSync(".env.production.local", "utf-8"));
-  tursoUrl = parsed.TURSO_DATABASE_URL;
-  tursoAuthToken = parsed.TURSO_AUTH_TOKEN;
-  console.log("Backing up PRODUCTION (Turso).");
-} else {
-  console.log("Backing up LOCAL database.");
-}
-
-const prisma = tursoUrl
-  ? new PrismaClient({ adapter: new PrismaLibSql({ url: tursoUrl, authToken: tursoAuthToken }) })
-  : new PrismaClient();
+const target = getDbTarget();
+console.log(`Backing up the ${target.toUpperCase()} database.`);
+const prisma = createPrismaFor(target);
 
 async function main() {
-  const target = process.env.DB_TARGET === "production" ? "production" : "local";
-
   const data = {
     exportedAt: new Date().toISOString(),
     target,

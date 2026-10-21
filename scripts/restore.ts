@@ -5,12 +5,11 @@
 //
 // Usage:
 //   npx tsx scripts/restore.ts backups/backup-local-....json
+//   DB_TARGET=dev npx tsx scripts/restore.ts backups/backup-production-....json
 //   DB_TARGET=production npx tsx scripts/restore.ts backups/backup-production-....json
 
 import { readFileSync } from "fs";
-import { parse } from "dotenv";
-import { PrismaClient } from "../generated/prisma";
-import { PrismaLibSql } from "@prisma/adapter-libsql";
+import { getDbTarget, createPrismaFor } from "./db-target";
 
 const backupFileArg = process.argv[2];
 if (!backupFileArg) {
@@ -19,21 +18,9 @@ if (!backupFileArg) {
 }
 const backupFile: string = backupFileArg;
 
-let tursoUrl: string | undefined;
-let tursoAuthToken: string | undefined;
-
-if (process.env.DB_TARGET === "production") {
-  const parsed = parse(readFileSync(".env.production.local", "utf-8"));
-  tursoUrl = parsed.TURSO_DATABASE_URL;
-  tursoAuthToken = parsed.TURSO_AUTH_TOKEN;
-  console.log(`Restoring into PRODUCTION (Turso) from ${backupFile}`);
-} else {
-  console.log(`Restoring into LOCAL database from ${backupFile}`);
-}
-
-const prisma = tursoUrl
-  ? new PrismaClient({ adapter: new PrismaLibSql({ url: tursoUrl, authToken: tursoAuthToken }) })
-  : new PrismaClient();
+const target = getDbTarget();
+console.log(`Restoring into the ${target.toUpperCase()} database from ${backupFile}`);
+const prisma = createPrismaFor(target);
 
 // A backup member row might be in the old shape (just `name`, from before
 // today's firstName/lastName/username migration) or the new shape. Handle
