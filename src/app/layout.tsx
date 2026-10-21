@@ -4,6 +4,7 @@ import { type Metadata } from "next";
 import { Geist } from "next/font/google";
 
 import { TRPCReactProvider } from "~/trpc/react";
+import { EnvBanner } from "~/app/_components/env-banner";
 
 export const metadata: Metadata = {
   title: "Create T3 App",
@@ -22,6 +23,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${geist.variable}`}>
       <body className="bg-rose-bg text-rose-text antialiased">
+        <EnvBanner />
         <TRPCReactProvider>{children}</TRPCReactProvider>
       </body>
     </html>
