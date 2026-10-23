@@ -41,17 +41,24 @@ export function assertSees(visible: boolean, what: string) {
   if (!visible) throw new RuleError(`This node can't see that ${what}`, ["R-VIS-01"]);
 }
 
-/** For a screen that shows an action but disables it: the rules check result, without throwing. */
+/**
+ * For a screen that shows an action but disables it: the rules check result, without throwing.
+ * `needsLabels` are the roles' display labels ("Treasurer"), for the "Needs Treasurer" caption.
+ */
 export async function permission(ctx: Ctx, capability: string) {
   const result = await can(ctx.db, ctx.actor.personId, ctx.actor.actingNodeId, capability);
-  return result.allowed
-    ? { capability, allowed: true as const, needsRoles: [] as string[], blockedBy: [] as string[] }
-    : {
-        capability,
-        allowed: false as const,
-        needsRoles: result.blockedBy.flatMap((b) => b.needsRoles),
-        blockedBy: result.blockedBy.map((b) => b.ruleId),
-      };
+  if (result.allowed) {
+    return { capability, allowed: true as const, needsRoles: [] as string[], needsLabels: [] as string[], blockedBy: [] as string[] };
+  }
+  const needsRoles = result.blockedBy.flatMap((b) => b.needsRoles);
+  const labels = await ctx.db.role.findMany({ where: { key: { in: needsRoles } }, select: { key: true, label: true } });
+  return {
+    capability,
+    allowed: false as const,
+    needsRoles,
+    needsLabels: needsRoles.map((key) => labels.find((r) => r.key === key)?.label ?? key),
+    blockedBy: result.blockedBy.map((b) => b.ruleId),
+  };
 }
 
 export function notFound(what: string): never {

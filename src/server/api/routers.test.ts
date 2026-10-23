@@ -82,7 +82,11 @@ describe("signing in and acting for a node", () => {
     const { mo, rose } = await org();
     const { permissions } = await as(mo).nodes.switchActingNode({ actingNodeId: rose.id });
     expect(permissions.find((p) => p.capability === "INTERACT")).toMatchObject({ allowed: true });
-    expect(permissions.find((p) => p.capability === "PAY")).toMatchObject({ allowed: false, needsRoles: ["TREASURER"] });
+    expect(permissions.find((p) => p.capability === "PAY")).toMatchObject({
+      allowed: false,
+      needsRoles: ["TREASURER"],
+      needsLabels: ["TREASURER"], // the test seed uses the key as the label
+    });
   });
 });
 
