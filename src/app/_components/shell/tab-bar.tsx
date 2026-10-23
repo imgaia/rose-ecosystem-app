@@ -21,6 +21,7 @@ import {
   WalletIcon,
   WorkIcon,
 } from "./icons";
+import { useNav } from "./navigation";
 
 export type Tab = "home" | "relationships" | "wallet";
 
@@ -43,16 +44,15 @@ interface TabBarProps {
   onTab: (tab: Tab) => void;
   quickOpen: boolean;
   onToggleQuick: () => void;
-  onNotYet: (what: string) => void;
 }
 
-export function TabBar({ tab, onTab, quickOpen, onToggleQuick, onNotYet }: TabBarProps) {
+export function TabBar({ tab, onTab, quickOpen, onToggleQuick }: TabBarProps) {
   return (
     <nav
       aria-label="Main"
       className="fixed inset-x-0 bottom-0 z-40 mx-auto flex max-w-lg items-center gap-1 border-t border-rose-border bg-rose-surface pt-1 pr-3 pb-4 pl-2"
     >
-      {quickOpen && <QuickActions onNotYet={onNotYet} />}
+      {quickOpen && <QuickActions />}
 
       {TABS.map(({ id, label, Icon }) => (
         <button
@@ -82,8 +82,9 @@ export function TabBar({ tab, onTab, quickOpen, onToggleQuick, onNotYet }: TabBa
   );
 }
 
-function QuickActions({ onNotYet }: { onNotYet: (what: string) => void }) {
+function QuickActions() {
   const { permissionFor } = useActingNode();
+  const { notYet } = useNav();
 
   return (
     <section
@@ -100,7 +101,7 @@ function QuickActions({ onNotYet }: { onNotYet: (what: string) => void }) {
             key={label}
             type="button"
             disabled={!allowed}
-            onClick={() => onNotYet(label)}
+            onClick={() => notYet(label)}
             className="flex min-h-14 items-center gap-3 border-t border-rose-border px-1 py-1.5 text-left enabled:hover:bg-white/5 disabled:cursor-not-allowed"
           >
             <span

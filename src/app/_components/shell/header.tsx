@@ -8,17 +8,17 @@
 
 import { roleList, useActingNode, type ActingEntry } from "./acting-node";
 import { ChevronDownIcon, ChevronUpIcon, PlusIcon, SearchIcon } from "./icons";
+import { useNav } from "./navigation";
 
 interface HeaderProps {
   menuOpen: boolean;
   onToggleMenu: () => void;
   onCloseMenu: () => void;
-  /** For screens that later slices build: shows a short "coming" note. */
-  onNotYet: (what: string) => void;
 }
 
-export function Header({ menuOpen, onToggleMenu, onCloseMenu, onNotYet }: HeaderProps) {
+export function Header({ menuOpen, onToggleMenu, onCloseMenu }: HeaderProps) {
   const { acting } = useActingNode();
+  const { notYet } = useNav();
 
   return (
     <header className="sticky top-0 z-40 border-b border-rose-border bg-rose-surface">
@@ -37,20 +37,21 @@ export function Header({ menuOpen, onToggleMenu, onCloseMenu, onNotYet }: Header
         <button
           type="button"
           aria-label="Search the network"
-          onClick={() => onNotYet("Network search")}
+          onClick={() => notYet("Network search")}
           className="flex size-11 flex-none items-center justify-center rounded-xl text-rose-muted hover:bg-white/5 hover:text-rose-text"
         >
           <SearchIcon />
         </button>
       </div>
 
-      {menuOpen && <NodeMenu onClose={onCloseMenu} onNotYet={onNotYet} />}
+      {menuOpen && <NodeMenu onClose={onCloseMenu} />}
     </header>
   );
 }
 
-function NodeMenu({ onClose, onNotYet }: { onClose: () => void; onNotYet: (what: string) => void }) {
+function NodeMenu({ onClose }: { onClose: () => void }) {
   const { person, actingAs, acting, switchTo } = useActingNode();
+  const { notYet } = useNav();
   const others = actingAs.filter((a) => a.node.id !== acting.node.id);
 
   async function handleLogout() {
@@ -73,7 +74,7 @@ function NodeMenu({ onClose, onNotYet }: { onClose: () => void; onNotYet: (what:
 
       <button
         type="button"
-        onClick={() => onNotYet("The node page")}
+        onClick={() => notYet("The node page")}
         className="min-h-11 rounded-xl border border-rose-muted px-4 text-sm font-semibold hover:bg-white/5"
       >
         Open node page: identity, roles, rules
@@ -105,7 +106,7 @@ function NodeMenu({ onClose, onNotYet }: { onClose: () => void; onNotYet: (what:
       <div className="flex flex-col">
         <button
           type="button"
-          onClick={() => onNotYet("Creating a collection")}
+          onClick={() => notYet("Creating a collection")}
           className="flex min-h-13 items-center gap-3 border-t border-rose-border px-1 text-sm font-semibold hover:bg-white/5"
         >
           <PlusIcon />

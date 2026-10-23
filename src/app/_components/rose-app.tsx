@@ -1,15 +1,19 @@
 "use client";
 
 // src/app/_components/rose-app.tsx
-// The node shell every signed-in screen sits in (PRD 4.1, BUILD_PLAN step 6
-// slice 1): the header with the acting node and its menu, the three tabs,
-// and the + button. The tabs' contents arrive in later slices.
+// The node shell every signed-in screen sits in (PRD 4.1): the header with
+// the acting node and its menu, the three tabs, and the + button. A screen
+// opened from a tab (a proposal, a relationship, a form) replaces the tabs
+// until you go back.
 
 import { useEffect, useState } from "react";
 
 import { api } from "~/trpc/react";
+import { HomeTab } from "./home/home-tab";
+import { ScreenView } from "./screens";
 import { ActingNodeProvider, useActingNode } from "./shell/acting-node";
 import { Header } from "./shell/header";
+import { NavProvider, useNav } from "./shell/navigation";
 import { TabBar, type Tab } from "./shell/tab-bar";
 
 export function RoseApp() {
@@ -25,16 +29,18 @@ export function RoseApp() {
 
   return (
     <ActingNodeProvider me={me.data}>
-      <Shell />
+      <NavProvider>
+        <Shell />
+      </NavProvider>
     </ActingNodeProvider>
   );
 }
 
 function Shell() {
+  const { stack, notice } = useNav();
   const [tab, setTab] = useState<Tab>("home");
   // At most one of the two menus is open at a time.
   const [open, setOpen] = useState<"node" | "quick" | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
 
   // Escape closes an open menu.
   useEffect(() => {
@@ -44,17 +50,14 @@ function Shell() {
     return () => window.removeEventListener("keydown", onKey);
   }, [open]);
 
-  // The "coming soon" note fades after a few seconds.
-  useEffect(() => {
-    if (!notice) return;
-    const timer = setTimeout(() => setNotice(null), 3500);
-    return () => clearTimeout(timer);
-  }, [notice]);
-
-  function notYet(what: string) {
+  // Any screen opened from a menu closes the menu.
+  const [depth, setDepth] = useState(stack.length);
+  if (depth !== stack.length) {
+    setDepth(stack.length);
     setOpen(null);
-    setNotice(`${what} is coming in a later step.`);
   }
+
+  const top = stack[stack.length - 1];
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-lg flex-col">
@@ -67,49 +70,47 @@ function Shell() {
         />
       )}
 
-      <Header
-        menuOpen={open === "node"}
-        onToggleMenu={() => setOpen(open === "node" ? null : "node")}
-        onCloseMenu={() => setOpen(null)}
-        onNotYet={notYet}
-      />
-
-      <main className="flex flex-1 flex-col gap-4 p-4 pb-28">
-        <TabContent tab={tab} />
-      </main>
+      {top ? (
+        <ScreenView key={stack.length} screen={top} />
+      ) : (
+        <>
+          <Header menuOpen={open === "node"} onToggleMenu={() => setOpen(open === "node" ? null : "node")} onCloseMenu={() => setOpen(null)} />
+          <main className="flex flex-1 flex-col gap-3 p-4 pb-28">
+            <TabContent tab={tab} />
+          </main>
+          <TabBar
+            tab={tab}
+            onTab={(t) => {
+              setTab(t);
+              setOpen(null);
+            }}
+            quickOpen={open === "quick"}
+            onToggleQuick={() => setOpen(open === "quick" ? null : "quick")}
+          />
+        </>
+      )}
 
       {notice && (
         <p
           role="status"
-          className="fixed inset-x-4 bottom-24 z-20 mx-auto max-w-md rounded-xl border border-rose-border bg-rose-surface px-4 py-3 text-center text-sm shadow-lg"
+          className="fixed inset-x-4 bottom-24 z-50 mx-auto max-w-md rounded-xl border border-rose-border bg-rose-surface px-4 py-3 text-center text-sm shadow-lg"
         >
           {notice}
         </p>
       )}
-
-      <TabBar
-        tab={tab}
-        onTab={(t) => {
-          setTab(t);
-          setOpen(null);
-        }}
-        quickOpen={open === "quick"}
-        onToggleQuick={() => setOpen(open === "quick" ? null : "quick")}
-        onNotYet={notYet}
-      />
     </div>
   );
 }
 
-/** Placeholders until each tab's own slice is built. */
 function TabContent({ tab }: { tab: Tab }) {
   const { acting } = useActingNode();
+  if (tab === "home") return <HomeTab />;
+
+  // Placeholders until each tab's own slice is built.
   const content = {
-    home: { title: "Home", body: `Proposals waiting on ${acting.node.name}, then recent activity.` },
     relationships: { title: "Relationships", body: `Every node ${acting.node.name} has a relationship with.` },
     wallet: { title: "Wallet", body: `${acting.node.name}'s balances and transactions.` },
   }[tab];
-
   return (
     <>
       <h1 className="text-lg font-semibold">{content.title}</h1>
