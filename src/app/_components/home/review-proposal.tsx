@@ -29,7 +29,7 @@ export function ReviewProposal({ proposalId }: { proposalId: string }) {
 
 function ProposalBody({ proposal: p }: { proposal: ProposalView }) {
   const { acting } = useActingNode();
-  const { back, notYet } = useNav();
+  const { back, open, notYet } = useNav();
   const me = acting.node.id;
   const text = proposalText(p, me);
   const [comment, setComment] = useState("");
@@ -161,7 +161,7 @@ function ProposalBody({ proposal: p }: { proposal: ProposalView }) {
       )}
 
       {interaction && (
-        <Button onClick={() => notYet("The interaction screen")}>Open the interaction</Button>
+        <Button onClick={() => open({ name: "interaction", interactionId: interaction.id })}>Open the interaction</Button>
       )}
     </>
   );

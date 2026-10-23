@@ -10,6 +10,7 @@ import { useEffect, useState } from "react";
 
 import { api } from "~/trpc/react";
 import { HomeTab } from "./home/home-tab";
+import { RelationshipsTab } from "./relationships/relationships-tab";
 import { ScreenView } from "./screens";
 import { ActingNodeProvider, useActingNode } from "./shell/acting-node";
 import { Header } from "./shell/header";
@@ -105,12 +106,10 @@ function Shell() {
 function TabContent({ tab }: { tab: Tab }) {
   const { acting } = useActingNode();
   if (tab === "home") return <HomeTab />;
+  if (tab === "relationships") return <RelationshipsTab />;
 
-  // Placeholders until each tab's own slice is built.
-  const content = {
-    relationships: { title: "Relationships", body: `Every node ${acting.node.name} has a relationship with.` },
-    wallet: { title: "Wallet", body: `${acting.node.name}'s balances and transactions.` },
-  }[tab];
+  // A placeholder until the Wallet slice is built.
+  const content = { title: "Wallet", body: `${acting.node.name}'s balances and transactions.` };
   return (
     <>
       <h1 className="text-lg font-semibold">{content.title}</h1>
