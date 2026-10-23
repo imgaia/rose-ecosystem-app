@@ -395,7 +395,8 @@ exports.TransactionKind = exports.$Enums.TransactionKind = {
   EXCHANGE: 'EXCHANGE',
   MINT: 'MINT',
   DEPOSIT: 'DEPOSIT',
-  WITHDRAWAL: 'WITHDRAWAL'
+  WITHDRAWAL: 'WITHDRAWAL',
+  OPENING_BALANCE: 'OPENING_BALANCE'
 };
 
 exports.InvitationStatus = exports.$Enums.InvitationStatus = {

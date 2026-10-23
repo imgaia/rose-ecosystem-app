@@ -221,7 +221,8 @@ export const TransactionKind: {
   EXCHANGE: 'EXCHANGE',
   MINT: 'MINT',
   DEPOSIT: 'DEPOSIT',
-  WITHDRAWAL: 'WITHDRAWAL'
+  WITHDRAWAL: 'WITHDRAWAL',
+  OPENING_BALANCE: 'OPENING_BALANCE'
 };
 
 export type TransactionKind = (typeof TransactionKind)[keyof typeof TransactionKind]

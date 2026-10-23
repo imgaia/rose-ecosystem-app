@@ -339,6 +339,7 @@ enum TransactionKind {
   MINT
   DEPOSIT
   WITHDRAWAL
+  OPENING_BALANCE // one per member, carried over from Phase 1; not a withdrawal
 }
 
 // The ledger: one row per movement of value. Never updated or deleted.
