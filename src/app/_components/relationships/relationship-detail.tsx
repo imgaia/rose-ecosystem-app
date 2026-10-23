@@ -29,7 +29,7 @@ export function RelationshipDetail({ relationshipId }: { relationshipId: string 
 
 function Body({ detail: r }: { detail: Detail }) {
   const { acting, permissionFor } = useActingNode();
-  const { open, notYet } = useNav();
+  const { open } = useNav();
   const other = r.otherNode;
   // "you" for a person acting for themselves; a collection is named.
   const you = acting.node.kind === "INDIVIDUAL" ? "you" : acting.node.name;
@@ -115,14 +115,14 @@ function Body({ detail: r }: { detail: Detail }) {
       )}
 
       <div className="mt-2 flex flex-col gap-2">
-        <GatedButton variant="primary" permission={permissionFor("PAY")} onClick={() => notYet("Sending a payment")}>
+        <GatedButton variant="primary" permission={permissionFor("PAY")} onClick={() => open({ name: "send", toNodeId: other.id })}>
           Send a payment or gift
         </GatedButton>
         <div className="grid grid-cols-2 gap-2">
-          <GatedButton permission={permissionFor("INTERACT")} onClick={() => notYet("Requesting a payment")}>
+          <GatedButton permission={permissionFor("INTERACT")} onClick={() => open({ name: "request", fromNodeId: other.id })}>
             Request a payment
           </GatedButton>
-          <GatedButton permission={permissionFor("INTERACT")} onClick={() => notYet("Proposing work")}>
+          <GatedButton permission={permissionFor("INTERACT")} onClick={() => open({ name: "propose-work", otherNodeId: other.id })}>
             Propose work
           </GatedButton>
         </div>

@@ -29,7 +29,7 @@ export function ReviewProposal({ proposalId }: { proposalId: string }) {
 
 function ProposalBody({ proposal: p }: { proposal: ProposalView }) {
   const { acting } = useActingNode();
-  const { back, open, notYet } = useNav();
+  const { back, open } = useNav();
   const me = acting.node.id;
   const text = proposalText(p, me);
   const [comment, setComment] = useState("");
@@ -138,7 +138,7 @@ function ProposalBody({ proposal: p }: { proposal: ProposalView }) {
           </GatedButton>
           <div className="flex gap-2">
             {canCounter && (
-              <GatedButton className="flex-1" permission={p.permission} disabled={busy} onClick={() => notYet("Counter-proposing")}>
+              <GatedButton className="flex-1" permission={p.permission} disabled={busy} onClick={() => open({ name: "counter", proposalId: p.id })}>
                 Counter-propose
               </GatedButton>
             )}

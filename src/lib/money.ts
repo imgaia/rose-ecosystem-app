@@ -11,3 +11,18 @@ export function formatAmount(minorUnits: number, decimals: number, code?: string
   const text = decimals > 0 ? `${whole}.${digits.slice(-decimals)}` : whole;
   return code ? `${sign}${text} ${code}` : `${sign}${text}`;
 }
+
+/**
+ * What someone typed into an amount field, as whole minor units:
+ * parseAmount("25.5", 2) -> 2550. Spaces, commas and apostrophes between
+ * thousands are ignored. Returns null if it isn't a positive-or-zero number
+ * with at most `decimals` digits after the point.
+ */
+export function parseAmount(text: string, decimals: number): number | null {
+  const clean = text.trim().replace(/[\s',]/g, "");
+  const match = /^(\d+)(?:\.(\d*))?$/.exec(clean);
+  if (!match) return null;
+  const fraction = match[2] ?? "";
+  if (fraction.length > decimals) return null;
+  return Number(match[1]) * 10 ** decimals + Number(fraction.padEnd(decimals, "0") || "0");
+}

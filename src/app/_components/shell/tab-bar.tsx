@@ -21,7 +21,7 @@ import {
   WalletIcon,
   WorkIcon,
 } from "./icons";
-import { useNav } from "./navigation";
+import { useNav, type Screen } from "./navigation";
 
 export type Tab = "home" | "relationships" | "wallet";
 
@@ -31,10 +31,10 @@ const TABS: { id: Tab; label: string; Icon: typeof HomeIcon }[] = [
   { id: "wallet", label: "Wallet", Icon: WalletIcon },
 ];
 
-const QUICK_ACTIONS = [
-  { label: "Send a payment or gift", hint: "To anyone in your network", capability: "PAY", Icon: SendIcon },
-  { label: "Request a payment", hint: "Ask someone to pay you", capability: "INTERACT", Icon: RequestIcon },
-  { label: "Propose work", hint: "Agree work and terms with someone", capability: "INTERACT", Icon: WorkIcon },
+const QUICK_ACTIONS: { label: string; hint: string; capability: string; Icon: typeof SendIcon; screen?: Screen }[] = [
+  { label: "Send a payment or gift", hint: "To anyone in your network", capability: "PAY", Icon: SendIcon, screen: { name: "send" } },
+  { label: "Request a payment", hint: "Ask someone to pay you", capability: "INTERACT", Icon: RequestIcon, screen: { name: "request" } },
+  { label: "Propose work", hint: "Agree work and terms with someone", capability: "INTERACT", Icon: WorkIcon, screen: { name: "propose-work" } },
   { label: "Exchange currencies", hint: "Between your own accounts", capability: "EXCHANGE", Icon: ExchangeIcon },
   { label: "Invite someone", hint: "Bring a new member into ROSE", capability: "INVITE", Icon: InviteIcon },
 ];
@@ -84,7 +84,7 @@ export function TabBar({ tab, onTab, quickOpen, onToggleQuick }: TabBarProps) {
 
 function QuickActions() {
   const { permissionFor } = useActingNode();
-  const { notYet } = useNav();
+  const { open, notYet } = useNav();
 
   return (
     <section
@@ -92,7 +92,7 @@ function QuickActions() {
       className="absolute inset-x-3 bottom-full mb-3 flex flex-col rounded-2xl border border-rose-border bg-rose-surface px-4 pt-3 pb-1 shadow-lg"
     >
       <p className="px-1 pt-1 pb-2 text-xs font-semibold tracking-wide text-rose-muted uppercase">Quick actions</p>
-      {QUICK_ACTIONS.map(({ label, hint, capability, Icon }) => {
+      {QUICK_ACTIONS.map(({ label, hint, capability, Icon, screen }) => {
         const permission = permissionFor(capability);
         // Disabled until the rules check has answered, then only if it refused.
         const allowed = permission?.allowed ?? false;
@@ -101,7 +101,7 @@ function QuickActions() {
             key={label}
             type="button"
             disabled={!allowed}
-            onClick={() => notYet(label)}
+            onClick={() => (screen ? open(screen) : notYet(label))}
             className="flex min-h-14 items-center gap-3 border-t border-rose-border px-1 py-1.5 text-left enabled:hover:bg-white/5 disabled:cursor-not-allowed"
           >
             <span

@@ -34,7 +34,7 @@ export function InteractionDetail({ interactionId }: { interactionId: string }) 
 
 function Body({ detail: d }: { detail: Detail }) {
   const { acting } = useActingNode();
-  const { open, notYet } = useNav();
+  const { open } = useNav();
   const [showHistory, setShowHistory] = useState(false);
   const me = acting.node.id;
   const other = d.actingNodePays ? d.payee : d.payer;
@@ -166,11 +166,11 @@ function Body({ detail: d }: { detail: Detail }) {
       {running && (
         <div className="mt-2 grid grid-cols-2 gap-2">
           {d.kind === "WORK" && !d.actingNodePays && (
-            <GatedButton variant="primary" className="col-span-2" permission={d.permission} disabled={busy} onClick={() => notYet("Requesting a payment")}>
+            <GatedButton variant="primary" className="col-span-2" permission={d.permission} disabled={busy} onClick={() => open({ name: "request", interactionId: d.id })}>
               Request a payment
             </GatedButton>
           )}
-          <GatedButton permission={d.permission} disabled={busy || openProposals.some((p) => p.kind !== "PAYMENT_REQUEST")} onClick={() => notYet("Amending terms")}>
+          <GatedButton permission={d.permission} disabled={busy || openProposals.some((p) => p.kind !== "PAYMENT_REQUEST")} onClick={() => open({ name: "amend", interactionId: d.id })}>
             Amend terms
           </GatedButton>
           {d.status === "ACTIVE" ? (

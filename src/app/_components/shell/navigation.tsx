@@ -14,7 +14,12 @@ import { createContext, useContext, useEffect, useState } from "react";
 export type Screen =
   | { name: "proposal"; proposalId: string }
   | { name: "relationship"; relationshipId: string }
-  | { name: "interaction"; interactionId: string };
+  | { name: "interaction"; interactionId: string }
+  | { name: "send"; toNodeId?: string }
+  | { name: "request"; fromNodeId?: string; interactionId?: string }
+  | { name: "propose-work"; otherNodeId?: string }
+  | { name: "counter"; proposalId: string }
+  | { name: "amend"; interactionId: string };
 
 interface NavValue {
   stack: Screen[];
@@ -24,6 +29,8 @@ interface NavValue {
   reset: () => void;
   /** A short note for something a later step builds. */
   notYet: (what: string) => void;
+  /** A short note that fades, e.g. "Sent. Theo accepts it from their inbox." */
+  notify: (text: string) => void;
   notice: string | null;
 }
 
@@ -70,6 +77,7 @@ export function NavProvider({ children }: { children: React.ReactNode }) {
     notYet(what) {
       setNotice(`${what} is coming in a later step.`);
     },
+    notify: setNotice,
   };
 
   return <NavContext.Provider value={value}>{children}</NavContext.Provider>;
