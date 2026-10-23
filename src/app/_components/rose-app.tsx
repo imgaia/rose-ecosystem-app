@@ -12,10 +12,11 @@ import { api } from "~/trpc/react";
 import { HomeTab } from "./home/home-tab";
 import { RelationshipsTab } from "./relationships/relationships-tab";
 import { ScreenView } from "./screens";
-import { ActingNodeProvider, useActingNode } from "./shell/acting-node";
+import { ActingNodeProvider } from "./shell/acting-node";
 import { Header } from "./shell/header";
 import { NavProvider, useNav } from "./shell/navigation";
 import { TabBar, type Tab } from "./shell/tab-bar";
+import { WalletTab } from "./wallet/wallet-tab";
 
 export function RoseApp() {
   const me = api.nodes.me.useQuery();
@@ -104,19 +105,7 @@ function Shell() {
 }
 
 function TabContent({ tab }: { tab: Tab }) {
-  const { acting } = useActingNode();
   if (tab === "home") return <HomeTab />;
   if (tab === "relationships") return <RelationshipsTab />;
-
-  // A placeholder until the Wallet slice is built.
-  const content = { title: "Wallet", body: `${acting.node.name}'s balances and transactions.` };
-  return (
-    <>
-      <h1 className="text-lg font-semibold">{content.title}</h1>
-      <section className="rounded-2xl border border-rose-border bg-rose-surface p-4">
-        <p>{content.body}</p>
-        <p className="mt-1 text-xs text-rose-muted">This screen is coming in a later step.</p>
-      </section>
-    </>
-  );
+  return <WalletTab />;
 }

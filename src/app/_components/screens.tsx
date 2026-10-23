@@ -12,6 +12,7 @@ import { InteractionDetail } from "./relationships/interaction-detail";
 import { RelationshipDetail } from "./relationships/relationship-detail";
 import type { Screen } from "./shell/navigation";
 import { SubScreen } from "./ui";
+import { AddFunds, Exchange, Mint } from "./wallet/money-actions";
 
 export function ScreenView({ screen }: { screen: Screen }) {
   switch (screen.name) {
@@ -31,6 +32,12 @@ export function ScreenView({ screen }: { screen: Screen }) {
       return <CounterPropose proposalId={screen.proposalId} />;
     case "amend":
       return <AmendTerms interactionId={screen.interactionId} />;
+    case "add-funds":
+      return <AddFunds />;
+    case "exchange":
+      return <Exchange />;
+    case "mint":
+      return <Mint />;
     default:
       return (
         <SubScreen title="Coming soon">

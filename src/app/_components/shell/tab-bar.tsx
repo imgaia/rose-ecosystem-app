@@ -35,7 +35,7 @@ const QUICK_ACTIONS: { label: string; hint: string; capability: string; Icon: ty
   { label: "Send a payment or gift", hint: "To anyone in your network", capability: "PAY", Icon: SendIcon, screen: { name: "send" } },
   { label: "Request a payment", hint: "Ask someone to pay you", capability: "INTERACT", Icon: RequestIcon, screen: { name: "request" } },
   { label: "Propose work", hint: "Agree work and terms with someone", capability: "INTERACT", Icon: WorkIcon, screen: { name: "propose-work" } },
-  { label: "Exchange currencies", hint: "Between your own accounts", capability: "EXCHANGE", Icon: ExchangeIcon },
+  { label: "Exchange currencies", hint: "Between your own accounts", capability: "EXCHANGE", Icon: ExchangeIcon, screen: { name: "exchange" } },
   { label: "Invite someone", hint: "Bring a new member into ROSE", capability: "INVITE", Icon: InviteIcon },
 ];
 

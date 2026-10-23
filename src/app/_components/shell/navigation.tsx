@@ -19,7 +19,10 @@ export type Screen =
   | { name: "request"; fromNodeId?: string; interactionId?: string }
   | { name: "propose-work"; otherNodeId?: string }
   | { name: "counter"; proposalId: string }
-  | { name: "amend"; interactionId: string };
+  | { name: "amend"; interactionId: string }
+  | { name: "add-funds" }
+  | { name: "exchange" }
+  | { name: "mint" };
 
 interface NavValue {
   stack: Screen[];
