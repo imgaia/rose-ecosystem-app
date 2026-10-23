@@ -22,7 +22,9 @@ export type Screen =
   | { name: "amend"; interactionId: string }
   | { name: "add-funds" }
   | { name: "exchange" }
-  | { name: "mint" };
+  | { name: "mint" }
+  | { name: "node"; nodeId: string }
+  | { name: "search" };
 
 interface NavValue {
   stack: Screen[];

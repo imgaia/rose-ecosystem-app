@@ -7,6 +7,7 @@
 import { ReviewProposal } from "./home/review-proposal";
 import { AmendTerms, CounterPropose, ProposeWork } from "./interact/propose-work";
 import { RequestPayment } from "./interact/request-payment";
+import { NetworkSearch, NodePage } from "./node/node-page";
 import { SendPayment } from "./interact/send-payment";
 import { InteractionDetail } from "./relationships/interaction-detail";
 import { RelationshipDetail } from "./relationships/relationship-detail";
@@ -38,6 +39,10 @@ export function ScreenView({ screen }: { screen: Screen }) {
       return <Exchange />;
     case "mint":
       return <Mint />;
+    case "node":
+      return <NodePage nodeId={screen.nodeId} />;
+    case "search":
+      return <NetworkSearch />;
     default:
       return (
         <SubScreen title="Coming soon">

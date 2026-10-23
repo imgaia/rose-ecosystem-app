@@ -18,7 +18,7 @@ interface HeaderProps {
 
 export function Header({ menuOpen, onToggleMenu, onCloseMenu }: HeaderProps) {
   const { acting } = useActingNode();
-  const { notYet } = useNav();
+  const { open } = useNav();
 
   return (
     <header className="sticky top-0 z-40 border-b border-rose-border bg-rose-surface">
@@ -37,7 +37,7 @@ export function Header({ menuOpen, onToggleMenu, onCloseMenu }: HeaderProps) {
         <button
           type="button"
           aria-label="Search the network"
-          onClick={() => notYet("Network search")}
+          onClick={() => open({ name: "search" })}
           className="flex size-11 flex-none items-center justify-center rounded-xl text-rose-muted hover:bg-white/5 hover:text-rose-text"
         >
           <SearchIcon />
@@ -51,7 +51,7 @@ export function Header({ menuOpen, onToggleMenu, onCloseMenu }: HeaderProps) {
 
 function NodeMenu({ onClose }: { onClose: () => void }) {
   const { person, actingAs, acting, switchTo } = useActingNode();
-  const { notYet } = useNav();
+  const { open, notYet } = useNav();
   const others = actingAs.filter((a) => a.node.id !== acting.node.id);
 
   async function handleLogout() {
@@ -74,7 +74,7 @@ function NodeMenu({ onClose }: { onClose: () => void }) {
 
       <button
         type="button"
-        onClick={() => notYet("The node page")}
+        onClick={() => open({ name: "node", nodeId: acting.node.id })}
         className="min-h-11 rounded-xl border border-rose-muted px-4 text-sm font-semibold hover:bg-white/5"
       >
         Open node page: identity, roles, rules

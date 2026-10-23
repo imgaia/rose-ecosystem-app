@@ -48,6 +48,9 @@ function Body({ detail: r }: { detail: Detail }) {
             </p>
           </div>
         </div>
+        <button type="button" onClick={() => open({ name: "node", nodeId: other.id })} className="min-h-11 self-start text-sm font-semibold text-rose-accent">
+          Open {other.name}&apos;s node page
+        </button>
         <Row label="Trust score (placeholder)" strong>
           {r.trustScore.toFixed(2)}
         </Row>
