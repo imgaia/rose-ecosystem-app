@@ -24,7 +24,8 @@ export type Screen =
   | { name: "exchange" }
   | { name: "mint" }
   | { name: "node"; nodeId: string }
-  | { name: "search" };
+  | { name: "search" }
+  | { name: "invite" };
 
 interface NavValue {
   stack: Screen[];

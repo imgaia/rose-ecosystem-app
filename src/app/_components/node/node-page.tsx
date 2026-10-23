@@ -245,7 +245,7 @@ function Members({ inside, isActing }: { inside: Inside; isActing: boolean }) {
       )}
       {isActing && (
         <div className="flex flex-col gap-2">
-          <GatedButton variant="primary" permission={permissionFor("ADD_MEMBERS")} onClick={notYetFor("Inviting a member")}>
+          <GatedButton variant="primary" permission={permissionFor("ADD_MEMBERS")} onClick={() => open({ name: "invite" })}>
             Invite a member
           </GatedButton>
           <GatedButton permission={permissionFor("EDIT_GOVERNANCE")} onClick={notYetFor("Proposing a role change")}>

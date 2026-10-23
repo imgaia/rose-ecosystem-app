@@ -6,13 +6,13 @@
 
 import { ReviewProposal } from "./home/review-proposal";
 import { AmendTerms, CounterPropose, ProposeWork } from "./interact/propose-work";
+import { Invite } from "./invite/invite";
 import { RequestPayment } from "./interact/request-payment";
 import { NetworkSearch, NodePage } from "./node/node-page";
 import { SendPayment } from "./interact/send-payment";
 import { InteractionDetail } from "./relationships/interaction-detail";
 import { RelationshipDetail } from "./relationships/relationship-detail";
 import type { Screen } from "./shell/navigation";
-import { SubScreen } from "./ui";
 import { AddFunds, Exchange, Mint } from "./wallet/money-actions";
 
 export function ScreenView({ screen }: { screen: Screen }) {
@@ -43,11 +43,7 @@ export function ScreenView({ screen }: { screen: Screen }) {
       return <NodePage nodeId={screen.nodeId} />;
     case "search":
       return <NetworkSearch />;
-    default:
-      return (
-        <SubScreen title="Coming soon">
-          <p className="text-rose-muted">This screen is coming in a later step.</p>
-        </SubScreen>
-      );
+    case "invite":
+      return <Invite />;
   }
 }

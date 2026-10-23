@@ -36,7 +36,8 @@ const QUICK_ACTIONS: { label: string; hint: string; capability: string; Icon: ty
   { label: "Request a payment", hint: "Ask someone to pay you", capability: "INTERACT", Icon: RequestIcon, screen: { name: "request" } },
   { label: "Propose work", hint: "Agree work and terms with someone", capability: "INTERACT", Icon: WorkIcon, screen: { name: "propose-work" } },
   { label: "Exchange currencies", hint: "Between your own accounts", capability: "EXCHANGE", Icon: ExchangeIcon, screen: { name: "exchange" } },
-  { label: "Invite someone", hint: "Bring a new member into ROSE", capability: "INVITE", Icon: InviteIcon },
+  // For a collection, inviting adds a member, so it needs ADD_MEMBERS (see QuickActions).
+  { label: "Invite someone", hint: "Bring a new member into ROSE", capability: "INVITE", Icon: InviteIcon, screen: { name: "invite" } },
 ];
 
 interface TabBarProps {
@@ -83,8 +84,9 @@ export function TabBar({ tab, onTab, quickOpen, onToggleQuick }: TabBarProps) {
 }
 
 function QuickActions() {
-  const { permissionFor } = useActingNode();
+  const { acting, permissionFor } = useActingNode();
   const { open, notYet } = useNav();
+  const isCollection = acting.node.kind === "COLLECTION";
 
   return (
     <section
@@ -93,7 +95,7 @@ function QuickActions() {
     >
       <p className="px-1 pt-1 pb-2 text-xs font-semibold tracking-wide text-rose-muted uppercase">Quick actions</p>
       {QUICK_ACTIONS.map(({ label, hint, capability, Icon, screen }) => {
-        const permission = permissionFor(capability);
+        const permission = permissionFor(capability === "INVITE" && isCollection ? "ADD_MEMBERS" : capability);
         // Disabled until the rules check has answered, then only if it refused.
         const allowed = permission?.allowed ?? false;
         return (
