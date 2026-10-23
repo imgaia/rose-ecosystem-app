@@ -1,60 +1,122 @@
 "use client";
 
 // src/app/_components/rose-app.tsx
-// Placeholder while the v0.8 screens are built (BUILD_PLAN step 6). It shows
-// who is signed in, read through the new API (nodes.me), so the dev site
-// proves sign-in, the signed cookie and the new routers work end to end.
+// The node shell every signed-in screen sits in (PRD 4.1, BUILD_PLAN step 6
+// slice 1): the header with the acting node and its menu, the three tabs,
+// and the + button. The tabs' contents arrive in later slices.
 
-import Image from "next/image";
+import { useEffect, useState } from "react";
 
 import { api } from "~/trpc/react";
+import { ActingNodeProvider, useActingNode } from "./shell/acting-node";
+import { Header } from "./shell/header";
+import { TabBar, type Tab } from "./shell/tab-bar";
 
 export function RoseApp() {
   const me = api.nodes.me.useQuery();
 
-  async function handleLogout() {
-    await fetch("/api/logout", { method: "POST" });
-    window.location.href = "/login";
+  if (!me.data) {
+    return (
+      <div className="mx-auto flex min-h-dvh max-w-lg items-center justify-center px-4 text-sm text-rose-muted">
+        {me.error ? <p className="text-red-400">{me.error.message}</p> : "Loading…"}
+      </div>
+    );
   }
 
   return (
-    <div className="mx-auto flex min-h-dvh max-w-lg flex-col bg-rose-bg px-4 py-12">
-      <div className="mx-auto w-full max-w-sm">
-        <div className="mb-8 flex justify-center">
-          <Image src="/rose-logo_orange.svg" alt="ROSE" width={120} height={48} className="h-12 w-auto" priority />
-        </div>
+    <ActingNodeProvider me={me.data}>
+      <Shell />
+    </ActingNodeProvider>
+  );
+}
 
-        <section className="rounded-2xl bg-gradient-to-br from-rose-accent to-rose-accent-dark p-6 shadow-lg">
-          <p className="text-sm font-medium text-white/80">v0.8 in progress</p>
-          <p className="mt-1 text-lg font-semibold text-rose-blush">
-            {me.isLoading ? "Loading…" : me.data ? `Signed in as ${me.data.person.name}` : "Could not load your node"}
-          </p>
-        </section>
+function Shell() {
+  const [tab, setTab] = useState<Tab>("home");
+  // At most one of the two menus is open at a time.
+  const [open, setOpen] = useState<"node" | "quick" | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
-        {me.data && me.data.actingAs.length > 1 && (
-          <section className="mt-6">
-            <p className="text-sm font-semibold uppercase tracking-wide text-rose-muted">You can also act for</p>
-            <ul className="mt-2 flex flex-col gap-2">
-              {me.data.actingAs.slice(1).map(({ node, roles }) => (
-                <li key={node.id} className="rounded-xl border border-rose-border bg-rose-surface px-4 py-3 text-sm">
-                  <span className="font-semibold">{node.name}</span>
-                  <span className="text-rose-muted"> · {roles.map((r) => r.label).join(", ")}</span>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
+  // Escape closes an open menu.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(null);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
 
-        {me.error && <p className="mt-4 text-sm text-red-400">{me.error.message}</p>}
+  // The "coming soon" note fades after a few seconds.
+  useEffect(() => {
+    if (!notice) return;
+    const timer = setTimeout(() => setNotice(null), 3500);
+    return () => clearTimeout(timer);
+  }, [notice]);
 
+  function notYet(what: string) {
+    setOpen(null);
+    setNotice(`${what} is coming in a later step.`);
+  }
+
+  return (
+    <div className="mx-auto flex min-h-dvh max-w-lg flex-col">
+      {open && (
         <button
           type="button"
-          onClick={() => void handleLogout()}
-          className="mt-8 w-full rounded-xl border border-rose-border px-4 py-3 text-sm font-semibold transition-colors hover:bg-rose-surface"
+          aria-label="Close menu"
+          onClick={() => setOpen(null)}
+          className="fixed inset-0 z-30 cursor-default bg-black/60"
+        />
+      )}
+
+      <Header
+        menuOpen={open === "node"}
+        onToggleMenu={() => setOpen(open === "node" ? null : "node")}
+        onCloseMenu={() => setOpen(null)}
+        onNotYet={notYet}
+      />
+
+      <main className="flex flex-1 flex-col gap-4 p-4 pb-28">
+        <TabContent tab={tab} />
+      </main>
+
+      {notice && (
+        <p
+          role="status"
+          className="fixed inset-x-4 bottom-24 z-20 mx-auto max-w-md rounded-xl border border-rose-border bg-rose-surface px-4 py-3 text-center text-sm shadow-lg"
         >
-          Sign out
-        </button>
-      </div>
+          {notice}
+        </p>
+      )}
+
+      <TabBar
+        tab={tab}
+        onTab={(t) => {
+          setTab(t);
+          setOpen(null);
+        }}
+        quickOpen={open === "quick"}
+        onToggleQuick={() => setOpen(open === "quick" ? null : "quick")}
+        onNotYet={notYet}
+      />
     </div>
+  );
+}
+
+/** Placeholders until each tab's own slice is built. */
+function TabContent({ tab }: { tab: Tab }) {
+  const { acting } = useActingNode();
+  const content = {
+    home: { title: "Home", body: `Proposals waiting on ${acting.node.name}, then recent activity.` },
+    relationships: { title: "Relationships", body: `Every node ${acting.node.name} has a relationship with.` },
+    wallet: { title: "Wallet", body: `${acting.node.name}'s balances and transactions.` },
+  }[tab];
+
+  return (
+    <>
+      <h1 className="text-lg font-semibold">{content.title}</h1>
+      <section className="rounded-2xl border border-rose-border bg-rose-surface p-4">
+        <p>{content.body}</p>
+        <p className="mt-1 text-xs text-rose-muted">This screen is coming in a later step.</p>
+      </section>
+    </>
   );
 }
