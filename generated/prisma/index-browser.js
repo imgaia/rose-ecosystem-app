@@ -118,74 +118,199 @@ exports.Prisma.TransactionIsolationLevel = makeStrictEnum({
   Serializable: 'Serializable'
 });
 
-exports.Prisma.MemberScalarFieldEnum = {
+exports.Prisma.NodeScalarFieldEnum = {
   id: 'id',
+  kind: 'kind',
+  status: 'status',
+  name: 'name',
   firstName: 'firstName',
   lastName: 'lastName',
+  description: 'description',
+  photoUrl: 'photoUrl',
   username: 'username',
   passwordHash: 'passwordHash',
   email: 'email',
-  phoneNumber: 'phoneNumber',
+  phone: 'phone',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.RoleScalarFieldEnum = {
+  key: 'key',
+  label: 'label',
+  native: 'native'
+};
+
+exports.Prisma.CapabilityScalarFieldEnum = {
+  key: 'key',
+  label: 'label',
+  description: 'description'
+};
+
+exports.Prisma.RoleCapabilityScalarFieldEnum = {
+  roleKey: 'roleKey',
+  capabilityKey: 'capabilityKey'
+};
+
+exports.Prisma.RoleAssignmentScalarFieldEnum = {
+  id: 'id',
+  scopeNodeId: 'scopeNodeId',
+  holderNodeId: 'holderNodeId',
+  roleKey: 'roleKey',
+  createdAt: 'createdAt',
+  endedAt: 'endedAt'
+};
+
+exports.Prisma.NodeRuleValueScalarFieldEnum = {
+  nodeId: 'nodeId',
+  ruleId: 'ruleId',
+  value: 'value'
+};
+
+exports.Prisma.RelationshipScalarFieldEnum = {
+  id: 'id',
+  nodeAId: 'nodeAId',
+  nodeBId: 'nodeBId',
+  status: 'status',
+  createdAt: 'createdAt',
+  formedAt: 'formedAt'
+};
+
+exports.Prisma.TrustScoreScalarFieldEnum = {
+  relationshipId: 'relationshipId',
+  value: 'value',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.InteractionScalarFieldEnum = {
+  id: 'id',
+  relationshipId: 'relationshipId',
+  kind: 'kind',
+  payerNodeId: 'payerNodeId',
+  payeeNodeId: 'payeeNodeId',
+  proposerNodeId: 'proposerNodeId',
+  status: 'status',
+  nextDueAt: 'nextDueAt',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.InteractionTermsScalarFieldEnum = {
+  id: 'id',
+  interactionId: 'interactionId',
+  version: 'version',
+  description: 'description',
+  amount: 'amount',
+  currencyId: 'currencyId',
+  frequency: 'frequency',
+  paymentMode: 'paymentMode',
+  startDate: 'startDate',
+  endDate: 'endDate',
+  maxPayments: 'maxPayments',
+  rulesVersion: 'rulesVersion',
+  approved: 'approved',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.InteractionCuratorScalarFieldEnum = {
+  interactionId: 'interactionId',
+  curatorNodeId: 'curatorNodeId'
+};
+
+exports.Prisma.VerificationScalarFieldEnum = {
+  id: 'id',
+  interactionId: 'interactionId',
+  curatorNodeId: 'curatorNodeId',
+  confirmed: 'confirmed',
+  note: 'note',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.ProposalScalarFieldEnum = {
+  id: 'id',
+  kind: 'kind',
+  status: 'status',
+  proposerNodeId: 'proposerNodeId',
+  proposedByPersonId: 'proposedByPersonId',
+  interactionId: 'interactionId',
+  subjectNodeId: 'subjectNodeId',
+  payload: 'payload',
+  comment: 'comment',
+  createdAt: 'createdAt',
+  decidedAt: 'decidedAt'
+};
+
+exports.Prisma.ProposalApproverScalarFieldEnum = {
+  proposalId: 'proposalId',
+  approverNodeId: 'approverNodeId',
+  decision: 'decision',
+  decidedByPersonId: 'decidedByPersonId',
+  decidedAt: 'decidedAt',
+  comment: 'comment'
+};
+
+exports.Prisma.CurrencyScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  code: 'code',
+  kind: 'kind',
+  decimals: 'decimals',
+  issuerNodeId: 'issuerNodeId',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.AccountScalarFieldEnum = {
+  id: 'id',
+  nodeId: 'nodeId',
+  currencyId: 'currencyId',
+  balance: 'balance',
+  isPrimaryFiat: 'isPrimaryFiat',
+  isReserve: 'isReserve',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.TransactionScalarFieldEnum = {
+  id: 'id',
+  kind: 'kind',
+  fromAccountId: 'fromAccountId',
+  toAccountId: 'toAccountId',
+  amount: 'amount',
+  toAmount: 'toAmount',
+  rate: 'rate',
+  comment: 'comment',
+  interactionId: 'interactionId',
+  groupId: 'groupId',
+  actedByPersonId: 'actedByPersonId',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.InvitationScalarFieldEnum = {
+  id: 'id',
+  inviterNodeId: 'inviterNodeId',
+  name: 'name',
+  email: 'email',
+  phone: 'phone',
+  tokenHash: 'tokenHash',
+  status: 'status',
+  expiresAt: 'expiresAt',
+  acceptedNodeId: 'acceptedNodeId',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.ActivityScalarFieldEnum = {
+  id: 'id',
+  nodeId: 'nodeId',
+  type: 'type',
+  refId: 'refId',
+  summary: 'summary',
   createdAt: 'createdAt'
 };
 
 exports.Prisma.PasswordResetTokenScalarFieldEnum = {
   id: 'id',
   token: 'token',
-  memberId: 'memberId',
+  nodeId: 'nodeId',
   expiresAt: 'expiresAt',
   used: 'used',
   createdAt: 'createdAt'
-};
-
-exports.Prisma.MemberRoleScalarFieldEnum = {
-  id: 'id',
-  memberId: 'memberId',
-  role: 'role'
-};
-
-exports.Prisma.WalletScalarFieldEnum = {
-  id: 'id',
-  memberId: 'memberId',
-  currency: 'currency',
-  balance: 'balance'
-};
-
-exports.Prisma.TransactionScalarFieldEnum = {
-  id: 'id',
-  senderId: 'senderId',
-  recipientId: 'recipientId',
-  amount: 'amount',
-  currency: 'currency',
-  note: 'note',
-  isPrivate: 'isPrivate',
-  createdAt: 'createdAt'
-};
-
-exports.Prisma.RewardScalarFieldEnum = {
-  id: 'id',
-  senderId: 'senderId',
-  recipientId: 'recipientId',
-  amount: 'amount',
-  currency: 'currency',
-  note: 'note',
-  isRecurring: 'isRecurring',
-  createdAt: 'createdAt'
-};
-
-exports.Prisma.EvaluationScalarFieldEnum = {
-  id: 'id',
-  curatorId: 'curatorId',
-  subject: 'subject',
-  note: 'note',
-  createdAt: 'createdAt'
-};
-
-exports.Prisma.RelationshipStrengthScalarFieldEnum = {
-  id: 'id',
-  memberAId: 'memberAId',
-  memberBId: 'memberBId',
-  strength: 'strength'
 };
 
 exports.Prisma.SortOrder = {
@@ -197,21 +322,110 @@ exports.Prisma.NullsOrder = {
   first: 'first',
   last: 'last'
 };
-exports.Role = exports.$Enums.Role = {
-  SPONSOR: 'SPONSOR',
-  CURATOR: 'CURATOR',
-  MAKER: 'MAKER'
+exports.NodeKind = exports.$Enums.NodeKind = {
+  INDIVIDUAL: 'INDIVIDUAL',
+  COLLECTION: 'COLLECTION'
+};
+
+exports.NodeStatus = exports.$Enums.NodeStatus = {
+  PROPOSED: 'PROPOSED',
+  ACTIVE: 'ACTIVE',
+  CLOSED: 'CLOSED'
+};
+
+exports.RelationshipStatus = exports.$Enums.RelationshipStatus = {
+  PENDING: 'PENDING',
+  ACTIVE: 'ACTIVE',
+  CLOSED: 'CLOSED'
+};
+
+exports.InteractionKind = exports.$Enums.InteractionKind = {
+  PAYMENT: 'PAYMENT',
+  GIFT: 'GIFT',
+  WORK: 'WORK'
+};
+
+exports.InteractionStatus = exports.$Enums.InteractionStatus = {
+  DRAFT: 'DRAFT',
+  PROPOSED: 'PROPOSED',
+  ACTIVE: 'ACTIVE',
+  PAUSED: 'PAUSED',
+  COMPLETED: 'COMPLETED',
+  CANCELLED: 'CANCELLED',
+  DECLINED: 'DECLINED',
+  WITHDRAWN: 'WITHDRAWN'
+};
+
+exports.Frequency = exports.$Enums.Frequency = {
+  ONCE: 'ONCE',
+  WEEKLY: 'WEEKLY',
+  MONTHLY: 'MONTHLY'
+};
+
+exports.PaymentMode = exports.$Enums.PaymentMode = {
+  AUTOMATIC: 'AUTOMATIC',
+  ON_REQUEST: 'ON_REQUEST'
+};
+
+exports.ProposalKind = exports.$Enums.ProposalKind = {
+  INTERACTION: 'INTERACTION',
+  TERMS_CHANGE: 'TERMS_CHANGE',
+  PAYMENT_REQUEST: 'PAYMENT_REQUEST',
+  ROLE_CHANGE: 'ROLE_CHANGE',
+  RULE_VALUE: 'RULE_VALUE',
+  MEMBER_REMOVAL: 'MEMBER_REMOVAL',
+  COLLECTION_CREATE: 'COLLECTION_CREATE'
+};
+
+exports.ProposalStatus = exports.$Enums.ProposalStatus = {
+  OPEN: 'OPEN',
+  APPROVED: 'APPROVED',
+  DECLINED: 'DECLINED',
+  WITHDRAWN: 'WITHDRAWN'
+};
+
+exports.CurrencyKind = exports.$Enums.CurrencyKind = {
+  FIAT: 'FIAT',
+  COMMUNITY: 'COMMUNITY'
+};
+
+exports.TransactionKind = exports.$Enums.TransactionKind = {
+  PAYMENT: 'PAYMENT',
+  GIFT: 'GIFT',
+  EXCHANGE: 'EXCHANGE',
+  MINT: 'MINT',
+  DEPOSIT: 'DEPOSIT',
+  WITHDRAWAL: 'WITHDRAWAL'
+};
+
+exports.InvitationStatus = exports.$Enums.InvitationStatus = {
+  PENDING: 'PENDING',
+  ACCEPTED: 'ACCEPTED',
+  EXPIRED: 'EXPIRED',
+  REVOKED: 'REVOKED'
 };
 
 exports.Prisma.ModelName = {
-  Member: 'Member',
-  PasswordResetToken: 'PasswordResetToken',
-  MemberRole: 'MemberRole',
-  Wallet: 'Wallet',
+  Node: 'Node',
+  Role: 'Role',
+  Capability: 'Capability',
+  RoleCapability: 'RoleCapability',
+  RoleAssignment: 'RoleAssignment',
+  NodeRuleValue: 'NodeRuleValue',
+  Relationship: 'Relationship',
+  TrustScore: 'TrustScore',
+  Interaction: 'Interaction',
+  InteractionTerms: 'InteractionTerms',
+  InteractionCurator: 'InteractionCurator',
+  Verification: 'Verification',
+  Proposal: 'Proposal',
+  ProposalApprover: 'ProposalApprover',
+  Currency: 'Currency',
+  Account: 'Account',
   Transaction: 'Transaction',
-  Reward: 'Reward',
-  Evaluation: 'Evaluation',
-  RelationshipStrength: 'RelationshipStrength'
+  Invitation: 'Invitation',
+  Activity: 'Activity',
+  PasswordResetToken: 'PasswordResetToken'
 };
 
 /**
