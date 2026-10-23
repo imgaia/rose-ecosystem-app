@@ -1,0 +1,396 @@
+// ROSE Ecosystem: data model for PRD v0.8 (reviewed 23 Oct 2026; see PRD tab 5)
+//
+// Storage: stays relational (Prisma + SQLite/Turso). The network is two edge tables
+// (Relationship, RoleAssignment), so traversal is a recursive SQL query and the
+// graph can be exported for the map view without a graph database.
+//
+// Money: every amount is a whole number of minor units (cents, rappen), never a
+// float. A currency's `decimals` says where the point goes (2 for CHF and RCC).
+
+// ───────────────────────── Nodes and identity ─────────────────────────
+
+enum NodeKind {
+  INDIVIDUAL
+  COLLECTION
+}
+
+enum NodeStatus {
+  PROPOSED // a collection waiting for its first members to accept
+  ACTIVE
+  CLOSED
+}
+
+model Node {
+  id          String     @id @default(cuid())
+  kind        NodeKind
+  status      NodeStatus @default(ACTIVE)
+  name        String // display name; for individuals computed from first + last
+  firstName   String?
+  lastName    String?
+  description String?
+  photoUrl    String?
+
+  // Login: individuals only (null for collections)
+  username     String? @unique
+  passwordHash String?
+  email        String? @unique
+  phone        String? @unique
+
+  createdAt DateTime @default(now())
+
+  rolesHeldHere   RoleAssignment[] @relation("ScopeNode") // roles inside this node
+  rolesHeldByMe   RoleAssignment[] @relation("HolderNode") // roles this node holds elsewhere
+  accounts        Account[]
+  ruleValues      NodeRuleValue[]
+  relationshipsA  Relationship[]   @relation("NodeA")
+  relationshipsB  Relationship[]   @relation("NodeB")
+  issuedCurrencies Currency[]
+  invitationsSent Invitation[]     @relation("Inviter")
+  activity        Activity[]
+}
+
+// ───────────────────────── Governance ─────────────────────────
+
+model Role {
+  key          String           @id // MEMBER, OWNER, TREASURER, CURATOR, COLLABORATOR, APPROVER, PROJECT_OWNER
+  label        String // what people see; rename freely
+  native       Boolean
+  capabilities RoleCapability[]
+  assignments  RoleAssignment[]
+}
+
+model Capability {
+  key         String           @id // INTERACT, INVITE, VIEW, PROPOSE_REMOVAL, PAY, ADD_FUNDS, MINT, ...
+  label       String
+  description String
+  roles       RoleCapability[]
+}
+
+// The capability map. System-wide for now; a nullable nodeId can be added later
+// for node-level overrides (parked question on local rules).
+model RoleCapability {
+  roleKey       String
+  capabilityKey String
+  role          Role       @relation(fields: [roleKey], references: [key])
+  capability    Capability @relation(fields: [capabilityKey], references: [key])
+
+  @@id([roleKey, capabilityKey])
+}
+
+// "holder holds role in scope". For an individual's own roles, scope = holder.
+// Belonging to a collection = holding its MEMBER role.
+model RoleAssignment {
+  id           String    @id @default(cuid())
+  scopeNodeId  String
+  holderNodeId String
+  roleKey      String
+  createdAt    DateTime  @default(now())
+  endedAt      DateTime? // kept for history instead of deleting
+
+  scope  Node @relation("ScopeNode", fields: [scopeNodeId], references: [id])
+  holder Node @relation("HolderNode", fields: [holderNodeId], references: [id])
+  role   Role @relation(fields: [roleKey], references: [key])
+
+  @@index([holderNodeId])
+  @@index([scopeNodeId, roleKey])
+}
+
+// Rules themselves live in rules.yaml in the repo; only a node's own values live here.
+model NodeRuleValue {
+  nodeId String
+  ruleId String // e.g. R-FIN-01 (reserve ratio)
+  value  String // parsed by the rules check according to the rule's type
+  node   Node   @relation(fields: [nodeId], references: [id])
+
+  @@id([nodeId, ruleId])
+}
+
+// ───────────────────────── Relationships and interactions ─────────────────────────
+
+enum RelationshipStatus {
+  PENDING // first interaction proposed, not yet approved
+  ACTIVE // formed by the first approved interaction
+  CLOSED
+}
+
+// Exactly one per pair of nodes. nodeAId is always the smaller id, so the pair is unique.
+model Relationship {
+  id        String             @id @default(cuid())
+  nodeAId   String
+  nodeBId   String
+  status    RelationshipStatus @default(PENDING)
+  createdAt DateTime           @default(now())
+  formedAt  DateTime?
+
+  nodeA        Node          @relation("NodeA", fields: [nodeAId], references: [id])
+  nodeB        Node          @relation("NodeB", fields: [nodeBId], references: [id])
+  interactions Interaction[]
+  trustScore   TrustScore?
+
+  @@unique([nodeAId, nodeBId])
+}
+
+// Trust score: kept in its own table so it can be dropped cleanly (PRD 2.6).
+model TrustScore {
+  relationshipId String       @id
+  value          Float        @default(0.75)
+  updatedAt      DateTime     @updatedAt
+  relationship   Relationship @relation(fields: [relationshipId], references: [id])
+}
+
+enum InteractionKind {
+  PAYMENT
+  GIFT
+  WORK
+}
+
+enum InteractionStatus {
+  DRAFT
+  PROPOSED
+  ACTIVE
+  PAUSED
+  COMPLETED
+  CANCELLED
+  DECLINED
+  WITHDRAWN
+}
+
+model Interaction {
+  id             String            @id @default(cuid())
+  relationshipId String
+  kind           InteractionKind
+  payerNodeId    String
+  payeeNodeId    String
+  proposerNodeId String
+  status         InteractionStatus @default(PROPOSED)
+  nextDueAt      DateTime? // for recurring payments and gifts
+  createdAt      DateTime          @default(now())
+
+  relationship  Relationship       @relation(fields: [relationshipId], references: [id])
+  terms         InteractionTerms[]
+  curators      InteractionCurator[]
+  verifications Verification[]
+  transactions  Transaction[]
+  proposals     Proposal[]
+
+  @@index([payerNodeId])
+  @@index([payeeNodeId])
+}
+
+enum Frequency {
+  ONCE
+  WEEKLY
+  MONTHLY
+}
+
+enum PaymentMode {
+  AUTOMATIC // the system pays on schedule
+  ON_REQUEST // the payee requests each payment
+}
+
+// Every change to the terms is a new version, approved by both sides.
+model InteractionTerms {
+  id            String      @id @default(cuid())
+  interactionId String
+  version       Int
+  description   String? // the work; or the comment for a payment or gift
+  amount        Int // minor units
+  currencyId    String
+  frequency     Frequency   @default(ONCE)
+  paymentMode   PaymentMode @default(AUTOMATIC)
+  startDate     DateTime?
+  endDate       DateTime?
+  maxPayments   Int?
+  rulesVersion  String // version of rules.yaml these terms were approved under
+  approved      Boolean     @default(false)
+  createdAt     DateTime    @default(now())
+
+  interaction Interaction @relation(fields: [interactionId], references: [id])
+  currency    Currency    @relation(fields: [currencyId], references: [id])
+
+  @@unique([interactionId, version])
+}
+
+model InteractionCurator {
+  interactionId String
+  curatorNodeId String
+  interaction   Interaction @relation(fields: [interactionId], references: [id])
+
+  @@id([interactionId, curatorNodeId])
+}
+
+model Verification {
+  id            String      @id @default(cuid())
+  interactionId String
+  curatorNodeId String
+  confirmed     Boolean
+  note          String?
+  createdAt     DateTime    @default(now())
+  interaction   Interaction @relation(fields: [interactionId], references: [id])
+}
+
+// ───────────────────────── Proposals and approvals ─────────────────────────
+
+enum ProposalKind {
+  INTERACTION // a new payment, gift or work
+  TERMS_CHANGE // amend, counter-propose
+  PAYMENT_REQUEST // within a work interaction
+  ROLE_CHANGE
+  RULE_VALUE
+  MEMBER_REMOVAL
+  COLLECTION_CREATE
+}
+
+enum ProposalStatus {
+  OPEN
+  APPROVED
+  DECLINED
+  WITHDRAWN
+}
+
+model Proposal {
+  id                 String         @id @default(cuid())
+  kind               ProposalKind
+  status             ProposalStatus @default(OPEN)
+  proposerNodeId     String // the node proposing (a person, or a collection)
+  proposedByPersonId String // the individual who pressed the button
+  interactionId      String?
+  subjectNodeId      String? // the node a role/rule/removal change applies to
+  payload            String // JSON: what would change
+  comment            String?
+  createdAt          DateTime       @default(now())
+  decidedAt          DateTime?
+
+  interaction Interaction?       @relation(fields: [interactionId], references: [id])
+  approvers   ProposalApprover[]
+}
+
+// One row per required approval, filled in when that node decides.
+// The inbox is simply: approverNodeId = me AND decision IS NULL.
+model ProposalApprover {
+  proposalId      String
+  approverNodeId  String // whose approval is needed
+  decision        Boolean? // null = waiting, true = approve, false = decline
+  decidedByPersonId String? // for a collection: the member who decided for it
+  decidedAt       DateTime?
+  comment         String?
+  proposal        Proposal  @relation(fields: [proposalId], references: [id])
+
+  @@id([proposalId, approverNodeId])
+  @@index([approverNodeId, decision])
+}
+
+// ───────────────────────── Money ─────────────────────────
+
+enum CurrencyKind {
+  FIAT
+  COMMUNITY
+}
+
+model Currency {
+  id           String       @id @default(cuid())
+  name         String // "Swiss franc", "Rose Currency Contribution"
+  code         String? // display code, e.g. CHF, RCC; not unique by design
+  kind         CurrencyKind
+  decimals     Int          @default(2)
+  issuerNodeId String? // null for fiat
+  createdAt    DateTime     @default(now())
+
+  issuer   Node?              @relation(fields: [issuerNodeId], references: [id])
+  accounts Account[]
+  terms    InteractionTerms[]
+}
+
+model Account {
+  id            String   @id @default(cuid())
+  nodeId        String
+  currencyId    String
+  balance       Int      @default(0) // minor units; always equals the sum of its transactions
+  isPrimaryFiat Boolean  @default(false)
+  isReserve     Boolean  @default(false) // locked reserve behind a community currency
+  createdAt     DateTime @default(now())
+
+  node     Node          @relation(fields: [nodeId], references: [id])
+  currency Currency      @relation(fields: [currencyId], references: [id])
+  outgoing Transaction[] @relation("From")
+  incoming Transaction[] @relation("To")
+
+  @@unique([nodeId, currencyId, isReserve])
+}
+
+enum TransactionKind {
+  PAYMENT
+  GIFT
+  EXCHANGE
+  MINT
+  DEPOSIT
+  WITHDRAWAL
+}
+
+// The ledger: one row per movement of value. Never updated or deleted.
+model Transaction {
+  id            String          @id @default(cuid())
+  kind          TransactionKind
+  fromAccountId String? // null for a deposit or newly minted units
+  toAccountId   String? // null for a withdrawal
+  amount        Int // minor units, in the from-account's currency
+  toAmount      Int? // when the currency changes (exchange, mint)
+  rate          String? // the rate used, kept as text for exactness
+  comment       String
+  interactionId String?
+  groupId       String? // ties the legs of one action together (a mint is two rows)
+  actedByPersonId String
+  createdAt     DateTime        @default(now())
+
+  from        Account?     @relation("From", fields: [fromAccountId], references: [id])
+  to          Account?     @relation("To", fields: [toAccountId], references: [id])
+  interaction Interaction? @relation(fields: [interactionId], references: [id])
+
+  @@index([fromAccountId])
+  @@index([toAccountId])
+  @@index([interactionId])
+}
+
+// ───────────────────────── Membership and history ─────────────────────────
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  REVOKED
+}
+
+model Invitation {
+  id             String           @id @default(cuid())
+  inviterNodeId  String
+  name           String
+  email          String?
+  phone          String?
+  tokenHash      String           @unique
+  status         InvitationStatus @default(PENDING)
+  expiresAt      DateTime
+  acceptedNodeId String?
+  createdAt      DateTime         @default(now())
+  inviter        Node             @relation("Inviter", fields: [inviterNodeId], references: [id])
+}
+
+model Activity {
+  id        String   @id @default(cuid())
+  nodeId    String
+  type      String // e.g. interaction.approved, transaction.made, role.changed
+  refId     String? // id of the thing that changed
+  summary   String
+  createdAt DateTime @default(now())
+  node      Node     @relation(fields: [nodeId], references: [id])
+
+  @@index([nodeId, createdAt])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  nodeId    String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}

@@ -1,0 +1,189 @@
+# ROSE Ecosystem rules file (PRD v0.8, tab 6).
+# One entry per rule. The app validates this file at startup and refuses to start if it is invalid.
+# Changing it bumps `version`; every interaction records the version it was approved under.
+
+version: "2026-10-23.1"
+
+capabilityMap:
+  # capability: [roles that carry it]. System-wide; node-level overrides are a parked question.
+  INTERACT: [MEMBER]          # request payments, propose work where the node is paid, accept money coming in
+  INVITE: [MEMBER]
+  VIEW: [MEMBER]              # see the node's roles, rules and activity
+  PROPOSE_REMOVAL: [MEMBER]
+  PAY: [TREASURER]            # send payments and gifts, propose/accept work where the node pays, set up schedules
+  ADD_FUNDS: [TREASURER]
+  MINT: [TREASURER]
+  EXCHANGE: [TREASURER]
+  WITHDRAW: [TREASURER]
+  SET_UP_CURRENCY: [TREASURER]
+  VIEW_BALANCES: [TREASURER]
+  EDIT_IDENTITY: [OWNER]
+  EDIT_GOVERNANCE: [OWNER]    # optional roles, role holders, rule values
+  ADD_MEMBERS: [OWNER]
+  VERIFY_WORK: [CURATOR]
+
+roles:
+  native: [MEMBER, OWNER, TREASURER]
+  optional: [CURATOR, COLLABORATOR, APPROVER, PROJECT_OWNER]
+
+rules:
+  # Relationships and interactions
+  - id: R-REL-01
+    name: Both sides approve every interaction
+    type: approval
+    applies_to: [interaction.propose]
+    approvers: both_sides          # proposing or sending counts as the proposer's approval
+  - id: R-REL-02
+    name: Changed terms need both approvals again
+    type: approval
+    applies_to: [interaction.amend, interaction.counter]
+    approvers: both_sides
+  - id: R-REL-03
+    name: One relationship per pair, formed by the first approved interaction
+    type: precondition
+  - id: R-REL-04
+    name: Approved interactions and relationships are never deleted
+    type: precondition
+  - id: R-REL-05
+    name: Any member node can interact with any other member node
+    type: precondition
+  - id: R-REL-06
+    name: Payments and gifts can go to any node reachable through the network
+    type: precondition
+  - id: R-REL-07
+    name: For a collection, any member accepts money in; money out needs PAY
+    type: approval
+    default: any_one_holder
+
+  # Trust score (placeholder, PRD 2.6)
+  - id: R-TS-01
+    name: Starting trust score of a new relationship
+    type: parameter
+    default: 0.75
+  - id: R-TS-02
+    name: Trust score step per completed payment (or cancellation/failure, downwards)
+    type: parameter
+    default: 0.10
+
+  # Payments and the ledger
+  - id: R-PAY-01
+    name: Value moves only between nodes; the only exit is a withdrawal to primary fiat
+    type: precondition
+  - id: R-PAY-02
+    name: Negative-balance limit
+    type: parameter
+    default: 0                     # minor units; to be set
+    node_level: true
+    changed_by: [TREASURER, OWNER]
+  - id: R-PAY-03
+    name: Every transaction records payer, payee, amount, currency, date, interaction and a required comment
+    type: validation
+  - id: R-PAY-04
+    name: Scheduled payments follow their interaction's schedule
+    type: precondition
+  - id: R-PAY-05
+    name: A failed scheduled payment cancels its schedule and notifies both nodes
+    type: process
+
+  # Financial
+  - id: R-FIN-01
+    name: Reserve ratio (minted units = converted value / ratio)
+    type: parameter
+    default: 1.0
+    node_level: true
+    changed_by: [TREASURER, OWNER]
+  - id: R-FIN-02
+    name: Value converted when minting is locked in the reserve
+    type: precondition
+  - id: R-FIN-03
+    name: Demurrage rate (defined, not applied)
+    type: parameter
+    default: 0
+    node_level: true
+    changed_by: [TREASURER, OWNER]
+  - id: R-FIN-04
+    name: Every node has a currency
+    type: precondition
+  - id: R-FIN-05
+    name: Exchange rates come from the static rates file
+    type: configuration
+    default: rates.json
+  - id: R-FIN-06
+    name: Each currency has a unique ID and a name
+    type: validation
+  - id: R-FIN-07
+    name: Every node has one primary fiat account
+    type: precondition
+  - id: R-FIN-08
+    name: Monthly withdrawal cap, in primary fiat (minor units)
+    type: parameter
+    default: 99999                 # under 1,000.00 a month
+    node_level: true
+    changed_by: [TREASURER, OWNER]
+  - id: R-FIN-09
+    name: Zero-sum across roles for a funded project
+    type: tbd
+    default: not_enforced
+
+  # Governance
+  - id: R-GOV-01
+    name: Native roles are system-wide and cannot be removed
+    type: configuration
+  - id: R-GOV-02
+    name: Every new individual node holds all native roles
+    type: default
+  - id: R-GOV-03
+    name: A collection always has at least one holder of each native role
+    type: precondition
+  - id: R-GOV-04
+    name: Roles and capabilities have a fixed key and a display label
+    type: configuration
+  - id: R-GOV-05
+    name: An action needs a role in the acting node that carries its capability
+    type: permission
+  - id: R-GOV-06
+    name: Changes needing several approvals are proposals; any decline closes them
+    type: approval
+  - id: R-GOV-07
+    name: A node's rule values change only with a Treasurer and an Owner
+    type: approval
+    approvers: [TREASURER, OWNER]
+  - id: R-GOV-08
+    name: A role change needs the affected member and the Owners
+    type: approval
+
+  # Membership and collections
+  - id: R-MEM-01
+    name: Usernames, emails and phone numbers are unique
+    type: validation
+  - id: R-MEM-02
+    name: Invitation expiry in days
+    type: parameter
+    default: 14
+  - id: R-MEM-03
+    name: Joining creates no relationship with the inviter
+    type: default
+  - id: R-COL-01
+    name: A collection is created once its initiator and one other node accept
+    type: precondition
+    default: 2
+  - id: R-COL-02
+    name: You can only invite a node into a collection if you have a relationship with it
+    type: precondition
+  - id: R-COL-03
+    name: Collections may contain individuals and collections
+    type: precondition
+  - id: R-COL-04
+    name: Share of remaining members needed to remove a member
+    type: parameter
+    default: 1.0                   # 100%; 0.5, or owner_only
+    node_level: true
+    changed_by: proposal
+  - id: R-COL-05
+    name: Belonging means holding the Member role
+    type: precondition
+
+  # Visibility
+  - id: R-VIS-01
+    name: A node sees only the transactions it shares with another node
+    type: permission
