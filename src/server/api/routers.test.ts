@@ -10,6 +10,7 @@ import { createTestDb, type TestDb } from "~/server/core/test-helpers";
 
 // The app's database client reads env settings on import; tests pass their own.
 vi.mock("~/server/db", () => ({ db: {} }));
+vi.stubEnv("SESSION_SECRET", "test-secret-that-is-at-least-32-characters-long");
 const { createCaller } = await import("~/server/api/root");
 
 let t: TestDb;
@@ -202,16 +203,17 @@ describe("wallet", () => {
     expect((await refused(as(mo).wallet.addFunds(input))).needsRoles).toEqual(["TREASURER"]);
 
     const row = await as(tess).wallet.addFunds(input);
-    expect(row).toMatchObject({ kind: "DEPOSIT", amount: 20_000, comment: "Deposit UBS 123 on 2026-10-20" });
+    expect(row).toMatchObject({ kind: "DEPOSIT", amount: 20_000, comment: "Deposit UBS 123", effectiveDate: input.depositedOn });
     const chf = await t.db.account.findFirstOrThrow({ where: { nodeId: rose.id, isPrimaryFiat: true } });
     expect(chf).toMatchObject({ currencyId: t.chf.id, balance: 20_000 });
   });
 
-  it("mints the node's own currency against a locked reserve", async () => {
+  it("mints the node's own currency from fiat, against a locked reserve", async () => {
     const { tess, mo, rose } = await org();
     await t.db.currency.update({ where: { id: t.rcc.id }, data: { issuerNodeId: rose.id } });
     await as(tess).wallet.addFunds({ actingNodeId: rose.id, amount: 10_000, reference: "r", depositedOn: new Date() });
     const chf = await t.db.account.findFirstOrThrow({ where: { nodeId: rose.id, isPrimaryFiat: true } });
+    const rcc = await t.db.account.findFirstOrThrow({ where: { nodeId: rose.id, currencyId: t.rcc.id } });
 
     const input = { actingNodeId: rose.id, sourceAccountId: chf.id, amount: 4_000 };
     expect((await refused(as(mo).wallet.mint(input))).needsRoles).toEqual(["TREASURER"]);
@@ -223,33 +225,57 @@ describe("wallet", () => {
     expect(await t.balanceOf(rose.id, t.rcc.id)).toBe(9_000);
     const reserve = await t.db.account.findFirstOrThrow({ where: { nodeId: rose.id, isReserve: true } });
     expect(reserve.balance).toBe(4_000);
-    // Reserves are locked: they can't be the source of anything.
-    const e = await refused(as(tess).wallet.exchange({ ...input, fromAccountId: reserve.id, toAccountId: chf.id }));
-    expect(e.ruleIds).toEqual(["R-FIN-02"]);
+
+    // Only fiat can be minted from, and reserves are locked.
+    expect((await refused(as(tess).wallet.mint({ ...input, sourceAccountId: rcc.id }))).ruleIds).toEqual(["R-FIN-02"]);
+    expect((await refused(as(tess).wallet.mint({ ...input, sourceAccountId: reserve.id }))).ruleIds).toEqual(["R-FIN-02"]);
+    // Buying your own currency is minting, not exchange.
+    const own = await refused(as(tess).wallet.exchange({ actingNodeId: rose.id, fromAccountId: chf.id, toCurrencyId: t.rcc.id, amount: 100 }));
+    expect(own.message).toMatch(/use Mint/);
     await t.db.currency.update({ where: { id: t.rcc.id }, data: { issuerNodeId: null } });
   });
 
-  it("exchanges between a person's own accounts at the rates-file rate", async () => {
-    const ana = await t.person("Ana");
+  it("exchange buys another node's currency: the fiat goes into the issuer's reserve", async () => {
+    const { ana, mo, zed, rose } = await org();
+    await t.db.currency.update({ where: { id: t.rcc.id }, data: { issuerNodeId: rose.id } });
     const chf = await t.account(ana.id, t.chf.id, 3_000);
-    const rcc = await t.account(ana.id, t.rcc.id, 0);
-    const input = { actingNodeId: ana.id, fromAccountId: chf.id, toAccountId: rcc.id, amount: 1_250 };
+    const input = { actingNodeId: ana.id, fromAccountId: chf.id, toCurrencyId: t.rcc.id, amount: 1_250 };
 
-    expect(await as(ana).wallet.quoteExchange(input)).toMatchObject({ toAmount: 1_250, rate: "1" });
-    const row = await as(ana).wallet.exchange(input);
-    expect(row).toMatchObject({ kind: "EXCHANGE", amount: 1_250, toAmount: 1_250, rate: "1" });
+    expect(await as(ana).wallet.quoteExchange(input)).toMatchObject({ units: 1_250, rate: "1", issuer: { id: rose.id } });
+    const { paid, minted } = await as(ana).wallet.exchange(input);
+    expect(paid).toMatchObject({ kind: "EXCHANGE", amount: 1_250, fromAccountId: chf.id, groupId: minted.groupId });
+    expect(minted).toMatchObject({ kind: "MINT", amount: 1_250, fromAccountId: null });
     expect(await t.balanceOf(ana.id, t.chf.id)).toBe(1_750);
-    expect(await t.balanceOf(ana.id, t.rcc.id)).toBe(1_250);
+    expect(await t.balanceOf(ana.id, t.rcc.id)).toBe(11_250);
+    const issuerReserve = await t.db.account.findFirstOrThrow({ where: { nodeId: rose.id, isReserve: true } });
+    expect(issuerReserve).toMatchObject({ currencyId: t.chf.id, balance: 1_250 });
+    expect(await t.balanceOf(rose.id, t.rcc.id)).toBe(5_000); // the issuer's own balance is untouched
 
-    const zed = await t.person("Zed");
-    const e = await refused(as(zed).wallet.exchange({ ...input, actingNodeId: zed.id }));
-    expect(e.message).toMatch(/does not belong/);
+    // Units are minted at the issuer's reserve ratio (R-FIN-01).
+    await t.db.nodeRuleValue.create({ data: { nodeId: rose.id, ruleId: "R-FIN-01", value: "0.5" } });
+    expect((await as(ana).wallet.quoteExchange({ ...input, amount: 1_000 })).units).toBe(2_000);
+    await t.db.nodeRuleValue.delete({ where: { nodeId_ruleId: { nodeId: rose.id, ruleId: "R-FIN-01" } } });
+
+    // Not offered: out of a community currency, fiat to fiat, a currency with no issuer.
+    const anaRcc = await t.db.account.findFirstOrThrow({ where: { nodeId: ana.id, currencyId: t.rcc.id } });
+    expect((await refused(as(ana).wallet.exchange({ ...input, fromAccountId: anaRcc.id, toCurrencyId: t.chf.id }))).message).toMatch(
+      /out of a community currency/,
+    );
+    expect((await refused(as(ana).wallet.exchange({ ...input, toCurrencyId: t.chf.id }))).message).toMatch(/between fiat/);
+    const loose = await t.db.currency.create({ data: { name: "No issuer", code: "NOI", kind: "COMMUNITY" } });
+    expect((await refused(as(ana).wallet.exchange({ ...input, toCurrencyId: loose.id }))).message).toMatch(/no issuer/);
+
+    // Someone else's account, and a Member buying for the collection.
+    expect((await refused(as(zed).wallet.exchange({ ...input, actingNodeId: zed.id }))).message).toMatch(/does not belong/);
+    const forOrg = await refused(as(mo).wallet.exchange({ ...input, actingNodeId: rose.id }));
+    expect(forOrg.needsRoles).toEqual(["TREASURER"]);
+    await t.db.currency.update({ where: { id: t.rcc.id }, data: { issuerNodeId: null } });
   });
 });
 
 describe("invitations", () => {
   it("invites, joins with all native roles, and can't reuse the link", async () => {
-    const { ana, mo, rose } = await org();
+    const { ana } = await org();
     const { joinPath } = await as(ana).invitations.create({ actingNodeId: ana.id, name: "Kim", email: "kim@example.org" });
     const token = new URL(joinPath, "http://x").searchParams.get("token")!;
 
@@ -258,15 +284,36 @@ describe("invitations", () => {
     const joined = await as(null).invitations.join({ token, firstName: "Kim", username: "kim", password: "long enough" });
     const roles = await t.db.roleAssignment.findMany({ where: { holderNodeId: joined.nodeId, scopeNodeId: joined.nodeId } });
     expect(roles.map((r) => r.roleKey).sort()).toEqual(["MEMBER", "OWNER", "TREASURER"]);
+    // Invited as yourself: the network only, no collection roles.
+    expect(await t.db.roleAssignment.count({ where: { holderNodeId: joined.nodeId, scopeNodeId: { not: joined.nodeId } } })).toBe(0);
     // R-MEM-03: no relationship with the inviter.
     expect(await t.db.relationship.count({ where: { OR: [{ nodeAId: joined.nodeId }, { nodeBId: joined.nodeId }] } })).toBe(0);
 
     const again = await refused(as(null).invitations.join({ token, firstName: "Kim", username: "kim2", password: "long enough" }));
     expect(again.code).toBe("BAD_REQUEST");
+  });
 
-    // A collection Member may invite for it (INVITE is a Member capability).
-    await as(mo).invitations.create({ actingNodeId: rose.id, name: "Lou", phone: "+41 79 000 00 00" });
-    expect((await as(mo).invitations.list({ actingNodeId: rose.id }))[0]).not.toHaveProperty("tokenHash");
+  it("a collection's invitation needs ADD_MEMBERS there and makes the invitee its Member", async () => {
+    const { tess, mo, rose } = await org();
+    const invite = { actingNodeId: rose.id, name: "Lou", phone: "+41 79 000 00 00", message: "Welcome to ROSE!" };
+
+    // Mo is only a Member: may invite as themselves, not for the collection.
+    expect(await refused(as(mo).invitations.create(invite))).toMatchObject({ code: "FORBIDDEN", needsRoles: ["OWNER"] });
+    expect((await refused(as(mo).invitations.list({ actingNodeId: rose.id }))).needsRoles).toEqual(["OWNER"]);
+
+    const { joinPath } = await as(tess).invitations.create(invite);
+    const token = new URL(joinPath, "http://x").searchParams.get("token")!;
+    expect(await as(null).invitations.preview({ token })).toMatchObject({ message: "Welcome to ROSE!", joinsCollection: "ROSE Org" });
+    expect((await as(tess).invitations.list({ actingNodeId: rose.id }))[0]).not.toHaveProperty("tokenHash");
+
+    const lou = await as(null).invitations.join({ token, firstName: "Lou", username: "lou", password: "long enough" });
+    const inOrg = await t.db.roleAssignment.findMany({ where: { holderNodeId: lou.nodeId, scopeNodeId: rose.id } });
+    expect(inOrg.map((r) => r.roleKey)).toEqual(["MEMBER"]);
+    const own = await t.db.roleAssignment.count({ where: { holderNodeId: lou.nodeId, scopeNodeId: lou.nodeId } });
+    expect(own).toBe(3);
+    // Lou can now act for ROSE Org as a Member.
+    const me = await as({ id: lou.nodeId }).nodes.me();
+    expect(me.actingAs.map((a) => a.node.id)).toEqual([lou.nodeId, rose.id]);
   });
 
   it("refuses a taken username (R-MEM-01) and a revoked link", async () => {

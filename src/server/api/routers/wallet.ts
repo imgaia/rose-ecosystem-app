@@ -98,20 +98,20 @@ export const walletRouter = createTRPCRouter({
       });
     }),
 
-  /** UC-FIN-03: what an exchange would give, before confirming. */
+  /** UC-FIN-03: what buying another node's currency would give, before confirming. */
   quoteExchange: actingProcedure
-    .input(z.object({ fromAccountId: z.string().min(1), toAccountId: z.string().min(1), amount: minorUnits }))
+    .input(z.object({ fromAccountId: z.string().min(1), toCurrencyId: z.string().min(1), amount: minorUnits }))
     .query(async ({ ctx, input }) => {
       await requireCan(ctx, "EXCHANGE");
       return core.quoteExchange(ctx.db, ctx.actor, input);
     }),
 
-  /** UC-FIN-03: exchange between two of the node's accounts at the rates-file rate. */
+  /** UC-FIN-03: buy another node's currency with fiat; the fiat goes into the issuer's reserve. */
   exchange: actingProcedure
     .input(
       z.object({
         fromAccountId: z.string().min(1),
-        toAccountId: z.string().min(1),
+        toCurrencyId: z.string().min(1),
         amount: minorUnits,
         comment: z.string().optional(),
       }),

@@ -27,6 +27,9 @@ export interface PostTransactionInput {
   interactionId?: string | null;
   groupId?: string | null;
   actedByPersonId: string;
+  effectiveDate?: Date | null; // when it happened outside the app (a deposit's bank date)
+  /** The activity text, when the default for this kind would mislead (a purchase's two legs). */
+  summary?: string;
 }
 
 function assertWholePositive(value: number, what: string) {
@@ -117,15 +120,16 @@ export async function postTransaction(db: Db, input: PostTransactionInput) {
         interactionId: input.interactionId ?? null,
         groupId: input.groupId ?? null,
         actedByPersonId: input.actedByPersonId,
+        effectiveDate: input.effectiveDate ?? null,
       },
     });
-    await recordTransactionActivity(tx, row);
+    await recordTransactionActivity(tx, row, input.summary);
     return row;
   });
 }
 
 /** One activity entry per movement of value, for the node(s) whose accounts it touched. */
-async function recordTransactionActivity(tx: Tx, row: Transaction) {
+async function recordTransactionActivity(tx: Tx, row: Transaction, summary?: string) {
   const ids = [row.fromAccountId, row.toAccountId].filter((id): id is string => !!id);
   const accounts = await tx.account.findMany({
     where: { id: { in: ids } },
@@ -152,7 +156,7 @@ async function recordTransactionActivity(tx: Tx, row: Transaction) {
     type: `transaction.${row.kind.toLowerCase()}`,
     refId: row.id,
     nodeIds: accounts.map((a) => a.nodeId),
-    summary: summaries[row.kind],
+    summary: summary ?? summaries[row.kind],
   });
 }
 

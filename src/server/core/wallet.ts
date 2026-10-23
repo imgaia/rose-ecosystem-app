@@ -1,8 +1,15 @@
 // src/server/core/wallet.ts
 // A node's own money actions (PRD 3.5): add funds (UC-FIN-04), exchange
-// between its own accounts (UC-FIN-03) and mint its own currency (UC-FIN-05).
-// Each one checks the capability first, then moves value only through
-// postTransaction (ledger.ts).
+// (UC-FIN-03) and mint its own currency (UC-FIN-05). Each one checks the
+// capability first, then moves value only through postTransaction (ledger.ts).
+//
+// Community currency only ever exists with fiat locked behind it:
+//   - mint: fiat into your OWN currency. The fiat goes into your reserve.
+//   - exchange: fiat into a currency ANOTHER node issues (RCC, issued by
+//     ROSE Org) = buying it from that issuer. The fiat goes into the
+//     issuer's reserve and the units are minted to you at the issuer's
+//     reserve ratio.
+// Exchanging out of a community currency, and fiat to fiat, are not offered yet.
 //
 // The quote functions do the same arithmetic without moving anything, so a
 // screen can show "you will receive ..." before the person confirms.
@@ -37,7 +44,8 @@ export async function addFunds(
       kind: "DEPOSIT",
       toAccountId: account.id,
       amount: input.amount,
-      comment: `Deposit ${input.reference.trim()} on ${input.depositedOn.toISOString().slice(0, 10)}`,
+      comment: `Deposit ${input.reference.trim()}`,
+      effectiveDate: input.depositedOn,
       actedByPersonId: actor.personId,
     });
   });
@@ -61,41 +69,91 @@ async function primaryFiatAccount(tx: Tx, nodeId: string) {
 
 // ───────────────────────── Exchange ─────────────────────────
 
-/** UC-FIN-03: what an exchange would give, at the rate in the rates file. Moves nothing. */
+/**
+ * UC-FIN-03: what buying `toCurrencyId` with `amount` from a fiat account would
+ * give, at the rates-file rate divided by the issuer's reserve ratio. Moves nothing.
+ */
 export async function quoteExchange(
   db: Db,
   actor: Actor,
-  input: { fromAccountId: string; toAccountId: string; amount: number },
+  input: { fromAccountId: string; toCurrencyId: string; amount: number },
 ) {
-  const [from, to] = await Promise.all([
-    ownAccount(db, actor.actingNodeId, input.fromAccountId),
-    ownAccount(db, actor.actingNodeId, input.toAccountId),
-  ]);
-  if (from.currencyId === to.currencyId) throw new RuleError("Pick two accounts in different currencies");
-  const { toAmount, rate } = convert(input.amount, from.currency, to.currency);
-  if (toAmount <= 0) throw new RuleError("That amount is too small to exchange");
-  return { from, to, amount: input.amount, toAmount, rate, summary: `${money(input.amount, from)} → ${money(toAmount, to)}` };
+  const from = await ownAccount(db, actor.actingNodeId, input.fromAccountId);
+  const currency = await db.currency.findUniqueOrThrow({ where: { id: input.toCurrencyId } });
+  if (from.currency.kind !== "FIAT") throw new RuleError("Exchanging out of a community currency is not offered yet");
+  if (currency.kind === "FIAT") throw new RuleError("Exchanging between fiat currencies is not offered yet");
+  if (!currency.issuerNodeId) throw new RuleError("This currency has no issuer to buy it from", ["R-FIN-02"]);
+  if (currency.issuerNodeId === actor.actingNodeId) {
+    throw new RuleError("This node issues that currency: use Mint instead", ["R-FIN-02"]);
+  }
+
+  const issuer = await db.node.findUniqueOrThrow({
+    where: { id: currency.issuerNodeId },
+    select: { id: true, name: true, status: true },
+  });
+  if (issuer.status !== "ACTIVE") throw new RuleError(`${issuer.name} is not active`);
+  const ratio = await reserveRatio(db, issuer.id);
+  const { toAmount: units, rate } = convert(input.amount, from.currency, currency, ratio);
+  if (units <= 0) throw new RuleError("That amount is too small to exchange");
+  return {
+    from,
+    currency,
+    issuer: { id: issuer.id, name: issuer.name },
+    amount: input.amount,
+    units,
+    rate,
+    reserveRatio: ratio,
+    summary: `${money(input.amount, from)} → ${formatAmount(units, currency.decimals, currency.code)}`,
+  };
 }
 
-/** UC-FIN-03: move value between two of the node's own accounts, recorded with its rate. No minting. */
+/**
+ * UC-FIN-03: buy a currency another node issues. Two ledger rows sharing one
+ * groupId: the fiat into the issuer's reserve (R-FIN-02), then the units
+ * minted to the buyer.
+ */
 export async function exchange(
   db: Db,
   actor: Actor,
-  input: { fromAccountId: string; toAccountId: string; amount: number; comment?: string },
+  input: { fromAccountId: string; toCurrencyId: string; amount: number; comment?: string },
 ) {
   return inTransaction(db, async (tx) => {
     await assertCan(tx, actor.personId, actor.actingNodeId, "EXCHANGE");
     const quote = await quoteExchange(tx, actor, input);
-    return postTransaction(tx, {
+    const issuerReserve = await tx.account.upsert({
+      where: {
+        nodeId_currencyId_isReserve: { nodeId: quote.issuer.id, currencyId: quote.from.currencyId, isReserve: true },
+      },
+      create: { nodeId: quote.issuer.id, currencyId: quote.from.currencyId, isReserve: true },
+      update: {},
+    });
+    const units = await unitsAccount(tx, actor.actingNodeId, quote.currency.id);
+    const buyer = await tx.node.findUniqueOrThrow({ where: { id: actor.actingNodeId }, select: { name: true } });
+
+    const groupId = randomUUID();
+    const base = {
+      comment: textOrNull(input.comment) ?? `Exchange ${quote.summary}`,
+      groupId,
+      rate: quote.rate,
+      actedByPersonId: actor.personId,
+    };
+    const unitsText = formatAmount(quote.units, quote.currency.decimals, quote.currency.code);
+    const paid = await postTransaction(tx, {
+      ...base,
       kind: "EXCHANGE",
       fromAccountId: quote.from.id,
-      toAccountId: quote.to.id,
+      toAccountId: issuerReserve.id,
       amount: quote.amount,
-      toAmount: quote.toAmount,
-      rate: quote.rate,
-      comment: textOrNull(input.comment) ?? `Exchange ${quote.summary}`,
-      actedByPersonId: actor.personId,
+      summary: `${buyer.name} paid ${money(quote.amount, quote.from)} into ${quote.issuer.name}'s reserve for ${unitsText}`,
     });
+    const minted = await postTransaction(tx, {
+      ...base,
+      kind: "MINT",
+      toAccountId: units.id,
+      amount: quote.units,
+      summary: `${quote.issuer.name} minted ${unitsText} for ${buyer.name}`,
+    });
+    return { groupId, paid, minted };
   });
 }
 
@@ -120,7 +178,9 @@ export async function quoteMint(
       ["R-FIN-04"],
     );
   }
-  if (source.currencyId === currency.id) throw new RuleError("Mint from an account in another currency");
+  if (source.currency.kind !== "FIAT") {
+    throw new RuleError("Mint from a fiat account: community currency only exists with fiat behind it", ["R-FIN-02"]);
+  }
 
   const ratio = await reserveRatio(db, actor.actingNodeId);
   const { toAmount: units, rate } = convert(input.amount, source.currency, currency, ratio);
@@ -155,13 +215,7 @@ export async function mint(
       create: { nodeId: actor.actingNodeId, currencyId: quote.source.currencyId, isReserve: true },
       update: {},
     });
-    const units = await tx.account.upsert({
-      where: {
-        nodeId_currencyId_isReserve: { nodeId: actor.actingNodeId, currencyId: quote.currency.id, isReserve: false },
-      },
-      create: { nodeId: actor.actingNodeId, currencyId: quote.currency.id },
-      update: {},
-    });
+    const units = await unitsAccount(tx, actor.actingNodeId, quote.currency.id);
 
     const groupId = randomUUID();
     const comment = textOrNull(input.comment) ?? `Mint: ${quote.summary}`;
@@ -184,6 +238,15 @@ async function reserveRatio(db: Db, nodeId: string): Promise<string> {
 }
 
 // ───────────────────────── Helpers ─────────────────────────
+
+/** The node's spending account in this currency, opened the first time it receives some. */
+function unitsAccount(tx: Tx, nodeId: string, currencyId: string) {
+  return tx.account.upsert({
+    where: { nodeId_currencyId_isReserve: { nodeId, currencyId, isReserve: false } },
+    create: { nodeId, currencyId },
+    update: {},
+  });
+}
 
 /** One of the acting node's own spending accounts (never its locked reserve). */
 async function ownAccount(db: Db, nodeId: string, accountId: string) {
