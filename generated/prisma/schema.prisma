@@ -354,6 +354,7 @@ model Transaction {
   comment         String
   interactionId   String?
   groupId         String? // ties the legs of one action together (a mint is two rows)
+  effectiveDate   DateTime? // when it happened outside the app (a deposit's bank date); createdAt is when it was recorded
   actedByPersonId String
   createdAt       DateTime        @default(now())
 
@@ -381,6 +382,7 @@ model Invitation {
   name           String
   email          String?
   phone          String?
+  message        String? // optional note from the inviter, shown on the join screen
   tokenHash      String           @unique
   status         InvitationStatus @default(PENDING)
   expiresAt      DateTime

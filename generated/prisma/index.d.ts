@@ -21206,6 +21206,7 @@ export namespace Prisma {
     comment: string | null
     interactionId: string | null
     groupId: string | null
+    effectiveDate: Date | null
     actedByPersonId: string | null
     createdAt: Date | null
   }
@@ -21221,6 +21222,7 @@ export namespace Prisma {
     comment: string | null
     interactionId: string | null
     groupId: string | null
+    effectiveDate: Date | null
     actedByPersonId: string | null
     createdAt: Date | null
   }
@@ -21236,6 +21238,7 @@ export namespace Prisma {
     comment: number
     interactionId: number
     groupId: number
+    effectiveDate: number
     actedByPersonId: number
     createdAt: number
     _all: number
@@ -21263,6 +21266,7 @@ export namespace Prisma {
     comment?: true
     interactionId?: true
     groupId?: true
+    effectiveDate?: true
     actedByPersonId?: true
     createdAt?: true
   }
@@ -21278,6 +21282,7 @@ export namespace Prisma {
     comment?: true
     interactionId?: true
     groupId?: true
+    effectiveDate?: true
     actedByPersonId?: true
     createdAt?: true
   }
@@ -21293,6 +21298,7 @@ export namespace Prisma {
     comment?: true
     interactionId?: true
     groupId?: true
+    effectiveDate?: true
     actedByPersonId?: true
     createdAt?: true
     _all?: true
@@ -21395,6 +21401,7 @@ export namespace Prisma {
     comment: string
     interactionId: string | null
     groupId: string | null
+    effectiveDate: Date | null
     actedByPersonId: string
     createdAt: Date
     _count: TransactionCountAggregateOutputType | null
@@ -21429,6 +21436,7 @@ export namespace Prisma {
     comment?: boolean
     interactionId?: boolean
     groupId?: boolean
+    effectiveDate?: boolean
     actedByPersonId?: boolean
     createdAt?: boolean
     from?: boolean | Transaction$fromArgs<ExtArgs>
@@ -21447,6 +21455,7 @@ export namespace Prisma {
     comment?: boolean
     interactionId?: boolean
     groupId?: boolean
+    effectiveDate?: boolean
     actedByPersonId?: boolean
     createdAt?: boolean
     from?: boolean | Transaction$fromArgs<ExtArgs>
@@ -21465,6 +21474,7 @@ export namespace Prisma {
     comment?: boolean
     interactionId?: boolean
     groupId?: boolean
+    effectiveDate?: boolean
     actedByPersonId?: boolean
     createdAt?: boolean
     from?: boolean | Transaction$fromArgs<ExtArgs>
@@ -21483,11 +21493,12 @@ export namespace Prisma {
     comment?: boolean
     interactionId?: boolean
     groupId?: boolean
+    effectiveDate?: boolean
     actedByPersonId?: boolean
     createdAt?: boolean
   }
 
-  export type TransactionOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "kind" | "fromAccountId" | "toAccountId" | "amount" | "toAmount" | "rate" | "comment" | "interactionId" | "groupId" | "actedByPersonId" | "createdAt", ExtArgs["result"]["transaction"]>
+  export type TransactionOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "kind" | "fromAccountId" | "toAccountId" | "amount" | "toAmount" | "rate" | "comment" | "interactionId" | "groupId" | "effectiveDate" | "actedByPersonId" | "createdAt", ExtArgs["result"]["transaction"]>
   export type TransactionInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     from?: boolean | Transaction$fromArgs<ExtArgs>
     to?: boolean | Transaction$toArgs<ExtArgs>
@@ -21522,6 +21533,7 @@ export namespace Prisma {
       comment: string
       interactionId: string | null
       groupId: string | null
+      effectiveDate: Date | null
       actedByPersonId: string
       createdAt: Date
     }, ExtArgs["result"]["transaction"]>
@@ -21960,6 +21972,7 @@ export namespace Prisma {
     readonly comment: FieldRef<"Transaction", 'String'>
     readonly interactionId: FieldRef<"Transaction", 'String'>
     readonly groupId: FieldRef<"Transaction", 'String'>
+    readonly effectiveDate: FieldRef<"Transaction", 'DateTime'>
     readonly actedByPersonId: FieldRef<"Transaction", 'String'>
     readonly createdAt: FieldRef<"Transaction", 'DateTime'>
   }
@@ -22447,6 +22460,7 @@ export namespace Prisma {
     name: string | null
     email: string | null
     phone: string | null
+    message: string | null
     tokenHash: string | null
     status: $Enums.InvitationStatus | null
     expiresAt: Date | null
@@ -22460,6 +22474,7 @@ export namespace Prisma {
     name: string | null
     email: string | null
     phone: string | null
+    message: string | null
     tokenHash: string | null
     status: $Enums.InvitationStatus | null
     expiresAt: Date | null
@@ -22473,6 +22488,7 @@ export namespace Prisma {
     name: number
     email: number
     phone: number
+    message: number
     tokenHash: number
     status: number
     expiresAt: number
@@ -22488,6 +22504,7 @@ export namespace Prisma {
     name?: true
     email?: true
     phone?: true
+    message?: true
     tokenHash?: true
     status?: true
     expiresAt?: true
@@ -22501,6 +22518,7 @@ export namespace Prisma {
     name?: true
     email?: true
     phone?: true
+    message?: true
     tokenHash?: true
     status?: true
     expiresAt?: true
@@ -22514,6 +22532,7 @@ export namespace Prisma {
     name?: true
     email?: true
     phone?: true
+    message?: true
     tokenHash?: true
     status?: true
     expiresAt?: true
@@ -22600,6 +22619,7 @@ export namespace Prisma {
     name: string
     email: string | null
     phone: string | null
+    message: string | null
     tokenHash: string
     status: $Enums.InvitationStatus
     expiresAt: Date
@@ -22630,6 +22650,7 @@ export namespace Prisma {
     name?: boolean
     email?: boolean
     phone?: boolean
+    message?: boolean
     tokenHash?: boolean
     status?: boolean
     expiresAt?: boolean
@@ -22644,6 +22665,7 @@ export namespace Prisma {
     name?: boolean
     email?: boolean
     phone?: boolean
+    message?: boolean
     tokenHash?: boolean
     status?: boolean
     expiresAt?: boolean
@@ -22658,6 +22680,7 @@ export namespace Prisma {
     name?: boolean
     email?: boolean
     phone?: boolean
+    message?: boolean
     tokenHash?: boolean
     status?: boolean
     expiresAt?: boolean
@@ -22672,6 +22695,7 @@ export namespace Prisma {
     name?: boolean
     email?: boolean
     phone?: boolean
+    message?: boolean
     tokenHash?: boolean
     status?: boolean
     expiresAt?: boolean
@@ -22679,7 +22703,7 @@ export namespace Prisma {
     createdAt?: boolean
   }
 
-  export type InvitationOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "inviterNodeId" | "name" | "email" | "phone" | "tokenHash" | "status" | "expiresAt" | "acceptedNodeId" | "createdAt", ExtArgs["result"]["invitation"]>
+  export type InvitationOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "inviterNodeId" | "name" | "email" | "phone" | "message" | "tokenHash" | "status" | "expiresAt" | "acceptedNodeId" | "createdAt", ExtArgs["result"]["invitation"]>
   export type InvitationInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     inviter?: boolean | NodeDefaultArgs<ExtArgs>
   }
@@ -22701,6 +22725,7 @@ export namespace Prisma {
       name: string
       email: string | null
       phone: string | null
+      message: string | null
       tokenHash: string
       status: $Enums.InvitationStatus
       expiresAt: Date
@@ -23135,6 +23160,7 @@ export namespace Prisma {
     readonly name: FieldRef<"Invitation", 'String'>
     readonly email: FieldRef<"Invitation", 'String'>
     readonly phone: FieldRef<"Invitation", 'String'>
+    readonly message: FieldRef<"Invitation", 'String'>
     readonly tokenHash: FieldRef<"Invitation", 'String'>
     readonly status: FieldRef<"Invitation", 'InvitationStatus'>
     readonly expiresAt: FieldRef<"Invitation", 'DateTime'>
@@ -25846,6 +25872,7 @@ export namespace Prisma {
     comment: 'comment',
     interactionId: 'interactionId',
     groupId: 'groupId',
+    effectiveDate: 'effectiveDate',
     actedByPersonId: 'actedByPersonId',
     createdAt: 'createdAt'
   };
@@ -25859,6 +25886,7 @@ export namespace Prisma {
     name: 'name',
     email: 'email',
     phone: 'phone',
+    message: 'message',
     tokenHash: 'tokenHash',
     status: 'status',
     expiresAt: 'expiresAt',
@@ -27131,6 +27159,7 @@ export namespace Prisma {
     comment?: StringFilter<"Transaction"> | string
     interactionId?: StringNullableFilter<"Transaction"> | string | null
     groupId?: StringNullableFilter<"Transaction"> | string | null
+    effectiveDate?: DateTimeNullableFilter<"Transaction"> | Date | string | null
     actedByPersonId?: StringFilter<"Transaction"> | string
     createdAt?: DateTimeFilter<"Transaction"> | Date | string
     from?: XOR<AccountNullableScalarRelationFilter, AccountWhereInput> | null
@@ -27149,6 +27178,7 @@ export namespace Prisma {
     comment?: SortOrder
     interactionId?: SortOrderInput | SortOrder
     groupId?: SortOrderInput | SortOrder
+    effectiveDate?: SortOrderInput | SortOrder
     actedByPersonId?: SortOrder
     createdAt?: SortOrder
     from?: AccountOrderByWithRelationInput
@@ -27170,6 +27200,7 @@ export namespace Prisma {
     comment?: StringFilter<"Transaction"> | string
     interactionId?: StringNullableFilter<"Transaction"> | string | null
     groupId?: StringNullableFilter<"Transaction"> | string | null
+    effectiveDate?: DateTimeNullableFilter<"Transaction"> | Date | string | null
     actedByPersonId?: StringFilter<"Transaction"> | string
     createdAt?: DateTimeFilter<"Transaction"> | Date | string
     from?: XOR<AccountNullableScalarRelationFilter, AccountWhereInput> | null
@@ -27188,6 +27219,7 @@ export namespace Prisma {
     comment?: SortOrder
     interactionId?: SortOrderInput | SortOrder
     groupId?: SortOrderInput | SortOrder
+    effectiveDate?: SortOrderInput | SortOrder
     actedByPersonId?: SortOrder
     createdAt?: SortOrder
     _count?: TransactionCountOrderByAggregateInput
@@ -27211,6 +27243,7 @@ export namespace Prisma {
     comment?: StringWithAggregatesFilter<"Transaction"> | string
     interactionId?: StringNullableWithAggregatesFilter<"Transaction"> | string | null
     groupId?: StringNullableWithAggregatesFilter<"Transaction"> | string | null
+    effectiveDate?: DateTimeNullableWithAggregatesFilter<"Transaction"> | Date | string | null
     actedByPersonId?: StringWithAggregatesFilter<"Transaction"> | string
     createdAt?: DateTimeWithAggregatesFilter<"Transaction"> | Date | string
   }
@@ -27224,6 +27257,7 @@ export namespace Prisma {
     name?: StringFilter<"Invitation"> | string
     email?: StringNullableFilter<"Invitation"> | string | null
     phone?: StringNullableFilter<"Invitation"> | string | null
+    message?: StringNullableFilter<"Invitation"> | string | null
     tokenHash?: StringFilter<"Invitation"> | string
     status?: EnumInvitationStatusFilter<"Invitation"> | $Enums.InvitationStatus
     expiresAt?: DateTimeFilter<"Invitation"> | Date | string
@@ -27238,6 +27272,7 @@ export namespace Prisma {
     name?: SortOrder
     email?: SortOrderInput | SortOrder
     phone?: SortOrderInput | SortOrder
+    message?: SortOrderInput | SortOrder
     tokenHash?: SortOrder
     status?: SortOrder
     expiresAt?: SortOrder
@@ -27256,6 +27291,7 @@ export namespace Prisma {
     name?: StringFilter<"Invitation"> | string
     email?: StringNullableFilter<"Invitation"> | string | null
     phone?: StringNullableFilter<"Invitation"> | string | null
+    message?: StringNullableFilter<"Invitation"> | string | null
     status?: EnumInvitationStatusFilter<"Invitation"> | $Enums.InvitationStatus
     expiresAt?: DateTimeFilter<"Invitation"> | Date | string
     acceptedNodeId?: StringNullableFilter<"Invitation"> | string | null
@@ -27269,6 +27305,7 @@ export namespace Prisma {
     name?: SortOrder
     email?: SortOrderInput | SortOrder
     phone?: SortOrderInput | SortOrder
+    message?: SortOrderInput | SortOrder
     tokenHash?: SortOrder
     status?: SortOrder
     expiresAt?: SortOrder
@@ -27288,6 +27325,7 @@ export namespace Prisma {
     name?: StringWithAggregatesFilter<"Invitation"> | string
     email?: StringNullableWithAggregatesFilter<"Invitation"> | string | null
     phone?: StringNullableWithAggregatesFilter<"Invitation"> | string | null
+    message?: StringNullableWithAggregatesFilter<"Invitation"> | string | null
     tokenHash?: StringWithAggregatesFilter<"Invitation"> | string
     status?: EnumInvitationStatusWithAggregatesFilter<"Invitation"> | $Enums.InvitationStatus
     expiresAt?: DateTimeWithAggregatesFilter<"Invitation"> | Date | string
@@ -28541,6 +28579,7 @@ export namespace Prisma {
     rate?: string | null
     comment: string
     groupId?: string | null
+    effectiveDate?: Date | string | null
     actedByPersonId: string
     createdAt?: Date | string
     from?: AccountCreateNestedOneWithoutOutgoingInput
@@ -28559,6 +28598,7 @@ export namespace Prisma {
     comment: string
     interactionId?: string | null
     groupId?: string | null
+    effectiveDate?: Date | string | null
     actedByPersonId: string
     createdAt?: Date | string
   }
@@ -28571,6 +28611,7 @@ export namespace Prisma {
     rate?: NullableStringFieldUpdateOperationsInput | string | null
     comment?: StringFieldUpdateOperationsInput | string
     groupId?: NullableStringFieldUpdateOperationsInput | string | null
+    effectiveDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     actedByPersonId?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     from?: AccountUpdateOneWithoutOutgoingNestedInput
@@ -28589,6 +28630,7 @@ export namespace Prisma {
     comment?: StringFieldUpdateOperationsInput | string
     interactionId?: NullableStringFieldUpdateOperationsInput | string | null
     groupId?: NullableStringFieldUpdateOperationsInput | string | null
+    effectiveDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     actedByPersonId?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -28604,6 +28646,7 @@ export namespace Prisma {
     comment: string
     interactionId?: string | null
     groupId?: string | null
+    effectiveDate?: Date | string | null
     actedByPersonId: string
     createdAt?: Date | string
   }
@@ -28616,6 +28659,7 @@ export namespace Prisma {
     rate?: NullableStringFieldUpdateOperationsInput | string | null
     comment?: StringFieldUpdateOperationsInput | string
     groupId?: NullableStringFieldUpdateOperationsInput | string | null
+    effectiveDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     actedByPersonId?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -28631,6 +28675,7 @@ export namespace Prisma {
     comment?: StringFieldUpdateOperationsInput | string
     interactionId?: NullableStringFieldUpdateOperationsInput | string | null
     groupId?: NullableStringFieldUpdateOperationsInput | string | null
+    effectiveDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     actedByPersonId?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -28640,6 +28685,7 @@ export namespace Prisma {
     name: string
     email?: string | null
     phone?: string | null
+    message?: string | null
     tokenHash: string
     status?: $Enums.InvitationStatus
     expiresAt: Date | string
@@ -28654,6 +28700,7 @@ export namespace Prisma {
     name: string
     email?: string | null
     phone?: string | null
+    message?: string | null
     tokenHash: string
     status?: $Enums.InvitationStatus
     expiresAt: Date | string
@@ -28666,6 +28713,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     email?: NullableStringFieldUpdateOperationsInput | string | null
     phone?: NullableStringFieldUpdateOperationsInput | string | null
+    message?: NullableStringFieldUpdateOperationsInput | string | null
     tokenHash?: StringFieldUpdateOperationsInput | string
     status?: EnumInvitationStatusFieldUpdateOperationsInput | $Enums.InvitationStatus
     expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -28680,6 +28728,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     email?: NullableStringFieldUpdateOperationsInput | string | null
     phone?: NullableStringFieldUpdateOperationsInput | string | null
+    message?: NullableStringFieldUpdateOperationsInput | string | null
     tokenHash?: StringFieldUpdateOperationsInput | string
     status?: EnumInvitationStatusFieldUpdateOperationsInput | $Enums.InvitationStatus
     expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -28693,6 +28742,7 @@ export namespace Prisma {
     name: string
     email?: string | null
     phone?: string | null
+    message?: string | null
     tokenHash: string
     status?: $Enums.InvitationStatus
     expiresAt: Date | string
@@ -28705,6 +28755,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     email?: NullableStringFieldUpdateOperationsInput | string | null
     phone?: NullableStringFieldUpdateOperationsInput | string | null
+    message?: NullableStringFieldUpdateOperationsInput | string | null
     tokenHash?: StringFieldUpdateOperationsInput | string
     status?: EnumInvitationStatusFieldUpdateOperationsInput | $Enums.InvitationStatus
     expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -28718,6 +28769,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     email?: NullableStringFieldUpdateOperationsInput | string | null
     phone?: NullableStringFieldUpdateOperationsInput | string | null
+    message?: NullableStringFieldUpdateOperationsInput | string | null
     tokenHash?: StringFieldUpdateOperationsInput | string
     status?: EnumInvitationStatusFieldUpdateOperationsInput | $Enums.InvitationStatus
     expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -29986,6 +30038,7 @@ export namespace Prisma {
     comment?: SortOrder
     interactionId?: SortOrder
     groupId?: SortOrder
+    effectiveDate?: SortOrder
     actedByPersonId?: SortOrder
     createdAt?: SortOrder
   }
@@ -30006,6 +30059,7 @@ export namespace Prisma {
     comment?: SortOrder
     interactionId?: SortOrder
     groupId?: SortOrder
+    effectiveDate?: SortOrder
     actedByPersonId?: SortOrder
     createdAt?: SortOrder
   }
@@ -30021,6 +30075,7 @@ export namespace Prisma {
     comment?: SortOrder
     interactionId?: SortOrder
     groupId?: SortOrder
+    effectiveDate?: SortOrder
     actedByPersonId?: SortOrder
     createdAt?: SortOrder
   }
@@ -30053,6 +30108,7 @@ export namespace Prisma {
     name?: SortOrder
     email?: SortOrder
     phone?: SortOrder
+    message?: SortOrder
     tokenHash?: SortOrder
     status?: SortOrder
     expiresAt?: SortOrder
@@ -30066,6 +30122,7 @@ export namespace Prisma {
     name?: SortOrder
     email?: SortOrder
     phone?: SortOrder
+    message?: SortOrder
     tokenHash?: SortOrder
     status?: SortOrder
     expiresAt?: SortOrder
@@ -30079,6 +30136,7 @@ export namespace Prisma {
     name?: SortOrder
     email?: SortOrder
     phone?: SortOrder
+    message?: SortOrder
     tokenHash?: SortOrder
     status?: SortOrder
     expiresAt?: SortOrder
@@ -32218,6 +32276,7 @@ export namespace Prisma {
     name: string
     email?: string | null
     phone?: string | null
+    message?: string | null
     tokenHash: string
     status?: $Enums.InvitationStatus
     expiresAt: Date | string
@@ -32230,6 +32289,7 @@ export namespace Prisma {
     name: string
     email?: string | null
     phone?: string | null
+    message?: string | null
     tokenHash: string
     status?: $Enums.InvitationStatus
     expiresAt: Date | string
@@ -32467,6 +32527,7 @@ export namespace Prisma {
     name?: StringFilter<"Invitation"> | string
     email?: StringNullableFilter<"Invitation"> | string | null
     phone?: StringNullableFilter<"Invitation"> | string | null
+    message?: StringNullableFilter<"Invitation"> | string | null
     tokenHash?: StringFilter<"Invitation"> | string
     status?: EnumInvitationStatusFilter<"Invitation"> | $Enums.InvitationStatus
     expiresAt?: DateTimeFilter<"Invitation"> | Date | string
@@ -33585,6 +33646,7 @@ export namespace Prisma {
     rate?: string | null
     comment: string
     groupId?: string | null
+    effectiveDate?: Date | string | null
     actedByPersonId: string
     createdAt?: Date | string
     from?: AccountCreateNestedOneWithoutOutgoingInput
@@ -33601,6 +33663,7 @@ export namespace Prisma {
     rate?: string | null
     comment: string
     groupId?: string | null
+    effectiveDate?: Date | string | null
     actedByPersonId: string
     createdAt?: Date | string
   }
@@ -33800,6 +33863,7 @@ export namespace Prisma {
     comment?: StringFilter<"Transaction"> | string
     interactionId?: StringNullableFilter<"Transaction"> | string | null
     groupId?: StringNullableFilter<"Transaction"> | string | null
+    effectiveDate?: DateTimeNullableFilter<"Transaction"> | Date | string | null
     actedByPersonId?: StringFilter<"Transaction"> | string
     createdAt?: DateTimeFilter<"Transaction"> | Date | string
   }
@@ -34646,6 +34710,7 @@ export namespace Prisma {
     rate?: string | null
     comment: string
     groupId?: string | null
+    effectiveDate?: Date | string | null
     actedByPersonId: string
     createdAt?: Date | string
     to?: AccountCreateNestedOneWithoutIncomingInput
@@ -34662,6 +34727,7 @@ export namespace Prisma {
     comment: string
     interactionId?: string | null
     groupId?: string | null
+    effectiveDate?: Date | string | null
     actedByPersonId: string
     createdAt?: Date | string
   }
@@ -34683,6 +34749,7 @@ export namespace Prisma {
     rate?: string | null
     comment: string
     groupId?: string | null
+    effectiveDate?: Date | string | null
     actedByPersonId: string
     createdAt?: Date | string
     from?: AccountCreateNestedOneWithoutOutgoingInput
@@ -34699,6 +34766,7 @@ export namespace Prisma {
     comment: string
     interactionId?: string | null
     groupId?: string | null
+    effectiveDate?: Date | string | null
     actedByPersonId: string
     createdAt?: Date | string
   }
@@ -35320,6 +35388,7 @@ export namespace Prisma {
     name: string
     email?: string | null
     phone?: string | null
+    message?: string | null
     tokenHash: string
     status?: $Enums.InvitationStatus
     expiresAt: Date | string
@@ -35521,6 +35590,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     email?: NullableStringFieldUpdateOperationsInput | string | null
     phone?: NullableStringFieldUpdateOperationsInput | string | null
+    message?: NullableStringFieldUpdateOperationsInput | string | null
     tokenHash?: StringFieldUpdateOperationsInput | string
     status?: EnumInvitationStatusFieldUpdateOperationsInput | $Enums.InvitationStatus
     expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -35533,6 +35603,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     email?: NullableStringFieldUpdateOperationsInput | string | null
     phone?: NullableStringFieldUpdateOperationsInput | string | null
+    message?: NullableStringFieldUpdateOperationsInput | string | null
     tokenHash?: StringFieldUpdateOperationsInput | string
     status?: EnumInvitationStatusFieldUpdateOperationsInput | $Enums.InvitationStatus
     expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -35545,6 +35616,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     email?: NullableStringFieldUpdateOperationsInput | string | null
     phone?: NullableStringFieldUpdateOperationsInput | string | null
+    message?: NullableStringFieldUpdateOperationsInput | string | null
     tokenHash?: StringFieldUpdateOperationsInput | string
     status?: EnumInvitationStatusFieldUpdateOperationsInput | $Enums.InvitationStatus
     expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -35732,6 +35804,7 @@ export namespace Prisma {
     rate?: string | null
     comment: string
     groupId?: string | null
+    effectiveDate?: Date | string | null
     actedByPersonId: string
     createdAt?: Date | string
   }
@@ -35841,6 +35914,7 @@ export namespace Prisma {
     rate?: NullableStringFieldUpdateOperationsInput | string | null
     comment?: StringFieldUpdateOperationsInput | string
     groupId?: NullableStringFieldUpdateOperationsInput | string | null
+    effectiveDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     actedByPersonId?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     from?: AccountUpdateOneWithoutOutgoingNestedInput
@@ -35857,6 +35931,7 @@ export namespace Prisma {
     rate?: NullableStringFieldUpdateOperationsInput | string | null
     comment?: StringFieldUpdateOperationsInput | string
     groupId?: NullableStringFieldUpdateOperationsInput | string | null
+    effectiveDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     actedByPersonId?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -35871,6 +35946,7 @@ export namespace Prisma {
     rate?: NullableStringFieldUpdateOperationsInput | string | null
     comment?: StringFieldUpdateOperationsInput | string
     groupId?: NullableStringFieldUpdateOperationsInput | string | null
+    effectiveDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     actedByPersonId?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -36062,6 +36138,7 @@ export namespace Prisma {
     comment: string
     interactionId?: string | null
     groupId?: string | null
+    effectiveDate?: Date | string | null
     actedByPersonId: string
     createdAt?: Date | string
   }
@@ -36076,6 +36153,7 @@ export namespace Prisma {
     comment: string
     interactionId?: string | null
     groupId?: string | null
+    effectiveDate?: Date | string | null
     actedByPersonId: string
     createdAt?: Date | string
   }
@@ -36088,6 +36166,7 @@ export namespace Prisma {
     rate?: NullableStringFieldUpdateOperationsInput | string | null
     comment?: StringFieldUpdateOperationsInput | string
     groupId?: NullableStringFieldUpdateOperationsInput | string | null
+    effectiveDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     actedByPersonId?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     to?: AccountUpdateOneWithoutIncomingNestedInput
@@ -36104,6 +36183,7 @@ export namespace Prisma {
     comment?: StringFieldUpdateOperationsInput | string
     interactionId?: NullableStringFieldUpdateOperationsInput | string | null
     groupId?: NullableStringFieldUpdateOperationsInput | string | null
+    effectiveDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     actedByPersonId?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -36118,6 +36198,7 @@ export namespace Prisma {
     comment?: StringFieldUpdateOperationsInput | string
     interactionId?: NullableStringFieldUpdateOperationsInput | string | null
     groupId?: NullableStringFieldUpdateOperationsInput | string | null
+    effectiveDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     actedByPersonId?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -36130,6 +36211,7 @@ export namespace Prisma {
     rate?: NullableStringFieldUpdateOperationsInput | string | null
     comment?: StringFieldUpdateOperationsInput | string
     groupId?: NullableStringFieldUpdateOperationsInput | string | null
+    effectiveDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     actedByPersonId?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     from?: AccountUpdateOneWithoutOutgoingNestedInput
@@ -36146,6 +36228,7 @@ export namespace Prisma {
     comment?: StringFieldUpdateOperationsInput | string
     interactionId?: NullableStringFieldUpdateOperationsInput | string | null
     groupId?: NullableStringFieldUpdateOperationsInput | string | null
+    effectiveDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     actedByPersonId?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -36160,6 +36243,7 @@ export namespace Prisma {
     comment?: StringFieldUpdateOperationsInput | string
     interactionId?: NullableStringFieldUpdateOperationsInput | string | null
     groupId?: NullableStringFieldUpdateOperationsInput | string | null
+    effectiveDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     actedByPersonId?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }

@@ -278,6 +278,7 @@ exports.Prisma.TransactionScalarFieldEnum = {
   comment: 'comment',
   interactionId: 'interactionId',
   groupId: 'groupId',
+  effectiveDate: 'effectiveDate',
   actedByPersonId: 'actedByPersonId',
   createdAt: 'createdAt'
 };
@@ -288,6 +289,7 @@ exports.Prisma.InvitationScalarFieldEnum = {
   name: 'name',
   email: 'email',
   phone: 'phone',
+  message: 'message',
   tokenHash: 'tokenHash',
   status: 'status',
   expiresAt: 'expiresAt',
