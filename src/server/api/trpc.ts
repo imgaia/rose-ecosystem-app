@@ -13,6 +13,7 @@ import { z, ZodError } from "zod";
 import { can, RuleError, type Actor, type Capability } from "~/server/core";
 import { db } from "~/server/db";
 import { getRule } from "~/server/rules";
+import { SESSION_COOKIE, verifySession } from "~/server/session";
 
 /**
  * 1. CONTEXT
@@ -29,9 +30,10 @@ import { getRule } from "~/server/rules";
 export const createTRPCContext = async (opts: { headers: Headers }) => {
   return {
     db,
-    // The signed-in person's node id, from the cookie /api/login sets.
-    // Checked against the database in protectedProcedure below.
-    sessionNodeId: readCookie(opts.headers, "session"),
+    // The signed-in person's node id, from the signed cookie /api/login sets
+    // (null if unsigned or tampered with). Checked against the database in
+    // protectedProcedure below.
+    sessionNodeId: verifySession(readCookie(opts.headers, SESSION_COOKIE)),
     ...opts,
   };
 };

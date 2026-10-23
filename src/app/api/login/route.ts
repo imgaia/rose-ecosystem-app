@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
 
 import { db } from "~/server/db";
+import { SESSION_COOKIE, signSession } from "~/server/session";
 
 export async function POST(request: Request) {
   const body = (await request.json()) as { username?: string; password?: string };
@@ -32,7 +33,7 @@ export async function POST(request: Request) {
   }
 
   const response = NextResponse.json({ success: true });
-  response.cookies.set("session", member.id, {
+  response.cookies.set(SESSION_COOKIE, signSession(member.id), {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",

@@ -3,10 +3,11 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 import { db } from "~/server/db";
+import { SESSION_COOKIE, verifySession } from "~/server/session";
 
 export async function POST(request: Request) {
   const cookieStore = await cookies();
-  const memberId = cookieStore.get("session")?.value;
+  const memberId = verifySession(cookieStore.get(SESSION_COOKIE)?.value);
 
   if (!memberId) {
     return NextResponse.json({ error: "Not logged in." }, { status: 401 });
