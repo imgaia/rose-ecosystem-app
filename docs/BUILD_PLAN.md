@@ -2,6 +2,9 @@
 
 This is the step-by-step plan for moving the app to the PRD v0.8 model (nodes, interactions within relationships, capabilities, one ledger). The PRD Google Doc is the source of truth; tabs 2 to 6 specify what to build.
 
+PRD: https://docs.google.com/document/d/1HRgAe84dX2GJ9xPskwVoQphbz6HEFSkePaI8klyygy4/edit
+(tab 2 Concepts `?tab=t.ienj5fw6cvu`, tab 3 Use cases `?tab=t.ocjeb6px1hd5`, tab 6 Rules `?tab=t.swj3czdid7d2`)
+
 ## How to use this plan
 
 - Work through the steps in order, one at a time, on the `dev` branch.

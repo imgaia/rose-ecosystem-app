@@ -1,7 +1,10 @@
 # ROSE Ecosystem app
 
 A relational currency network for the ROSE community. The product spec is the
-PRD, a Google Doc kept outside this repo. When a request conflicts with what you
+PRD, a Google Doc kept outside this repo:
+https://docs.google.com/document/d/1HRgAe84dX2GJ9xPskwVoQphbz6HEFSkePaI8klyygy4/edit
+(tab 2 Concepts `?tab=t.ienj5fw6cvu`, tab 3 Use cases `?tab=t.ocjeb6px1hd5`,
+tab 6 Rules `?tab=t.swj3czdid7d2`). Read it with the Google Docs connector. When a request conflicts with what you
 see in the code, ask before changing direction.
 
 Stack: Next.js (T3) with tRPC, Prisma (client generated into `generated/prisma`),
