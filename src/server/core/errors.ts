@@ -15,3 +15,10 @@ export class RuleError extends Error {
     this.name = "RuleError";
   }
 }
+
+/** Trimmed text, or null when it is missing or only spaces (blank form fields are stored as null). */
+export function textOrNull(text: string | null | undefined): string | null {
+  const trimmed = text?.trim();
+  if (!trimmed) return null;
+  return trimmed;
+}

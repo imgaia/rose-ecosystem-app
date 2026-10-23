@@ -6,11 +6,13 @@
  * TL;DR - This is where all the tRPC server stuff is created and plugged in. The pieces you will
  * need to use are documented accordingly near the end.
  */
-import { initTRPC } from "@trpc/server";
+import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
-import { ZodError } from "zod";
+import { z, ZodError } from "zod";
 
+import { can, RuleError, type Actor, type Capability } from "~/server/core";
 import { db } from "~/server/db";
+import { getRule } from "~/server/rules";
 
 /**
  * 1. CONTEXT
@@ -27,9 +29,20 @@ import { db } from "~/server/db";
 export const createTRPCContext = async (opts: { headers: Headers }) => {
   return {
     db,
+    // The signed-in person's node id, from the cookie /api/login sets.
+    // Checked against the database in protectedProcedure below.
+    sessionNodeId: readCookie(opts.headers, "session"),
     ...opts,
   };
 };
+
+function readCookie(headers: Headers, name: string): string | null {
+  for (const part of (headers.get("cookie") ?? "").split(";")) {
+    const [key, ...rest] = part.trim().split("=");
+    if (key === name) return decodeURIComponent(rest.join("=")) || null;
+  }
+  return null;
+}
 
 /**
  * 2. INITIALIZATION
@@ -47,6 +60,13 @@ const t = initTRPC.context<typeof createTRPCContext>().create({
         ...shape.data,
         zodError:
           error.cause instanceof ZodError ? error.cause.flatten() : null,
+        // When the rules stopped the action: which rules, and which roles
+        // would allow it, so a screen can say "Needs Treasurer".
+        blockedBy:
+          error.cause instanceof RuleError
+            ? error.cause.ruleIds.map((ruleId) => ({ ruleId, rule: getRule(ruleId)?.name ?? ruleId }))
+            : null,
+        needsRoles: error.cause instanceof RuleError ? error.cause.needsRoles : null,
       },
     };
   },
@@ -103,4 +123,72 @@ const timingMiddleware = t.middleware(async ({ next, path }) => {
  * guarantee that a user querying is authorized, but you can still access user session data if they
  * are logged in.
  */
-export const publicProcedure = t.procedure.use(timingMiddleware);
+export const publicProcedure = t.procedure.use(timingMiddleware).use(ruleErrorMiddleware());
+
+/**
+ * Turns the errors core code throws into proper API errors:
+ * a RuleError becomes FORBIDDEN (a missing role) or BAD_REQUEST (anything
+ * else the rules refuse), and "record not found" becomes NOT_FOUND.
+ * The RuleError stays attached as `cause`, so errorFormatter can add its rules.
+ */
+function ruleErrorMiddleware() {
+  return t.middleware(async ({ next }) => {
+    const result = await next();
+    if (result.ok) return result;
+    const cause = result.error.cause;
+    if (cause instanceof RuleError) {
+      throw new TRPCError({
+        code: cause.needsRoles.length > 0 ? "FORBIDDEN" : "BAD_REQUEST",
+        message: cause.message,
+        cause,
+      });
+    }
+    if (cause && typeof cause === "object" && "code" in cause && cause.code === "P2025") {
+      throw new TRPCError({ code: "NOT_FOUND", message: "Not found", cause });
+    }
+    return result;
+  });
+}
+
+/**
+ * Signed-in procedure: refuses unless the session cookie belongs to an
+ * active individual node. Adds `ctx.personId`.
+ */
+export const protectedProcedure = publicProcedure.use(async ({ ctx, next }) => {
+  const person = ctx.sessionNodeId
+    ? await ctx.db.node.findUnique({ where: { id: ctx.sessionNodeId }, select: { id: true, kind: true, status: true } })
+    : null;
+  if (person?.kind !== "INDIVIDUAL" || person.status !== "ACTIVE") {
+    throw new TRPCError({ code: "UNAUTHORIZED", message: "Please sign in" });
+  }
+  return next({ ctx: { personId: person.id } });
+});
+
+/**
+ * Every screen action goes through this one: the input must say which node
+ * the person is acting for (themselves, or a collection from the switcher).
+ * Adds `ctx.actor` = { personId, actingNodeId }, the shape core functions take.
+ * Each procedure then calls requireCan(...) as its first step.
+ */
+export const actingProcedure = protectedProcedure
+  .input(z.object({ actingNodeId: z.string().min(1) }))
+  .use(async ({ ctx, input, next }) => {
+    const actor: Actor = { personId: ctx.personId, actingNodeId: input.actingNodeId };
+    return next({ ctx: { actor } });
+  });
+
+/**
+ * The rules check (R-GOV-05), run first in every acting procedure. Refuses
+ * with FORBIDDEN, carrying the blocking rules and the roles that would allow it.
+ */
+export async function requireCan(ctx: { db: typeof db; actor: Actor }, capability: Capability) {
+  const result = await can(ctx.db, ctx.actor.personId, ctx.actor.actingNodeId, capability);
+  if (!result.allowed) {
+    const block = result.blockedBy[0]!;
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: `${capability}: ${block.reason}`,
+      cause: new RuleError(block.reason, result.blockedBy.map((b) => b.ruleId), block.needsRoles),
+    });
+  }
+}

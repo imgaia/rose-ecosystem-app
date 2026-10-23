@@ -620,6 +620,15 @@ async function trustEvent(tx: Tx, relationshipId: string, event: TrustEventKind)
   await updateTrustScore(tx, relationshipId, event);
 }
 
+/**
+ * The capability the node needs for its side of this interaction, so the API
+ * can run the rules check before calling an action (and a screen can show
+ * "Needs TREASURER" up front). Throws if the node is not a side.
+ */
+export async function capabilityOnInteraction(db: Db, interactionId: string, nodeId: string) {
+  return sideCapability(await db.interaction.findUniqueOrThrow({ where: { id: interactionId } }), nodeId);
+}
+
 /** PAY for the paying side, INTERACT for the paid side (R-REL-07). */
 function sideCapability(interaction: Interaction, nodeId: string): "PAY" | "INTERACT" {
   if (nodeId === interaction.payerNodeId) return "PAY";

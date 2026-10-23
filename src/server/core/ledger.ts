@@ -142,7 +142,8 @@ async function recordTransactionActivity(tx: Tx, row: Transaction) {
     PAYMENT: `${payer} paid ${payee} ${sent}`,
     GIFT: `${payer} gave ${payee} a gift of ${sent}`,
     EXCHANGE: `${payer} exchanged ${sent} for ${received}`,
-    MINT: `${payee} minted ${received}`,
+    // A mint is two rows: the source amount locked in the reserve, then the new units.
+    MINT: from ? `${payer} locked ${sent} in the reserve` : `${payee} minted ${received}`,
     DEPOSIT: `${payee} recorded a deposit of ${received}`,
     WITHDRAWAL: `${payer} withdrew ${sent}`,
     OPENING_BALANCE: `Opening balance of ${received} for ${payee}`,

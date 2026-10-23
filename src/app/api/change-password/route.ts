@@ -26,7 +26,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const member = await db.member.findUnique({ where: { id: memberId } });
+  const member = await db.node.findUnique({ where: { id: memberId } });
 
   if (
     !member?.passwordHash ||
@@ -39,7 +39,7 @@ export async function POST(request: Request) {
   }
 
   const newPasswordHash = bcrypt.hashSync(newPassword, 10);
-  await db.member.update({
+  await db.node.update({
     where: { id: memberId },
     data: { passwordHash: newPasswordHash },
   });

@@ -12,12 +12,11 @@ export default async function Home() {
     redirect("/login");
   }
 
-  const member = await db.member.findUnique({ where: { id: sessionId } });
+  const member = await db.node.findUnique({ where: { id: sessionId } });
 
-  if (!member) {
+  if (member?.kind !== "INDIVIDUAL") {
     redirect("/login");
   }
 
-  const displayName = member.lastName ? `${member.firstName} ${member.lastName}` : member.firstName;
-  return <RoseApp memberId={member.id} memberName={displayName} />;
+  return <RoseApp memberId={member.id} memberName={member.name} />;
 }

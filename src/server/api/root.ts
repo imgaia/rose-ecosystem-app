@@ -1,4 +1,9 @@
-import { roseRouter } from "~/server/api/routers/rose";
+import { interactionsRouter } from "~/server/api/routers/interactions";
+import { invitationsRouter } from "~/server/api/routers/invitations";
+import { nodesRouter } from "~/server/api/routers/nodes";
+import { proposalsRouter } from "~/server/api/routers/proposals";
+import { relationshipsRouter } from "~/server/api/routers/relationships";
+import { walletRouter } from "~/server/api/routers/wallet";
 import { createCallerFactory, createTRPCRouter } from "~/server/api/trpc";
 
 /**
@@ -7,7 +12,12 @@ import { createCallerFactory, createTRPCRouter } from "~/server/api/trpc";
  * All routers added in /api/routers should be manually added here.
  */
 export const appRouter = createTRPCRouter({
-  rose: roseRouter,
+  nodes: nodesRouter,
+  relationships: relationshipsRouter,
+  interactions: interactionsRouter,
+  proposals: proposalsRouter,
+  wallet: walletRouter,
+  invitations: invitationsRouter,
 });
 
 // export type definition of API
@@ -17,7 +27,6 @@ export type AppRouter = typeof appRouter;
  * Create a server-side caller for the tRPC API.
  * @example
  * const trpc = createCaller(createContext);
- * const res = await trpc.rose.listMembers();
- *       ^? Member[]
+ * const res = await trpc.nodes.me();
  */
 export const createCaller = createCallerFactory(appRouter);

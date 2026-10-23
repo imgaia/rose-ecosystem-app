@@ -15,9 +15,13 @@ export async function POST(request: Request) {
     );
   }
 
-  const members = await db.member.findMany();
-  const member = members.find(
-    (m) => m.username.toLowerCase() === username.toLowerCase(),
+  // Only individuals sign in; usernames match ignoring case.
+  const people = await db.node.findMany({
+    where: { kind: "INDIVIDUAL", status: "ACTIVE" },
+    select: { id: true, username: true, passwordHash: true },
+  });
+  const member = people.find(
+    (m) => m.username?.toLowerCase() === username.toLowerCase(),
   );
 
   if (!member?.passwordHash || !bcrypt.compareSync(password, member.passwordHash)) {
