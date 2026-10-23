@@ -3,10 +3,12 @@ import { redirect } from "next/navigation";
 
 import { RoseApp } from "~/app/_components/rose-app";
 import { db } from "~/server/db";
+import { SESSION_COOKIE, verifySession } from "~/server/session";
 
 export default async function Home() {
   const cookieStore = await cookies();
-  const sessionId = cookieStore.get("session")?.value;
+  // null if the cookie is missing, unsigned or tampered with.
+  const sessionId = verifySession(cookieStore.get(SESSION_COOKIE)?.value);
 
   if (!sessionId) {
     redirect("/login");
@@ -18,5 +20,5 @@ export default async function Home() {
     redirect("/login");
   }
 
-  return <RoseApp memberId={member.id} memberName={member.name} />;
+  return <RoseApp />;
 }
