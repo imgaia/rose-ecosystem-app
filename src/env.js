@@ -10,6 +10,9 @@ export const env = createEnv({
     DATABASE_URL: z.string().url().optional(),
     // Signs the sign-in cookie (src/server/session.ts). Make one with: openssl rand -base64 48
     SESSION_SECRET: z.string().min(32),
+    // The bearer token Vercel cron sends to /api/cron/due-payments. Optional so
+    // the app still builds without it; the route refuses every call until it is set.
+    CRON_SECRET: z.string().min(32).optional(),
     NODE_ENV: z
       .enum(["development", "test", "production"])
       .default("development"),
@@ -31,6 +34,7 @@ export const env = createEnv({
   runtimeEnv: {
     DATABASE_URL: process.env.DATABASE_URL,
     SESSION_SECRET: process.env.SESSION_SECRET,
+    CRON_SECRET: process.env.CRON_SECRET,
     NODE_ENV: process.env.NODE_ENV,
     // NEXT_PUBLIC_CLIENTVAR: process.env.NEXT_PUBLIC_CLIENTVAR,
   },

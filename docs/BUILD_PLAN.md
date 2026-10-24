@@ -180,6 +180,15 @@ Built after step 6, before step 7, so nothing the old app could do is lost and c
 
 ## Step 7. Scheduled payments
 
+**Status: done** · checked with the tests (139), type check, lint and build; the manual script ran on the local database.
+
+- The job is `runDuePayments` in `src/server/core/schedules.ts`. Each due date is claimed (nextDueAt moved on, or the interaction completed after its last payment) in the same database transaction as its payment, so a due date is never paid twice, however often the job runs. It pays through `payScheduled` and ends schedules through `endSchedule` in `interactions.ts`, so the trust score is still reached only from there.
+- A failed payment (e.g. R-PAY-02) cancels the schedule, tells both nodes in their activity and steps the trust score down (R-PAY-05).
+- From rules.yaml (R-PAY-04): the automatic comment ("Scheduled payment 3 of 12: Rent", or "Scheduled payment 3: Rent" with no number of payments agreed) and what to do with due dates the job missed (`pay_each`, or `skip`).
+- Scheduled payments are recorded with `actedByPersonId = "system:schedule"`; that is also how "3 of 12" is counted.
+- The cron: `GET /api/cron/due-payments`, daily at 05:00 UTC (`vercel.json`). It refuses any request without `Authorization: Bearer <CRON_SECRET>`, and every request while CRON_SECRET is unset. Vercel cron only runs on production, so production's payments start only once step 9 is released and CRON_SECRET is set there.
+- By hand: `npx tsx scripts/run-due-payments.ts` (local) or `DB_TARGET=dev npx tsx scripts/run-due-payments.ts`; it refuses `DB_TARGET=production`.
+
 ```
 Step 7: add a daily job (a Vercel cron calling a protected API route) that runs due scheduled
 payments through ledger.ts, writes the automatic comment, notifies both nodes, and cancels the
@@ -191,7 +200,7 @@ schedule when a payment fails (R-PAY-05). Add a test.
 First, before moving anything:
 1. Update `scripts/restore.ts` to read backup format 2 (what `scripts/backup.ts` writes since `cb31e7f`) and test it locally: back up the local database, restore it, and compare.
 2. Rename `.env.production.local` to `.env.prod-secrets`, so Next.js never loads it, and update `scripts/db-target.ts` and `scripts/apply-sql.mjs` to read the new name.
-3. Add `SESSION_SECRET` in Vercel for Preview, branch `dev` only.
+3. Add `SESSION_SECRET` and `CRON_SECRET` in Vercel for Preview, branch `dev` only (each at least 32 characters: `openssl rand -base64 48`).
 
 Only after steps 1 to 7 work locally.
 
@@ -204,7 +213,7 @@ Step 8: move the DEV database to the new model.
 Never use DB_TARGET=production in this step.
 ```
 
-**Done when:** the dev site runs on the new model with everyone's balances intact.
+**Done when:** the dev site runs on the new model with everyone's balances intact, and the scheduled payments have run once on dev by hand (`DB_TARGET=dev npx tsx scripts/run-due-payments.ts`; Vercel cron doesn't run there) with no errors.
 
 ## Step 9. Release to production (later, your decision)
 

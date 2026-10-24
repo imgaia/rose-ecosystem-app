@@ -54,6 +54,10 @@ const RuleSchema = z
     applies_to: z.array(z.string().min(1)).optional(),
     approvers: z.union([z.literal("both_sides"), z.array(ApproverSpec).min(1)]).optional(),
     declines: z.enum(["any_closes", "unreachable"]).optional(),
+    // R-PAY-04: the scheduled payments' automatic comment, and what to do with missed due dates.
+    comment: z.string().min(1).optional(),
+    comment_open_ended: z.string().min(1).optional(),
+    missed: z.enum(["pay_each", "skip"]).optional(),
     default: z.union([z.string(), z.number()]).optional(),
     node_level: z.boolean().optional(),
     changed_by: z.union([z.literal("proposal"), z.array(Key).min(1)]).optional(),

@@ -20,6 +20,7 @@ export * from "./wallet";
 export * from "./invitations";
 export * from "./identity";
 export * from "./governance";
+export { runDuePayments, type DuePaymentsResult } from "./schedules";
 export { convert, findRate } from "./rates";
 
 /** Every kind of proposal the inbox can decide, and the handler that knows how. */

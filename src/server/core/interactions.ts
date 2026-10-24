@@ -285,12 +285,7 @@ async function changeStatus(db: Db, actor: Actor, interactionId: string, action:
     let nextDueAt = interaction.nextDueAt;
     if (to === "COMPLETED" || to === "CANCELLED") {
       nextDueAt = null; // schedules stop
-      // A pending change of terms no longer makes sense. Open payment
-      // requests stay: work already done can still be paid for.
-      await tx.proposal.updateMany({
-        where: { interactionId, status: "OPEN", kind: "TERMS_CHANGE" },
-        data: { status: "WITHDRAWN", decidedAt: new Date() },
-      });
+      await withdrawPendingTerms(tx, interactionId);
     }
     if (action === "resume") {
       // Payments missed while paused are skipped; carry on from the next due date.
@@ -314,6 +309,63 @@ export const complete = (db: Db, actor: Actor, interactionId: string) =>
   changeStatus(db, actor, interactionId, "complete");
 export const cancel = (db: Db, actor: Actor, interactionId: string) =>
   changeStatus(db, actor, interactionId, "cancel");
+
+/**
+ * An ended interaction: a pending change of terms no longer makes sense.
+ * Open payment requests stay: work already done can still be paid for.
+ */
+async function withdrawPendingTerms(tx: Tx, interactionId: string) {
+  await tx.proposal.updateMany({
+    where: { interactionId, status: "OPEN", kind: "TERMS_CHANGE" },
+    data: { status: "WITHDRAWN", decidedAt: new Date() },
+  });
+}
+
+// ───────────────────────── Scheduled payments ─────────────────────────
+// schedules.ts runs the due payments (UC-PAY-01) and moves each schedule on.
+// It pays and ends schedules through these two, so a scheduled payment reaches
+// the ledger and the trust score the same way as every other payment.
+
+/** Recorded as the transaction's `actedByPersonId`: the system pays, no person pressed a button. */
+export const SCHEDULE_ACTOR = "system:schedule";
+
+/** One scheduled payment, through the ledger. Throws a RuleError if it can't be made (R-PAY-02). */
+export async function payScheduled(
+  tx: Tx,
+  interaction: Interaction,
+  payment: { amount: number; currencyId: string; comment: string },
+) {
+  const [payer, payee] = await sideNames(tx, interaction);
+  const currency = await tx.currency.findUniqueOrThrow({ where: { id: payment.currencyId } });
+  const amount = formatAmount(payment.amount, currency.decimals, currency.code);
+  const paid = interaction.kind === "GIFT" ? `gave ${payee} a gift of ${amount}` : `paid ${payee} ${amount}`;
+  await pay(tx, interaction, payment, SCHEDULE_ACTOR, `${payer} ${paid} (${payment.comment})`);
+}
+
+/**
+ * The schedule has ended: after its last payment ("completed"), or because a
+ * payment failed ("failed", R-PAY-05: cancelled, both sides told, trust steps
+ * down). schedules.ts has already set the status; this does the rest.
+ */
+export async function endSchedule(
+  tx: Tx,
+  interaction: Interaction,
+  end: { outcome: "completed" } | { outcome: "failed"; payment: string; reason: string },
+) {
+  await withdrawPendingTerms(tx, interaction.id);
+  const label = await describe(tx, interaction, await currentTerms(tx, interaction.id));
+  if (end.outcome === "completed") {
+    await logInteraction(tx, interaction, "interaction.completed", `${capitalise(label)} is complete: its schedule has ended`);
+    return;
+  }
+  await trustEvent(tx, interaction.relationshipId, "SCHEDULED_PAYMENT_FAILED");
+  await logInteraction(
+    tx,
+    interaction,
+    "schedule.failed",
+    `${end.payment} failed (${end.reason}), so ${label} was cancelled`,
+  );
+}
 
 // ───────────────────────── Proposal handlers ─────────────────────────
 // What happens when an interaction's proposal is approved, declined or withdrawn.
@@ -445,6 +497,8 @@ async function describe(tx: Tx, interaction: Interaction, terms: InteractionTerm
   if (interaction.kind === "WORK") return `work "${terms.description}" for ${amount}${often}, paid by ${payer} to ${payee}`;
   return `a ${interaction.kind === "GIFT" ? "gift" : "payment"} of ${amount}${often} from ${payer} to ${payee}`;
 }
+
+const capitalise = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
 
 async function sideNames(tx: Tx, interaction: Interaction) {
   const nodes = await tx.node.findMany({
@@ -587,6 +641,7 @@ async function pay(
   interaction: Interaction,
   payment: { amount: number; currencyId: string; comment: string },
   personId: string,
+  summary?: string, // the activity text, when the ledger's default isn't enough
 ) {
   const from = await accountOf(tx, interaction.payerNodeId, payment.currencyId);
   if (!from) throw new RuleError("The paying node has no account in this currency");
@@ -608,6 +663,7 @@ async function pay(
     comment: payment.comment,
     interactionId: interaction.id,
     actedByPersonId: personId,
+    summary,
   });
   if (kind === "PAYMENT") await trustEvent(tx, interaction.relationshipId, "PAYMENT_COMPLETED");
 }

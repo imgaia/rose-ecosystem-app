@@ -2,7 +2,7 @@
 # One entry per rule. The app validates this file at startup and refuses to start if it is invalid.
 # Changing it bumps `version`; every interaction records the version it was approved under.
 
-version: "2026-10-23.1"
+version: "2026-10-24.1"
 
 capabilityMap:
   # capability: [roles that carry it]. System-wide; node-level overrides are a parked question.
@@ -81,6 +81,15 @@ rules:
   - id: R-PAY-04
     name: Scheduled payments follow their interaction's schedule
     type: precondition
+    # Read by schedules.ts. The automatic comment on each payment:
+    #   {n} this payment's number, {total} the number of payments agreed,
+    #   {description} the interaction's comment or work description.
+    comment: "Scheduled payment {n} of {total}: {description}"
+    comment_open_ended: "Scheduled payment {n}: {description}"   # when no number of payments was agreed
+    # Due dates that passed without a run (the daily job didn't run):
+    #   pay_each - pay every one of them, oldest first
+    #   skip     - pay once, then carry on from the next date still ahead
+    missed: pay_each
   - id: R-PAY-05
     name: A failed scheduled payment cancels its schedule and notifies both nodes
     type: process
