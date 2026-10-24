@@ -1,8 +1,8 @@
 // src/server/api/routers/proposals.ts
 // The inbox (UC-NET-01, the home screen) and reviewing and deciding a
-// proposal (UC-NET-07). Only interaction proposals (new interactions,
-// changed terms, payment requests) can be decided so far; role, rule-value
-// and membership proposals come with those features.
+// proposal (UC-NET-07): interaction proposals (new interactions, changed
+// terms, payment requests) and a collection's role changes, new members and
+// removals. Rule-value proposals come with that feature.
 
 import { z } from "zod";
 import * as core from "~/server/core";
@@ -17,6 +17,14 @@ async function proposalView(ctx: Ctx, proposal: Proposal) {
     amount?: number;
     currencyId?: string;
     comment?: string;
+    // ROLE_CHANGE
+    change?: "ADD" | "REMOVE";
+    roleKey?: string;
+    holderNodeId?: string;
+    // MEMBER_REMOVAL
+    memberNodeId?: string;
+    reason?: string;
+    share?: string;
   };
   const [proposer, proposedBy, approvers, interaction] = await Promise.all([
     ctx.db.node.findUniqueOrThrow({ where: { id: proposal.proposerNodeId }, select: publicNode }),
@@ -36,6 +44,7 @@ async function proposalView(ctx: Ctx, proposal: Proposal) {
           ...approvers.map((a) => a.approverNodeId),
           ...approvers.flatMap((a) => (a.decidedByPersonId ? [a.decidedByPersonId] : [])),
           ...(interaction ? [interaction.payerNodeId, interaction.payeeNodeId] : []),
+          ...[proposal.subjectNodeId, payload.holderNodeId, payload.memberNodeId].filter((id): id is string => !!id),
         ],
       },
     },
@@ -45,9 +54,10 @@ async function proposalView(ctx: Ctx, proposal: Proposal) {
 
   const waitingOnMe = approvers.some((a) => a.approverNodeId === ctx.actor.actingNodeId && a.decision === null);
   const capability =
-    proposal.status === "OPEN" && interaction
+    proposal.status === "OPEN"
       ? await core.capabilityForProposal(ctx.db, proposal.id, ctx.actor.actingNodeId).catch(() => null)
       : null;
+  const role = payload.roleKey ? await ctx.db.role.findUnique({ where: { key: payload.roleKey } }) : null;
 
   return {
     id: proposal.id,
@@ -76,6 +86,16 @@ async function proposalView(ctx: Ctx, proposal: Proposal) {
             comment: payload.comment!,
             currency: await ctx.db.currency.findUnique({ where: { id: payload.currencyId! } }),
           }
+        : null,
+    // A collection's role change, new member (roleKey MEMBER) or removal.
+    collection: node(proposal.subjectNodeId),
+    roleChange:
+      proposal.kind === "ROLE_CHANGE"
+        ? { change: payload.change!, role: { key: payload.roleKey!, label: role?.label ?? payload.roleKey! }, holder: node(payload.holderNodeId!) }
+        : null,
+    removal:
+      proposal.kind === "MEMBER_REMOVAL"
+        ? { member: node(payload.memberNodeId!), reason: payload.reason!, share: payload.share! }
         : null,
     approvers: approvers.map((a) => ({
       node: node(a.approverNodeId),
@@ -121,6 +141,12 @@ export const proposalsRouter = createTRPCRouter({
       "proposal",
     );
     return proposalView(ctx, proposal);
+  }),
+
+  /** The proposing node takes back an open proposal of any kind. */
+  withdraw: actingProcedure.input(z.object({ proposalId: z.string().min(1) })).mutation(async ({ ctx, input }) => {
+    await requireCan(ctx, await core.capabilityForProposal(ctx.db, input.proposalId, ctx.actor.actingNodeId));
+    return core.withdrawAnyProposal(ctx.db, ctx.actor, input.proposalId);
   }),
 
   /** UC-NET-07: approve or decline for the acting node, with an optional comment. */

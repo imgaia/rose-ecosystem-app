@@ -1,8 +1,9 @@
 "use client";
 
 // src/app/_components/home/review-proposal.tsx
-// Review a proposal (PRD S25, UC-NET-07): what would change, the two sides,
-// who has approved, and approve / decline (with an optional comment), or
+// Review a proposal (PRD S25, UC-NET-07): what would change, the two sides
+// (or for a collection's role change or removal, who and what), who has
+// approved, and approve / decline (with an optional comment), or
 // counter-propose for work. The node that proposed it can withdraw it.
 
 import { useState } from "react";
@@ -37,7 +38,7 @@ function ProposalBody({ proposal: p }: { proposal: ProposalView }) {
   const utils = api.useUtils();
   const done = { onSuccess: () => utils.invalidate().then(back) };
   const decide = api.proposals.decide.useMutation(done);
-  const withdraw = api.interactions.withdraw.useMutation(done);
+  const withdraw = api.proposals.withdraw.useMutation(done);
   const busy = decide.isPending || withdraw.isPending;
 
   const interaction = p.interaction;
@@ -61,6 +62,37 @@ function ProposalBody({ proposal: p }: { proposal: ProposalView }) {
         </p>
         {p.comment && <p className="text-rose-muted">“{p.comment}”</p>}
       </Card>
+
+      {p.roleChange && p.collection && (
+        <Card className="gap-0">
+          <SectionLabel className="mb-1">{p.roleChange.role.key === "MEMBER" ? "New member" : "Role change"}</SectionLabel>
+          <Row label="Collection">{p.collection.name}</Row>
+          <Row label="Member" strong>
+            {label(p.roleChange.holder, me)}
+          </Row>
+          {p.roleChange.role.key !== "MEMBER" && (
+            <Row label={p.roleChange.change === "ADD" ? "Would become" : "Would stop being"}>{p.roleChange.role.label}</Row>
+          )}
+        </Card>
+      )}
+
+      {p.removal && p.collection && (
+        <Card className="gap-0">
+          <SectionLabel className="mb-1">Removal</SectionLabel>
+          <Row label="Collection">{p.collection.name}</Row>
+          <Row label="Member" strong>
+            {label(p.removal.member, me)}
+          </Row>
+          <Row label="Reason">{p.removal.reason}</Row>
+          <Row label="Needs">
+            {p.removal.share === "owner_only"
+              ? "The Owners"
+              : Number(p.removal.share) < 1
+                ? `${Math.round(Number(p.removal.share) * 100)}% of members`
+                : "Every remaining member"}
+          </Row>
+        </Card>
+      )}
 
       {interaction && (
         <Card className="gap-0">
@@ -119,7 +151,11 @@ function ProposalBody({ proposal: p }: { proposal: ProposalView }) {
 
       {isOpen && (
         <p className="text-xs text-rose-muted">
-          Both sides must approve. {p.kind === "TERMS_CHANGE" ? "Until then the current terms stay in force." : ""}
+          {p.roleChange
+            ? "The member and every Owner must approve. Each native role always keeps a holder."
+            : p.removal
+              ? "Any decline closes it."
+              : `Both sides must approve. ${p.kind === "TERMS_CHANGE" ? "Until then the current terms stay in force." : ""}`}
         </p>
       )}
 

@@ -334,3 +334,55 @@ describe("invitations", () => {
     expect(revoked.message).toMatch(/revoked/);
   });
 });
+
+describe("identity, roles and members (step 6b)", () => {
+  it("lets a person edit their own identity, and refuses a plain Member editing the collection's", async () => {
+    const { mo, rose } = await org();
+    expect(await as(mo).identity.update({ actingNodeId: mo.id, firstName: "Moritz", email: "mo@example.org" })).toMatchObject({
+      name: "Moritz",
+    });
+    expect(await as(mo).identity.get({ actingNodeId: mo.id })).toMatchObject({ email: "mo@example.org" });
+    const e = await refused(as(mo).identity.update({ actingNodeId: rose.id, name: "Mo's Org" }));
+    expect(e).toMatchObject({ code: "FORBIDDEN", needsRoles: ["OWNER"] });
+  });
+
+  it("puts a role change in the affected member's inbox, and applies it when they approve there", async () => {
+    const { tess, mo, rose } = await org();
+    expect(
+      (await refused(as(mo).members.proposeRoleChange({ actingNodeId: rose.id, holderNodeId: mo.id, roleKey: "CURATOR", change: "ADD" })))
+        .needsRoles,
+    ).toEqual(["OWNER"]);
+
+    await as(tess).members.proposeRoleChange({ actingNodeId: rose.id, holderNodeId: mo.id, roleKey: "CURATOR", change: "ADD" });
+    const inbox = await as(mo).proposals.inbox({ actingNodeId: mo.id });
+    const p = inbox.waiting.find((w) => w.kind === "ROLE_CHANGE")!;
+    expect(p).toMatchObject({
+      waitingOnMe: true,
+      collection: { id: rose.id },
+      roleChange: { change: "ADD", role: { key: "CURATOR" }, holder: { id: mo.id } },
+      permission: { allowed: true },
+    });
+    // The collection sees it under what it is waiting on.
+    expect((await as(tess).proposals.inbox({ actingNodeId: rose.id })).sent.map((s) => s.id)).toContain(p.id);
+
+    await as(mo).proposals.decide({ actingNodeId: mo.id, proposalId: p.id, approve: true });
+    const me = await as(mo).nodes.me();
+    expect(me.actingAs.find((a) => a.node.id === rose.id)!.roles.map((r) => r.key).sort()).toEqual(["CURATOR", "MEMBER"]);
+  });
+
+  it("lets the collection withdraw its proposal through proposals.withdraw", async () => {
+    const { tess, mo, rose } = await org();
+    const p = await as(tess).members.proposeRoleChange({ actingNodeId: rose.id, holderNodeId: mo.id, roleKey: "CURATOR", change: "ADD" });
+    expect(await as(tess).proposals.withdraw({ actingNodeId: rose.id, proposalId: p.id })).toMatchObject({ status: "WITHDRAWN" });
+  });
+
+  it("lets a member leave, and lets any member propose a removal but not an outsider", async () => {
+    const { tess, mo, zed, rose } = await org();
+    expect((await refused(as(zed).members.proposeRemoval({ actingNodeId: rose.id, memberNodeId: mo.id, reason: "x" }))).code).toBe("FORBIDDEN");
+    const removal = await as(mo).members.proposeRemoval({ actingNodeId: rose.id, memberNodeId: tess.id, reason: "x" }).catch((e: unknown) => e);
+    expect(removal).toBeInstanceOf(TRPCError); // Tess is the only Owner and Treasurer (R-GOV-03)
+
+    await as(mo).members.leave({ actingNodeId: rose.id });
+    expect((await as(mo).nodes.me()).actingAs.map((a) => a.node.id)).toEqual([mo.id]);
+  });
+});

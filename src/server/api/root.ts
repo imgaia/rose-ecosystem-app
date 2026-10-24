@@ -1,5 +1,7 @@
+import { identityRouter } from "~/server/api/routers/identity";
 import { interactionsRouter } from "~/server/api/routers/interactions";
 import { invitationsRouter } from "~/server/api/routers/invitations";
+import { membersRouter } from "~/server/api/routers/members";
 import { nodesRouter } from "~/server/api/routers/nodes";
 import { proposalsRouter } from "~/server/api/routers/proposals";
 import { relationshipsRouter } from "~/server/api/routers/relationships";
@@ -18,6 +20,8 @@ export const appRouter = createTRPCRouter({
   proposals: proposalsRouter,
   wallet: walletRouter,
   invitations: invitationsRouter,
+  identity: identityRouter,
+  members: membersRouter,
 });
 
 // export type definition of API

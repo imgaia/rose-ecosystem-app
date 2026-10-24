@@ -22,6 +22,12 @@ export interface ProposalHandler {
   apply(tx: Tx, proposal: Proposal, personId: string): Promise<void>;
   /** Runs when the proposal is declined or withdrawn. */
   onClosed?(tx: Tx, proposal: Proposal, status: "DECLINED" | "WITHDRAWN", personId: string): Promise<void>;
+  /**
+   * Whether enough approvals are in. Default: all of them. A handler can ask
+   * for fewer, e.g. half the members to remove one (R-COL-04). Any decline
+   * still closes the proposal (R-GOV-06).
+   */
+  approvedWhen?(proposal: Proposal, approved: number, total: number): boolean;
 }
 
 export interface CreateProposalInput {
@@ -34,6 +40,12 @@ export interface CreateProposalInput {
   comment?: string;
   /** Every node whose approval is needed, the proposer included. */
   approverNodeIds: string[];
+  /**
+   * Approver nodes whose approval proposing already gives. Default: the
+   * proposer node. A collection's role change also counts the proposing
+   * Owner's own approval, for instance.
+   */
+  preApprovedNodeIds?: string[];
 }
 
 export function readPayload<T>(proposal: Proposal): T {
@@ -43,11 +55,12 @@ export function readPayload<T>(proposal: Proposal): T {
 /**
  * Create a proposal with its approver rows. Proposing counts as the
  * proposer's own approval (R-REL-01), so the proposer's row starts approved.
- * If the proposer is the only approver, it applies at once.
+ * If no other approval is needed, it applies at once.
  */
 export async function createProposal(db: Db, input: CreateProposalInput, handler: ProposalHandler) {
   const approverIds = [...new Set(input.approverNodeIds)];
   if (approverIds.length === 0) throw new Error("A proposal needs at least one approver");
+  const preApproved = new Set(input.preApprovedNodeIds ?? [input.proposerNodeId]);
 
   return inTransaction(db, async (tx) => {
     const now = new Date();
@@ -62,7 +75,7 @@ export async function createProposal(db: Db, input: CreateProposalInput, handler
         comment: input.comment,
         approvers: {
           create: approverIds.map((approverNodeId) =>
-            approverNodeId === input.proposerNodeId
+            preApproved.has(approverNodeId)
               ? { approverNodeId, decision: true, decidedByPersonId: input.proposedByPersonId, decidedAt: now }
               : { approverNodeId },
           ),
@@ -75,7 +88,7 @@ export async function createProposal(db: Db, input: CreateProposalInput, handler
     const capability = await handler.capabilityFor(tx, proposal, input.proposerNodeId);
     await assertCan(tx, input.proposedByPersonId, input.proposerNodeId, capability);
 
-    if (approverIds.every((id) => id === input.proposerNodeId)) {
+    if (enoughApprovals(handler, proposal, approverIds.filter((id) => preApproved.has(id)).length, approverIds.length)) {
       await setStatus(tx, proposal, "APPROVED");
       await handler.apply(tx, proposal, input.proposedByPersonId);
     }
@@ -121,8 +134,11 @@ export async function decide(db: Db, input: DecideInput, handler: ProposalHandle
       await setStatus(tx, proposal, "DECLINED");
       await handler.onClosed?.(tx, proposal, "DECLINED", input.personId);
     } else {
-      const waiting = await tx.proposalApprover.count({ where: { proposalId: proposal.id, decision: null } });
-      if (waiting === 0) {
+      const [approved, total] = await Promise.all([
+        tx.proposalApprover.count({ where: { proposalId: proposal.id, decision: true } }),
+        tx.proposalApprover.count({ where: { proposalId: proposal.id } }),
+      ]);
+      if (enoughApprovals(handler, proposal, approved, total)) {
         await setStatus(tx, proposal, "APPROVED");
         await handler.apply(tx, proposal, input.personId);
       }
@@ -161,6 +177,10 @@ export async function supersede(tx: Tx, proposalId: string, approverNodeId: stri
   });
   if (count === 0) throw new RuleError("Only the side that has not yet approved can counter-propose");
   await setStatus(tx, proposal, "DECLINED");
+}
+
+function enoughApprovals(handler: ProposalHandler, proposal: Proposal, approved: number, total: number) {
+  return handler.approvedWhen ? handler.approvedWhen(proposal, approved, total) : approved === total;
 }
 
 async function openProposal(tx: Tx, proposalId: string) {

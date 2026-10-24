@@ -15,6 +15,7 @@ import { formatDate, titleCase } from "../describe";
 import { useActingNode } from "../shell/acting-node";
 import { Avatar } from "../shell/header";
 import { useNav } from "../shell/navigation";
+import { LeaveButton } from "./membership";
 import { Button, Card, Chip, Empty, ErrorText, GatedButton, Input, Loading, Row, SectionLabel, SubScreen, Toggle } from "../ui";
 
 type Page = RouterOutputs["nodes"]["page"];
@@ -93,7 +94,8 @@ function Body({ page }: { page: Page }) {
         <>
           <Toggle label="Section" value={section} onChange={setSection} options={sections} />
           {section === "identity" && <Identity page={page} isActing={isActing} />}
-          {section === "roles" && <Roles inside={inside} isActing={isActing} />}
+          {/* Role changes are for collections; an individual's own roles are fixed (R-GOV-02). */}
+          {section === "roles" && <Roles inside={inside} canChange={isActing && node.kind === "COLLECTION"} />}
           {section === "rules" && <Rules inside={inside} />}
           {section === "members" && <Members inside={inside} isActing={isActing} />}
         </>
@@ -107,7 +109,8 @@ function Body({ page }: { page: Page }) {
 }
 
 function Identity({ page, isActing }: { page: Page; isActing: boolean }) {
-  const { permissionFor, notYetFor } = useNodeActions();
+  const { permissionFor } = useActingNode();
+  const { open } = useNav();
   const { node } = page;
   return (
     <>
@@ -116,12 +119,13 @@ function Identity({ page, isActing }: { page: Page; isActing: boolean }) {
         <Row label="Name">{node.name}</Row>
         {node.firstName && <Row label="First name">{node.firstName}</Row>}
         {node.lastName && <Row label="Last name">{node.lastName}</Row>}
+        {node.description && <Row label="About">{node.description}</Row>}
         <Row label="Kind">{node.kind === "COLLECTION" ? "Collection" : "Person"}</Row>
         <Row label="Status">{titleCase(node.status)}</Row>
         <Row label="On ROSE since">{formatDate(node.createdAt)}</Row>
       </Card>
       {isActing && (
-        <GatedButton permission={permissionFor("EDIT_IDENTITY")} onClick={notYetFor("Editing the identity")}>
+        <GatedButton permission={permissionFor("EDIT_IDENTITY")} onClick={() => open({ name: "edit-identity" })}>
           Edit identity
         </GatedButton>
       )}
@@ -129,8 +133,9 @@ function Identity({ page, isActing }: { page: Page; isActing: boolean }) {
   );
 }
 
-function Roles({ inside, isActing }: { inside: Inside; isActing: boolean }) {
-  const { permissionFor, notYetFor } = useNodeActions();
+function Roles({ inside, canChange }: { inside: Inside; canChange: boolean }) {
+  const { permissionFor } = useActingNode();
+  const { open } = useNav();
   const me = useMe();
   const groups = [
     { title: "Native roles", roles: inside.roles.filter((r) => r.native) },
@@ -164,8 +169,8 @@ function Roles({ inside, isActing }: { inside: Inside; isActing: boolean }) {
         Capabilities come from the system&apos;s capability map.
         {mine.length > 0 && ` You hold ${mine.map((r) => r.label).join(" and ")} here.`}
       </p>
-      {isActing && (
-        <GatedButton permission={permissionFor("EDIT_GOVERNANCE")} onClick={notYetFor("Proposing a role change")}>
+      {canChange && (
+        <GatedButton permission={permissionFor("EDIT_GOVERNANCE")} onClick={() => open({ name: "role-change" })}>
           Propose a role change
         </GatedButton>
       )}
@@ -208,7 +213,7 @@ function Rules({ inside }: { inside: Inside }) {
 }
 
 function Members({ inside, isActing }: { inside: Inside; isActing: boolean }) {
-  const { permissionFor, notYetFor } = useNodeActions();
+  const { permissionFor } = useActingNode();
   const { open } = useNav();
   const me = useMe();
   // Each member's roles here, from the role list.
@@ -245,12 +250,18 @@ function Members({ inside, isActing }: { inside: Inside; isActing: boolean }) {
       )}
       {isActing && (
         <div className="flex flex-col gap-2">
-          <GatedButton variant="primary" permission={permissionFor("ADD_MEMBERS")} onClick={() => open({ name: "invite" })}>
-            Invite a member
+          <GatedButton variant="primary" permission={permissionFor("ADD_MEMBERS")} onClick={() => open({ name: "add-member" })}>
+            Add a member
           </GatedButton>
-          <GatedButton permission={permissionFor("EDIT_GOVERNANCE")} onClick={notYetFor("Proposing a role change")}>
-            Propose a role change
-          </GatedButton>
+          <div className="grid grid-cols-2 gap-2">
+            <GatedButton permission={permissionFor("EDIT_GOVERNANCE")} onClick={() => open({ name: "role-change" })}>
+              Change a role
+            </GatedButton>
+            <GatedButton permission={permissionFor("PROPOSE_REMOVAL")} onClick={() => open({ name: "remove-member" })}>
+              Remove a member
+            </GatedButton>
+          </div>
+          <LeaveButton />
         </div>
       )}
     </>
@@ -260,12 +271,6 @@ function Members({ inside, isActing }: { inside: Inside; isActing: boolean }) {
 /** The signed-in person's own node id. */
 function useMe() {
   return useActingNode().person.id;
-}
-
-function useNodeActions() {
-  const { permissionFor } = useActingNode();
-  const { notYet } = useNav();
-  return { permissionFor, notYetFor: (what: string) => () => notYet(what) };
 }
 
 export function NetworkSearch() {

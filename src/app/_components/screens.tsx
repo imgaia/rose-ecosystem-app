@@ -8,6 +8,8 @@ import { ReviewProposal } from "./home/review-proposal";
 import { AmendTerms, CounterPropose, ProposeWork } from "./interact/propose-work";
 import { Invite } from "./invite/invite";
 import { RequestPayment } from "./interact/request-payment";
+import { EditIdentity } from "./node/edit-identity";
+import { AddMember, ProposeRemoval, ProposeRoleChange } from "./node/membership";
 import { NetworkSearch, NodePage } from "./node/node-page";
 import { SendPayment } from "./interact/send-payment";
 import { InteractionDetail } from "./relationships/interaction-detail";
@@ -45,5 +47,13 @@ export function ScreenView({ screen }: { screen: Screen }) {
       return <NetworkSearch />;
     case "invite":
       return <Invite />;
+    case "edit-identity":
+      return <EditIdentity />;
+    case "role-change":
+      return <ProposeRoleChange holderNodeId={screen.holderNodeId} />;
+    case "add-member":
+      return <AddMember />;
+    case "remove-member":
+      return <ProposeRemoval memberNodeId={screen.memberNodeId} />;
   }
 }

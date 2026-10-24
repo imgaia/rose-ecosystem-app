@@ -17,6 +17,7 @@ import { getRule, roles } from "~/server/rules";
 import { recordActivity } from "./activity";
 import { inTransaction, type Db } from "./db";
 import { RuleError, textOrNull } from "./errors";
+import { assertUnique } from "./identity";
 import type { Actor } from "./interactions";
 import { assertCan, type Capability } from "./rules";
 
@@ -220,20 +221,3 @@ export async function acceptInvitation(db: Db, token: string, input: JoinInput) 
   });
 }
 
-/** R-MEM-01. Usernames are compared ignoring case, the same way sign-in matches them. */
-async function assertUnique(db: Db, input: { username: string; email: string | null; phone: string | null }) {
-  const people = await db.node.findMany({
-    where: { kind: "INDIVIDUAL" },
-    select: { username: true, email: true, phone: true },
-  });
-  const lower = (s: string | null) => s?.toLowerCase() ?? null;
-  if (people.some((p) => lower(p.username) === input.username.toLowerCase())) {
-    throw new RuleError("That username is already taken", ["R-MEM-01"]);
-  }
-  if (input.email && people.some((p) => lower(p.email) === input.email!.toLowerCase())) {
-    throw new RuleError("That email is already in use", ["R-MEM-01"]);
-  }
-  if (input.phone && people.some((p) => p.phone === input.phone)) {
-    throw new RuleError("That phone number is already in use", ["R-MEM-01"]);
-  }
-}

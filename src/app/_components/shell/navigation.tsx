@@ -25,7 +25,11 @@ export type Screen =
   | { name: "mint" }
   | { name: "node"; nodeId: string }
   | { name: "search" }
-  | { name: "invite" };
+  | { name: "invite" }
+  | { name: "edit-identity" }
+  | { name: "role-change"; holderNodeId?: string }
+  | { name: "add-member" }
+  | { name: "remove-member"; memberNodeId?: string };
 
 interface NavValue {
   stack: Screen[];

@@ -13,6 +13,33 @@ export function proposalText(p: ProposalView, actingNodeId: string) {
   const payer = nameOrYou(interaction?.payer, actingNodeId);
   const who = p.proposer.name;
 
+  // A collection's role change, new member or removal.
+  if (p.roleChange && p.collection) {
+    const { change, role, holder } = p.roleChange;
+    const you = holder?.id === actingNodeId;
+    const subject = you ? "You" : (holder?.name ?? "Someone");
+    const approvals = `${p.approvers.filter((x) => x.decision === true).length} of ${p.approvers.length} approvals in`;
+    if (role.key === "MEMBER") {
+      return {
+        label: `${p.collection.name} · new member`,
+        title: you ? `Join ${p.collection.name}` : `${subject} would join ${p.collection.name}`,
+        detail: `Proposed by ${p.proposedBy.name} · ${approvals}`,
+      };
+    }
+    return {
+      label: `${p.collection.name} · role change`,
+      title: change === "ADD" ? `${subject} would become ${role.label}` : `${subject} would no longer be ${role.label}`,
+      detail: `Proposed by ${p.proposedBy.name} · ${approvals}`,
+    };
+  }
+  if (p.removal && p.collection) {
+    return {
+      label: `${p.collection.name} · removal`,
+      title: `Remove ${p.removal.member?.name ?? "a member"} from ${p.collection.name}`,
+      detail: `“${p.removal.reason}” · proposed by ${p.proposedBy.name}`,
+    };
+  }
+
   if (p.kind === "PAYMENT_REQUEST" && p.paymentRequest) {
     const amount = money(p.paymentRequest.amount, p.paymentRequest.currency);
     return { label: "Payment request", title: `${who} requests ${amount}`, detail: `${p.paymentRequest.comment} · ${payer} would pay` };
