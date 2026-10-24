@@ -101,7 +101,7 @@ async function proposalView(ctx: Ctx, proposal: Proposal) {
     approval: {
       needed: approval?.needed ?? approvers.length,
       total: approvers.length,
-      declines: approval?.declines ?? "any_closes",
+      declines: approval?.declines ?? "unreachable",
       ruleIds: approval?.ruleIds ?? [],
     },
     approvers: approvers.map((a) => ({

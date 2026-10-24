@@ -142,12 +142,13 @@ rules:
     name: An action needs a role in the acting node that carries its capability
     type: permission
   - id: R-GOV-06
-    name: Changes needing several approvals are proposals; any decline closes them
+    name: Changes needing several approvals are proposals; declines close one once its share can't be reached
     type: approval
     # How declines count against the share of approvals needed (R-COL-04 for removals; all, otherwise):
-    #   any_closes  - one decline closes the proposal
     #   unreachable - a decline closes it only once the share can no longer be reached
-    declines: any_closes
+    #                 (where every approval is needed, that is the first decline)
+    #   any_closes  - one decline closes the proposal
+    declines: unreachable
     node_level: true
   - id: R-GOV-07
     name: A node's rule values change only with a Treasurer and an Owner

@@ -148,7 +148,9 @@ function ProposalBody({ proposal: p }: { proposal: ProposalView }) {
         <p className="text-xs text-rose-muted">
           {p.roleChange || p.removal
             ? `${p.approval.needed === p.approval.total ? "Everyone listed must approve" : `${p.approval.needed} of the ${p.approval.total} listed must approve`}; ${
-                p.approval.declines === "any_closes" ? "any decline closes it" : "it closes once too many decline"
+                p.approval.declines === "any_closes" || p.approval.needed === p.approval.total
+                  ? "any decline closes it"
+                  : "it closes once too many decline"
               }.${p.roleChange ? " Each native role always keeps a holder." : ""}`
             : `Both sides must approve. ${p.kind === "TERMS_CHANGE" ? "Until then the current terms stay in force." : ""}`}
         </p>

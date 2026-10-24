@@ -252,25 +252,36 @@ describe("removing a member (UC-COL-10, R-COL-04)", () => {
     expect(await rolesOf(col.id, ed.id)).toEqual([]);
   });
 
-  it("follows R-GOV-06: with 'unreachable', a decline closes it only once the share can't be reached", async () => {
+  it("by default (R-GOV-06 unreachable), at 0.5 a decline closes it only once half can't be reached", async () => {
     const { olga, tim, mia, col } = await org();
+    const [ed, flo] = [await t.person("Ed"), await t.person("Flo")];
+    for (const p of [ed, flo]) await t.db.roleAssignment.create({ data: { scopeNodeId: col.id, holderNodeId: p.id, roleKey: "MEMBER" } });
+    await t.db.nodeRuleValue.create({ data: { nodeId: col.id, ruleId: "R-COL-04", value: "0.5" } });
+    // Removing Flo: the four other members (Olga, Tim, Mia, Ed) are asked; half of 4 is 2. Olga's proposal is the first.
+    const p = await proposeRemoval(t.db, as(olga, col), { memberNodeId: flo.id, reason: "Inactive" });
+    expect(p.approvers).toHaveLength(4);
+    expect((await approve(tim, p.id, false)).status).toBe("OPEN"); // 3 could still approve
+    expect((await approve(mia, p.id, false)).status).toBe("OPEN"); // Olga and Ed could still make 2
+    expect((await approve(ed, p.id, false)).status).toBe("DECLINED"); // the third decline: only Olga is left
+    expect(await rolesOf(col.id, flo.id)).toEqual(["MEMBER"]);
+  });
+
+  it("follows a collection's own R-GOV-06 value: with any_closes, one decline closes it even at 0.5", async () => {
+    const { olga, tim, col } = await org();
     const [ed, flo] = [await t.person("Ed"), await t.person("Flo")];
     for (const p of [ed, flo]) await t.db.roleAssignment.create({ data: { scopeNodeId: col.id, holderNodeId: p.id, roleKey: "MEMBER" } });
     await t.db.nodeRuleValue.createMany({
       data: [
         { nodeId: col.id, ruleId: "R-COL-04", value: "0.5" },
-        { nodeId: col.id, ruleId: "R-GOV-06", value: "unreachable" },
+        { nodeId: col.id, ruleId: "R-GOV-06", value: "any_closes" },
       ],
     });
-    // Removing Flo: Olga, Tim, Mia and Ed are asked; half of 4 is 2. Olga's proposal is the first.
     const p = await proposeRemoval(t.db, as(olga, col), { memberNodeId: flo.id, reason: "Inactive" });
-    expect((await approve(tim, p.id, false)).status).toBe("OPEN"); // 3 could still approve
-    expect((await approve(mia, p.id, false)).status).toBe("OPEN"); // Olga and Ed could still make 2
-    expect((await approve(ed, p.id, false)).status).toBe("DECLINED"); // only 1 can approve now
+    expect((await approve(tim, p.id, false)).status).toBe("DECLINED");
     expect(await rolesOf(col.id, flo.id)).toEqual(["MEMBER"]);
   });
 
-  it("any member may propose it, and any decline closes it", async () => {
+  it("any member may propose it; where every approval is needed, the first decline closes it", async () => {
     const { olga, tim, mia, col } = await org();
     const p = await proposeRemoval(t.db, as(mia, col), { memberNodeId: tim.id, reason: "x" }).catch((e: unknown) => e);
     // Tim is the only Treasurer, so this one is refused (R-GOV-03).

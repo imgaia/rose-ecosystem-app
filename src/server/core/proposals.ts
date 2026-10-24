@@ -73,7 +73,7 @@ export function readPayload<T>(proposal: Proposal): T {
   return JSON.parse(proposal.payload) as T;
 }
 
-/** The approval read from rules.yaml when it was proposed, or null for "every approver, any decline closes". */
+/** The approval read from rules.yaml when it was proposed, or null for "every approver needed". */
 export function approvalOf(proposal: Proposal): Approval | null {
   return readPayload<{ approval?: Approval }>(proposal).approval ?? null;
 }
@@ -83,10 +83,13 @@ export async function requirementFor(tx: Tx, proposal: Proposal, nodeId: string,
   return approvalOf(proposal)?.deciders[nodeId] ?? handler.capabilityFor(tx, proposal, nodeId);
 }
 
-/** Approvals needed and how declines count; the defaults are all of them and any decline closes. */
+/**
+ * Approvals needed and how declines count. Without an approval read from
+ * rules.yaml, every approver is needed, so the first decline closes it.
+ */
 function thresholds(proposal: Proposal, total: number) {
   const approval = approvalOf(proposal);
-  return { needed: approval?.needed ?? total, declines: approval?.declines ?? "any_closes" };
+  return { needed: approval?.needed ?? total, declines: approval?.declines ?? "unreachable" };
 }
 
 /**
@@ -110,7 +113,7 @@ async function readApproval(tx: Tx, input: ApprovalRule): Promise<Approval> {
     else share = Number(value);
     if (!(share > 0 && share <= 1)) throw new Error(`${input.shareRuleId} must be a share between 0 and 1, or owner_only`);
   }
-  const declines = ((await ownValue("R-GOV-06")) ?? getRule("R-GOV-06")?.declines ?? "any_closes") as Approval["declines"];
+  const declines = ((await ownValue("R-GOV-06")) ?? getRule("R-GOV-06")?.declines ?? "unreachable") as Approval["declines"];
 
   const deciders: Record<string, Requirement> = {};
   const holders = async (roleKey: string) =>
