@@ -70,3 +70,39 @@ export async function assertCan(db: Db, personId: string, actingNodeId: string, 
     throw new RuleError(`${action}: ${block.reason}`, [block.ruleId], block.needsRoles);
   }
 }
+
+/**
+ * What deciding something needs: a capability (as above), or holding one of
+ * these roles in the node, e.g. "any one Owner" for a role change (R-GOV-08,
+ * read from rules.yaml by proposals.ts).
+ */
+export type Requirement = Capability | { anyRole: string[] };
+
+export async function meets(db: Db, personId: string, nodeId: string, requirement: Requirement): Promise<CanResult> {
+  if (typeof requirement === "string") return can(db, personId, nodeId, requirement);
+  const held = await db.roleAssignment.findFirst({
+    where: { holderNodeId: personId, scopeNodeId: nodeId, roleKey: { in: requirement.anyRole }, endedAt: null },
+    select: { id: true },
+  });
+  if (held) return { allowed: true };
+  return {
+    allowed: false,
+    blockedBy: [
+      {
+        ruleId: "R-GOV-05",
+        rule: getRule("R-GOV-05")?.name ?? "R-GOV-05",
+        reason: `Needs ${requirement.anyRole.join(" or ")}`,
+        needsRoles: requirement.anyRole,
+      },
+    ],
+  };
+}
+
+/** Same check, but throws a RuleError instead of returning the result. */
+export async function assertMeets(db: Db, personId: string, nodeId: string, requirement: Requirement) {
+  const result = await meets(db, personId, nodeId, requirement);
+  if (!result.allowed) {
+    const block = result.blockedBy[0]!;
+    throw new RuleError(block.reason, [block.ruleId], block.needsRoles);
+  }
+}

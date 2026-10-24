@@ -17,6 +17,25 @@ export const RULES_FILE = path.join(process.cwd(), "src/server/rules/rules.yaml"
 const Key = z.string().regex(/^[A-Z][A-Z_]*$/, "must be UPPER_SNAKE_CASE");
 const RuleId = z.string().regex(/^R-[A-Z]+-\d{2}$/, "must look like R-PAY-02");
 
+/**
+ * One entry of a rule's `approvers` list (see R-GOV-08 in rules.yaml).
+ * A bare role key (R-GOV-07's [TREASURER, OWNER]) is also accepted.
+ */
+const ApproverSpec = z.union([
+  z.literal("affected"),
+  Key,
+  z.object({ any_one: Key }).strict(),
+  z.object({ every: Key }).strict(),
+  z.object({ every_other: Key }).strict(),
+]);
+export type ApproverSpec = z.infer<typeof ApproverSpec>;
+
+/** The role named in an approver entry, if any. */
+export function approverRole(spec: ApproverSpec): string | null {
+  if (typeof spec === "string") return spec === "affected" ? null : spec;
+  return "any_one" in spec ? spec.any_one : "every" in spec ? spec.every : spec.every_other;
+}
+
 const RuleSchema = z
   .object({
     id: RuleId,
@@ -33,7 +52,8 @@ const RuleSchema = z
       "tbd",
     ]),
     applies_to: z.array(z.string().min(1)).optional(),
-    approvers: z.union([z.literal("both_sides"), z.array(Key).min(1)]).optional(),
+    approvers: z.union([z.literal("both_sides"), z.array(ApproverSpec).min(1)]).optional(),
+    declines: z.enum(["any_closes", "unreachable"]).optional(),
     default: z.union([z.string(), z.number()]).optional(),
     node_level: z.boolean().optional(),
     changed_by: z.union([z.literal("proposal"), z.array(Key).min(1)]).optional(),
@@ -82,7 +102,9 @@ const RulesFileSchema = z
       }
       seenIds.add(rule.id);
 
-      if (Array.isArray(rule.approvers)) checkRoles(rule.approvers, ["rules", i, "approvers"]);
+      if (Array.isArray(rule.approvers)) {
+        checkRoles(rule.approvers.map(approverRole).filter((r): r is string => r !== null), ["rules", i, "approvers"]);
+      }
       if (Array.isArray(rule.changed_by)) checkRoles(rule.changed_by, ["rules", i, "changed_by"]);
 
       if (rule.type === "parameter" && rule.default === undefined) {

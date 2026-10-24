@@ -45,7 +45,7 @@ export function ProposeRoleChange({ holderNodeId }: { holderNodeId?: string }) {
   const [roleKey, setRoleKey] = useState("");
   const [comment, setComment] = useState("");
   const propose = api.members.proposeRoleChange.useMutation({
-    onSuccess: useProposed("Proposed. It applies once the member and the Owners approve."),
+    onSuccess: useProposed("Proposed. It applies once it is approved."),
   });
 
   const members = inside?.members ?? [];
@@ -96,7 +96,7 @@ export function ProposeRoleChange({ holderNodeId }: { holderNodeId?: string }) {
             <Input value={comment} onChange={(e) => setComment(e.target.value)} />
           </Field>
           <p className="text-xs text-rose-muted">
-            {holderName || "The member"} and the Owners of {acting.node.name} must approve. Every native role keeps at least one holder.
+            It goes to whoever must approve under {acting.node.name}&apos;s rules (R-GOV-08). Every native role keeps at least one holder.
           </p>
           <ErrorText error={propose.error} />
           <GatedButton
@@ -129,7 +129,7 @@ export function AddMember() {
   const candidates = api.members.candidates.useQuery({ actingNodeId: acting.node.id }, { enabled: !!permission?.allowed });
   const [chosen, setChosen] = useState<string | null>(null);
   const [comment, setComment] = useState("");
-  const propose = api.members.proposeAddMember.useMutation({ onSuccess: useProposed("Proposed. They join once they accept.") });
+  const propose = api.members.proposeAddMember.useMutation({ onSuccess: useProposed("Proposed. They join once it is approved.") });
 
   return (
     <SubScreen title="Add a member">

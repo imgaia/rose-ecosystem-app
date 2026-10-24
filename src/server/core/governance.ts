@@ -2,20 +2,24 @@
 // Who holds which role in a collection, and who belongs to it.
 //
 // - Role changes (UC-COL-06, UC-GOV-02): an Owner proposes adding or
-//   removing a role holder; it applies once the affected member and the
-//   collection's Owners approve (R-GOV-08).
+//   removing a role holder; it applies once those R-GOV-08 names approve
+//   (in rules.yaml: the affected member and any one Owner).
 // - Adding a member (UC-COL-04): an Owner proposes the Member role for a node
 //   from their own relationships (R-COL-02); the same kind of proposal.
 // - Leaving (UC-COL-05): a member gives up every role they hold there, at once.
 // - Removing a member (UC-COL-10): any member proposes it with a reason; the
 //   remaining members approve, by the share the collection sets (R-COL-04).
 //
+// Who approves, how many approvals it takes and how declines count are not
+// in this file: proposals.ts reads them from rules.yaml (R-GOV-08, R-COL-04,
+// R-GOV-06) and the collection's own rule values.
+//
 // Every change keeps at least one holder of each native role (R-GOV-03).
 // Proposals go through proposals.ts like interactions do, so they show up in
 // the same inbox; index.ts picks these handlers by proposal kind.
 
 import type { Proposal, ProposalKind } from "../../../generated/prisma";
-import { getRule, roles } from "~/server/rules";
+import { roles } from "~/server/rules";
 import { actorName, recordActivity } from "./activity";
 import { inTransaction, type Db, type Tx } from "./db";
 import { RuleError, textOrNull } from "./errors";
@@ -32,8 +36,6 @@ export interface RoleChangePayload {
 export interface RemovalPayload {
   memberNodeId: string;
   reason: string;
-  /** R-COL-04 when proposed: "1.0" (everyone), "0.5" (half), or "owner_only". */
-  share: string;
 }
 
 // ───────────────────────── Role changes and adding members ─────────────────────────
@@ -96,8 +98,6 @@ async function createRoleChange(db: Db, actor: Actor, payload: RoleChangePayload
     });
     if (duplicate) throw new RuleError("A change to this role for this node is already waiting for approval");
 
-    // R-GOV-08: the affected node and every Owner. The proposing Owner's approval is given by proposing.
-    const approverNodeIds = [payload.holderNodeId, ...(await holdersOf(tx, collectionId, "OWNER"))];
     const proposal = await createProposal(
       tx,
       {
@@ -107,8 +107,9 @@ async function createRoleChange(db: Db, actor: Actor, payload: RoleChangePayload
         subjectNodeId: collectionId,
         payload,
         comment: textOrNull(comment) ?? undefined,
-        approverNodeIds,
-        preApprovedNodeIds: approverNodeIds.includes(actor.personId) ? [actor.personId] : [],
+        approvalRule: { approversRuleId: "R-GOV-08", scopeNodeId: collectionId, affectedNodeId: payload.holderNodeId },
+        // Proposing is the proposing Owner's approval, for the collection and for themselves.
+        preApprovedNodeIds: [collectionId, actor.personId],
       },
       roleChangeHandler,
     );
@@ -208,11 +209,6 @@ export async function proposeRemoval(db: Db, actor: Actor, input: { memberNodeId
     );
     if (duplicate) throw new RuleError("A removal of this member is already waiting for approval");
 
-    const share = await removalShare(tx, collection.id);
-    const pool = await holdersOf(tx, collection.id, share === "owner_only" ? "OWNER" : "MEMBER");
-    const approverNodeIds = pool.filter((id) => id !== input.memberNodeId);
-    if (approverNodeIds.length === 0) throw new RuleError("No one is left to approve this removal", ["R-COL-04"]);
-
     const proposal = await createProposal(
       tx,
       {
@@ -220,10 +216,10 @@ export async function proposeRemoval(db: Db, actor: Actor, input: { memberNodeId
         proposerNodeId: collection.id,
         proposedByPersonId: actor.personId,
         subjectNodeId: collection.id,
-        payload: { memberNodeId: input.memberNodeId, reason, share } satisfies RemovalPayload,
+        payload: { memberNodeId: input.memberNodeId, reason } satisfies RemovalPayload,
         comment: reason,
-        approverNodeIds,
-        preApprovedNodeIds: approverNodeIds.includes(actor.personId) ? [actor.personId] : [],
+        approvalRule: { approversRuleId: "R-COL-04", shareRuleId: "R-COL-04", scopeNodeId: collection.id, affectedNodeId: input.memberNodeId },
+        preApprovedNodeIds: [collection.id, actor.personId],
       },
       removalHandler,
     );
@@ -245,11 +241,6 @@ const removalHandler: ProposalHandler = {
   async capabilityFor(tx, proposal, nodeId) {
     return nodeId === proposal.proposerNodeId ? "PROPOSE_REMOVAL" : approverCapability(tx, nodeId);
   },
-  approvedWhen(proposal, approved, total) {
-    const share = Number(readPayload<RemovalPayload>(proposal).share);
-    // "owner_only" and "1.0" both mean every approver asked; a number below 1 is a share of them.
-    return Number.isFinite(share) && share < 1 ? approved >= Math.ceil(share * total) : approved === total;
-  },
   async apply(tx, proposal, personId) {
     const p = readPayload<RemovalPayload>(proposal);
     const collectionId = proposal.subjectNodeId!;
@@ -263,12 +254,6 @@ const removalHandler: ProposalHandler = {
     else await log(tx, proposal, "withdrawn", personId);
   },
 };
-
-/** R-COL-04 for this collection: its own value, or the default. */
-async function removalShare(tx: Tx, collectionId: string) {
-  const own = await tx.nodeRuleValue.findUnique({ where: { nodeId_ruleId: { nodeId: collectionId, ruleId: "R-COL-04" } } });
-  return String(own?.value ?? getRule("R-COL-04")?.default ?? "1.0");
-}
 
 // ───────────────────────── Deciding (from the inbox) ─────────────────────────
 

@@ -24,8 +24,8 @@ async function proposalView(ctx: Ctx, proposal: Proposal) {
     // MEMBER_REMOVAL
     memberNodeId?: string;
     reason?: string;
-    share?: string;
   };
+  const approval = core.approvalOf(proposal);
   const [proposer, proposedBy, approvers, interaction] = await Promise.all([
     ctx.db.node.findUniqueOrThrow({ where: { id: proposal.proposerNodeId }, select: publicNode }),
     ctx.db.node.findUniqueOrThrow({ where: { id: proposal.proposedByPersonId }, select: publicNode }),
@@ -95,8 +95,15 @@ async function proposalView(ctx: Ctx, proposal: Proposal) {
         : null,
     removal:
       proposal.kind === "MEMBER_REMOVAL"
-        ? { member: node(payload.memberNodeId!), reason: payload.reason!, share: payload.share! }
+        ? { member: node(payload.memberNodeId!), reason: payload.reason! }
         : null,
+    // How many approvals it needs (all, unless rules.yaml or the node set a share) and how declines count (R-GOV-06).
+    approval: {
+      needed: approval?.needed ?? approvers.length,
+      total: approvers.length,
+      declines: approval?.declines ?? "any_closes",
+      ruleIds: approval?.ruleIds ?? [],
+    },
     approvers: approvers.map((a) => ({
       node: node(a.approverNodeId),
       decision: a.decision,
@@ -145,7 +152,7 @@ export const proposalsRouter = createTRPCRouter({
 
   /** The proposing node takes back an open proposal of any kind. */
   withdraw: actingProcedure.input(z.object({ proposalId: z.string().min(1) })).mutation(async ({ ctx, input }) => {
-    await requireCan(ctx, await core.capabilityForProposal(ctx.db, input.proposalId, ctx.actor.actingNodeId));
+    await requireCan(ctx, await core.capabilityToWithdraw(ctx.db, input.proposalId));
     return core.withdrawAnyProposal(ctx.db, ctx.actor, input.proposalId);
   }),
 

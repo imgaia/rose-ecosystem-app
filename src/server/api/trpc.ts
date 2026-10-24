@@ -10,7 +10,7 @@ import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import { z, ZodError } from "zod";
 
-import { can, RuleError, type Actor, type Capability } from "~/server/core";
+import { meets, RuleError, type Actor, type Requirement } from "~/server/core";
 import { db } from "~/server/db";
 import { getRule } from "~/server/rules";
 import { SESSION_COOKIE, verifySession } from "~/server/session";
@@ -182,14 +182,16 @@ export const actingProcedure = protectedProcedure
 /**
  * The rules check (R-GOV-05), run first in every acting procedure. Refuses
  * with FORBIDDEN, carrying the blocking rules and the roles that would allow it.
+ * Takes a capability, or (for deciding some proposals) roles: { anyRole: ["OWNER"] }.
  */
-export async function requireCan(ctx: { db: typeof db; actor: Actor }, capability: Capability) {
-  const result = await can(ctx.db, ctx.actor.personId, ctx.actor.actingNodeId, capability);
+export async function requireCan(ctx: { db: typeof db; actor: Actor }, requirement: Requirement) {
+  const result = await meets(ctx.db, ctx.actor.personId, ctx.actor.actingNodeId, requirement);
   if (!result.allowed) {
     const block = result.blockedBy[0]!;
+    const what = typeof requirement === "string" ? requirement : "Deciding";
     throw new TRPCError({
       code: "FORBIDDEN",
-      message: `${capability}: ${block.reason}`,
+      message: `${what}: ${block.reason}`,
       cause: new RuleError(block.reason, result.blockedBy.map((b) => b.ruleId), block.needsRoles),
     });
   }

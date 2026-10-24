@@ -18,7 +18,7 @@ export function proposalText(p: ProposalView, actingNodeId: string) {
     const { change, role, holder } = p.roleChange;
     const you = holder?.id === actingNodeId;
     const subject = you ? "You" : (holder?.name ?? "Someone");
-    const approvals = `${p.approvers.filter((x) => x.decision === true).length} of ${p.approvers.length} approvals in`;
+    const approvals = `${p.approvers.filter((x) => x.decision === true).length} of ${p.approval.needed} approvals in`;
     if (role.key === "MEMBER") {
       return {
         label: `${p.collection.name} · new member`,

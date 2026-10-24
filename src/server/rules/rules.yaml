@@ -144,13 +144,28 @@ rules:
   - id: R-GOV-06
     name: Changes needing several approvals are proposals; any decline closes them
     type: approval
+    # How declines count against the share of approvals needed (R-COL-04 for removals; all, otherwise):
+    #   any_closes  - one decline closes the proposal
+    #   unreachable - a decline closes it only once the share can no longer be reached
+    declines: any_closes
+    node_level: true
   - id: R-GOV-07
     name: A node's rule values change only with a Treasurer and an Owner
     type: approval
     approvers: [TREASURER, OWNER]
   - id: R-GOV-08
-    name: A role change needs the affected member and the Owners
+    name: A role change needs the affected member and an Owner
     type: approval
+    # Who approves, read by proposals.ts. Each entry is one of:
+    #   affected          - the node the change is about
+    #   any_one: ROLE     - the collection itself, decided by any one holder of ROLE there
+    #   every: ROLE       - each holder of ROLE in the collection
+    #   every_other: ROLE - each holder of ROLE except the affected node
+    # Proposing counts as approval for every entry the proposer meets.
+    approvers:
+      - affected
+      - any_one: OWNER
+    node_level: true
 
   # Membership and collections
   - id: R-MEM-01
@@ -176,7 +191,9 @@ rules:
   - id: R-COL-04
     name: Share of remaining members needed to remove a member
     type: parameter
-    default: 1.0                   # 100%; 0.5, or owner_only
+    default: 1.0                   # 100%; 0.5, or owner_only (then approvers: any_one OWNER)
+    approvers:                     # same entries as R-GOV-08
+      - every_other: MEMBER
     node_level: true
     changed_by: proposal
   - id: R-COL-05

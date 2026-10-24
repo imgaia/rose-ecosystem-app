@@ -84,13 +84,7 @@ function ProposalBody({ proposal: p }: { proposal: ProposalView }) {
             {label(p.removal.member, me)}
           </Row>
           <Row label="Reason">{p.removal.reason}</Row>
-          <Row label="Needs">
-            {p.removal.share === "owner_only"
-              ? "The Owners"
-              : Number(p.removal.share) < 1
-                ? `${Math.round(Number(p.removal.share) * 100)}% of members`
-                : "Every remaining member"}
-          </Row>
+
         </Card>
       )}
 
@@ -132,7 +126,8 @@ function ProposalBody({ proposal: p }: { proposal: ProposalView }) {
 
       <Card className="gap-0">
         <SectionLabel className="mb-1">
-          Approvals · {approvedCount} of {p.approvers.length}
+          Approvals · {approvedCount} of {p.approval.needed} needed
+          {p.approval.needed < p.approval.total && ` (from ${p.approval.total})`}
         </SectionLabel>
         {p.approvers.map((a) => (
           <div key={a.node?.id} className="flex items-center justify-between gap-3 border-t border-rose-border py-2">
@@ -151,11 +146,11 @@ function ProposalBody({ proposal: p }: { proposal: ProposalView }) {
 
       {isOpen && (
         <p className="text-xs text-rose-muted">
-          {p.roleChange
-            ? "The member and every Owner must approve. Each native role always keeps a holder."
-            : p.removal
-              ? "Any decline closes it."
-              : `Both sides must approve. ${p.kind === "TERMS_CHANGE" ? "Until then the current terms stay in force." : ""}`}
+          {p.roleChange || p.removal
+            ? `${p.approval.needed === p.approval.total ? "Everyone listed must approve" : `${p.approval.needed} of the ${p.approval.total} listed must approve`}; ${
+                p.approval.declines === "any_closes" ? "any decline closes it" : "it closes once too many decline"
+              }.${p.roleChange ? " Each native role always keeps a holder." : ""}`
+            : `Both sides must approve. ${p.kind === "TERMS_CHANGE" ? "Until then the current terms stay in force." : ""}`}
         </p>
       )}
 

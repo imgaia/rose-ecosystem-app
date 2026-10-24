@@ -7,12 +7,14 @@ import { RuleError } from "./errors";
 import { inTransaction } from "./db";
 import { decideGovernance, governanceHandlers, withdrawGovernance } from "./governance";
 import { interactionHandlers, respond, withdrawProposal, type Actor } from "./interactions";
-import type { DecideInput } from "./proposals";
+import { approvalOf, type DecideInput } from "./proposals";
+import type { Requirement } from "./rules";
 
 export { RuleError } from "./errors";
-export { can, assertCan, type CanResult, type Block, type Capability } from "./rules";
+export { can, assertCan, meets, assertMeets, type CanResult, type Block, type Capability, type Requirement } from "./rules";
 export { postTransaction, recomputeBalance, ledgerBalance, spendable, negativeBalanceLimit } from "./ledger";
 export { recordActivity } from "./activity";
+export { approvalOf, type Approval } from "./proposals";
 export * from "./interactions";
 export * from "./wallet";
 export * from "./invitations";
@@ -23,12 +25,25 @@ export { convert, findRate } from "./rates";
 /** Every kind of proposal the inbox can decide, and the handler that knows how. */
 const handlers = { ...interactionHandlers, ...governanceHandlers };
 
-/** The capability `nodeId` needs to decide (or withdraw) this proposal. */
-export async function capabilityForProposal(db: Db, proposalId: string, nodeId: string) {
+/**
+ * What `nodeId` needs to decide this proposal: a capability, or one of some
+ * roles ("any one Owner") when its approvers came from rules.yaml.
+ */
+export async function capabilityForProposal(db: Db, proposalId: string, nodeId: string): Promise<Requirement> {
   const proposal = await db.proposal.findUniqueOrThrow({ where: { id: proposalId } });
+  const decider = approvalOf(proposal)?.deciders[nodeId];
+  if (decider) return decider;
   const handler = handlers[proposal.kind];
   if (!handler) throw new RuleError(`Deciding ${proposal.kind} proposals is not built yet`);
   return inTransaction(db, (tx) => handler.capabilityFor(tx, proposal, nodeId));
+}
+
+/** What withdrawing needs: what proposing needed, in the proposing node. */
+export async function capabilityToWithdraw(db: Db, proposalId: string) {
+  const proposal = await db.proposal.findUniqueOrThrow({ where: { id: proposalId } });
+  const handler = handlers[proposal.kind];
+  if (!handler) throw new RuleError(`Withdrawing ${proposal.kind} proposals is not built yet`);
+  return inTransaction(db, (tx) => handler.capabilityFor(tx, proposal, proposal.proposerNodeId));
 }
 
 /**

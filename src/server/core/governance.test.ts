@@ -45,14 +45,15 @@ async function relate(a: { id: string }, b: { id: string }) {
 }
 
 describe("role changes in a collection (UC-COL-06, R-GOV-08)", () => {
-  it("applies once the affected member approves; the proposing Owner's approval is given by proposing", async () => {
+  it("applies once the affected member approves; proposing is the Owner's approval for the collection", async () => {
     const { olga, mia, col } = await org();
     const p = await proposeRoleChange(t.db, as(olga, col), { holderNodeId: mia.id, roleKey: "TREASURER", change: "ADD" });
     expect(p.status).toBe("OPEN");
+    // rules.yaml R-GOV-08: the affected member, and the collection decided by any one Owner.
     expect(p.approvers.map((a) => [a.approverNodeId, a.decision]).sort()).toEqual(
       [
         [mia.id, null],
-        [olga.id, true],
+        [col.id, true],
       ].sort(),
     );
     expect(await rolesOf(col.id, mia.id)).toEqual(["MEMBER"]);
@@ -62,10 +63,25 @@ describe("role changes in a collection (UC-COL-06, R-GOV-08)", () => {
     expect(await rolesOf(col.id, mia.id)).toEqual(["MEMBER", "TREASURER"]);
   });
 
-  it("needs every Owner, not just the one proposing", async () => {
+  it("by default one Owner is enough, even when there are several", async () => {
     const { olga, tim, mia, col } = await org();
     await t.db.roleAssignment.create({ data: { scopeNodeId: col.id, holderNodeId: tim.id, roleKey: "OWNER" } });
     const p = await proposeRoleChange(t.db, as(olga, col), { holderNodeId: mia.id, roleKey: "CURATOR", change: "ADD" });
+    expect((await approve(mia, p.id)).status).toBe("APPROVED");
+  });
+
+  it("follows a collection's own R-GOV-08 value: here, every Owner must approve", async () => {
+    const { olga, tim, mia, col } = await org();
+    await t.db.roleAssignment.create({ data: { scopeNodeId: col.id, holderNodeId: tim.id, roleKey: "OWNER" } });
+    await t.db.nodeRuleValue.create({ data: { nodeId: col.id, ruleId: "R-GOV-08", value: JSON.stringify(["affected", { every: "OWNER" }]) } });
+    const p = await proposeRoleChange(t.db, as(olga, col), { holderNodeId: mia.id, roleKey: "CURATOR", change: "ADD" });
+    expect(p.approvers.map((a) => [a.approverNodeId, a.decision]).sort()).toEqual(
+      [
+        [mia.id, null],
+        [olga.id, true],
+        [tim.id, null],
+      ].sort(),
+    );
     expect((await approve(mia, p.id)).status).toBe("OPEN");
     expect(await rolesOf(col.id, mia.id)).toEqual(["MEMBER"]);
     expect((await approve(tim, p.id)).status).toBe("APPROVED");
@@ -217,6 +233,41 @@ describe("removing a member (UC-COL-10, R-COL-04)", () => {
     const p = await proposeRemoval(t.db, as(olga, col), { memberNodeId: mia.id, reason: "Asked to leave" });
     expect(p.status).toBe("APPROVED");
     expect(await rolesOf(col.id, mia.id)).toEqual([]);
+  });
+
+  it("with owner_only, a plain member's proposal waits for an Owner deciding for the collection", async () => {
+    const { olga, tim, mia, col } = await org();
+    await t.db.nodeRuleValue.create({ data: { nodeId: col.id, ruleId: "R-COL-04", value: "owner_only" } });
+    const p = await proposeRemoval(t.db, as(mia, col), { memberNodeId: tim.id, reason: "x" }).catch((e: unknown) => e);
+    expect(p).toMatchObject({ ruleIds: ["R-GOV-03"] }); // Tim is the only Treasurer
+    const ed = await t.person("Ed");
+    await t.db.roleAssignment.create({ data: { scopeNodeId: col.id, holderNodeId: ed.id, roleKey: "MEMBER" } });
+
+    const q = await proposeRemoval(t.db, as(mia, col), { memberNodeId: ed.id, reason: "Inactive" });
+    expect(q.status).toBe("OPEN");
+    const forCollection = (person: { id: string }) =>
+      decideProposal(t.db, { proposalId: q.id, approverNodeId: col.id, personId: person.id, approve: true });
+    await expect(forCollection(tim)).rejects.toMatchObject({ needsRoles: ["OWNER"] });
+    expect((await forCollection(olga)).status).toBe("APPROVED");
+    expect(await rolesOf(col.id, ed.id)).toEqual([]);
+  });
+
+  it("follows R-GOV-06: with 'unreachable', a decline closes it only once the share can't be reached", async () => {
+    const { olga, tim, mia, col } = await org();
+    const [ed, flo] = [await t.person("Ed"), await t.person("Flo")];
+    for (const p of [ed, flo]) await t.db.roleAssignment.create({ data: { scopeNodeId: col.id, holderNodeId: p.id, roleKey: "MEMBER" } });
+    await t.db.nodeRuleValue.createMany({
+      data: [
+        { nodeId: col.id, ruleId: "R-COL-04", value: "0.5" },
+        { nodeId: col.id, ruleId: "R-GOV-06", value: "unreachable" },
+      ],
+    });
+    // Removing Flo: Olga, Tim, Mia and Ed are asked; half of 4 is 2. Olga's proposal is the first.
+    const p = await proposeRemoval(t.db, as(olga, col), { memberNodeId: flo.id, reason: "Inactive" });
+    expect((await approve(tim, p.id, false)).status).toBe("OPEN"); // 3 could still approve
+    expect((await approve(mia, p.id, false)).status).toBe("OPEN"); // Olga and Ed could still make 2
+    expect((await approve(ed, p.id, false)).status).toBe("DECLINED"); // only 1 can approve now
+    expect(await rolesOf(col.id, flo.id)).toEqual(["MEMBER"]);
   });
 
   it("any member may propose it, and any decline closes it", async () => {

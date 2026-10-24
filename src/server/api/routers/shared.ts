@@ -4,7 +4,7 @@
 
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
-import { can, RuleError, type Actor } from "~/server/core";
+import { meets, RuleError, type Actor, type Requirement } from "~/server/core";
 import type { Prisma } from "../../../../generated/prisma";
 import type { db } from "~/server/db";
 
@@ -45,8 +45,10 @@ export function assertSees(visible: boolean, what: string) {
  * For a screen that shows an action but disables it: the rules check result, without throwing.
  * `needsLabels` are the roles' display labels ("Treasurer"), for the "Needs Treasurer" caption.
  */
-export async function permission(ctx: Ctx, capability: string) {
-  const result = await can(ctx.db, ctx.actor.personId, ctx.actor.actingNodeId, capability);
+export async function permission(ctx: Ctx, requirement: Requirement) {
+  // A role requirement ("any one Owner") is reported as e.g. "ROLE:OWNER".
+  const capability = typeof requirement === "string" ? requirement : `ROLE:${requirement.anyRole.join("|")}`;
+  const result = await meets(ctx.db, ctx.actor.personId, ctx.actor.actingNodeId, requirement);
   if (result.allowed) {
     return { capability, allowed: true as const, needsRoles: [] as string[], needsLabels: [] as string[], blockedBy: [] as string[] };
   }
