@@ -60,8 +60,12 @@ export function NavProvider({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener("popstate", onPop);
   }, []);
 
-  // A newly opened screen starts at the top of the page.
-  useEffect(() => window.scrollTo(0, 0), [stack.length]);
+  // A newly opened screen starts at the top of the page. Braces, not a bare
+  // `() => window.scrollTo(0, 0)`: newer browsers return a Promise from
+  // scrollTo, and React would try to call it as the effect's cleanup.
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [stack.length]);
 
   // The note fades after a few seconds.
   useEffect(() => {
