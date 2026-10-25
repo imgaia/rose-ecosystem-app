@@ -84,9 +84,9 @@ The live app runs on **Vercel**, connected to this GitHub repo — every push to
 ### Re-seeding production
 
 ```
-npx vercel env pull .env.production.local --environment=production
+npx vercel env pull .env.prod-secrets --environment=production
 SEED_TARGET=production npx prisma db seed
-rm .env.production.local    # clean up afterward — contains real credentials
+rm .env.prod-secrets    # clean up afterward — contains real credentials
 ```
 
 This runs directly against the live Turso database over the network. **It does not require a git push or redeploy** — seeding is a data operation, completely separate from deploying code. The moment it finishes, the live app reflects the new data on its very next request.
@@ -95,7 +95,7 @@ This runs directly against the live Turso database over the network. **It does n
 
 ```
 npx tsx scripts/backup.ts                          # local
-DB_TARGET=production npx tsx scripts/backup.ts     # production (needs .env.production.local pulled first)
+DB_TARGET=production npx tsx scripts/backup.ts     # production (needs .env.prod-secrets pulled first)
 ```
 Writes a timestamped JSON snapshot of every table to `backups/` (gitignored — contains real names, emails, and password hashes; never commit these).
 
@@ -103,7 +103,9 @@ Writes a timestamped JSON snapshot of every table to `backups/` (gitignored — 
 npx tsx scripts/restore.ts backups/<file>.json                          # local
 DB_TARGET=production npx tsx scripts/restore.ts backups/<file>.json     # production
 ```
-**Full replace, not a merge** — clears existing data first, then reloads from the file, preserving original IDs so relationships stay intact. Handles both old-shape backups (from before the firstName/lastName/username migration, just `name`) and new-shape ones.
+**Full replace, not a merge** — drops every table in the target, recreates the tables and indexes exactly as the backup recorded them, then reloads the rows (original IDs kept), all in one transaction. Because it rebuilds the schema too, a backup of the old Member/Wallet schema puts a v0.8 database back on the old schema. Reads format 2 backups only (what `backup.ts` writes since `cb31e7f`); backups made before step 8 have no indexes, so tables restored from them come back without unique indexes.
+
+`.env.prod-secrets` holds the production credentials for these scripts. It is deliberately not named `.env*.local`, so Next.js never loads it, and it is gitignored.
 
 **Always take a fresh backup before any schema change or risky operation.** Restoring an old backup brings back *everything* from that snapshot, including passwords — if you've since changed a password, restoring will revert it too (this is correct behavior, just worth remembering).
 
@@ -112,7 +114,7 @@ DB_TARGET=production npx tsx scripts/restore.ts backups/<file>.json     # produc
 Prisma's CLI (`db push`, `migrate dev`) cannot connect to Turso directly — it requires a local SQLite connection. The workflow instead:
 
 1. Write the migration as plain SQL by hand, saved under `scripts/migrations/` (numbered sequentially — `migration-002.sql`, `migration-003.sql`, etc.)
-2. `npx vercel env pull .env.production.local --environment=production`
+2. `npx vercel env pull .env.prod-secrets --environment=production`
 3. `node scripts/apply-sql.mjs scripts/migrations/migration-XXX.sql`
 
 For a brand new database only, `npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script > file.sql` can generate the SQL for you — this is **not** valid for a schema change to an already-populated database, since it tries to recreate every table from scratch. Hand-write the diff instead (see `scripts/migrations/migration-003.sql` for a real example: adding columns with safe defaults, then a unique index, done separately from any backfill).

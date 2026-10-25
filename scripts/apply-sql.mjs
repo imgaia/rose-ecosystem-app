@@ -11,7 +11,7 @@ import { createClient } from "@libsql/client";
 import { existsSync, readFileSync } from "fs";
 import { parse } from "dotenv";
 
-const ENV_FILES = { dev: ".env.dev.local", production: ".env.production.local" };
+const ENV_FILES = { dev: ".env.dev.local", production: ".env.prod-secrets" };
 const target = process.env.DB_TARGET;
 if (target !== "dev" && target !== "production") {
   console.error("Set DB_TARGET=dev or DB_TARGET=production. Nothing was applied.");

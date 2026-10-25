@@ -3,7 +3,7 @@
 //
 //   (unset)            -> the local SQLite file
 //   DB_TARGET=dev      -> the dev Turso database   (.env.dev.local)
-//   DB_TARGET=production -> the live Turso database (.env.production.local)
+//   DB_TARGET=production -> the live Turso database (.env.prod-secrets)
 //
 // Refuses to run if the dev settings point at the same database as
 // production, so a copy-paste slip can't make a "dev" command touch live data.
@@ -15,7 +15,7 @@ import { PrismaLibSql } from "@prisma/adapter-libsql";
 
 export type DbTarget = "local" | "dev" | "production";
 
-const ENV_FILES = { dev: ".env.dev.local", production: ".env.production.local" } as const;
+const ENV_FILES = { dev: ".env.dev.local", production: ".env.prod-secrets" } as const;
 
 export function getDbTarget(varName = "DB_TARGET"): DbTarget {
   const raw = process.env[varName];
