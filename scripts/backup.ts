@@ -10,6 +10,7 @@
 // File format:
 //   { format: 2, exportedAt, target,
 //     schema: { <table>: "CREATE TABLE ..." },
+//     indexes: { <index>: "CREATE INDEX ..." },   (backups since step 8)
 //     tables: { <table>: [ {column: value, ...}, ... ] } }
 //
 // Usage:
@@ -39,7 +40,16 @@ async function main() {
     tables[name] = await prisma.$queryRawUnsafe(`SELECT * FROM "${name.replace(/"/g, '""')}"`);
   }
 
-  const data = { format: 2, exportedAt: new Date().toISOString(), target, schema, tables };
+  // Indexes too (unique usernames etc.), so restore.ts can rebuild them.
+  // Indexes SQLite makes itself (sql IS NULL) come back with their tables.
+  const indexList = await prisma.$queryRawUnsafe<{ name: string; sql: string }[]>(
+    `SELECT name, sql FROM sqlite_master
+     WHERE type = 'index' AND sql IS NOT NULL AND name NOT LIKE 'sqlite_%' AND name NOT LIKE 'libsql_%'
+     ORDER BY name`,
+  );
+  const indexes = Object.fromEntries(indexList.map(({ name, sql }) => [name, sql]));
+
+  const data = { format: 2, exportedAt: new Date().toISOString(), target, schema, indexes, tables };
 
   mkdirSync("backups", { recursive: true });
   const filename = `backups/backup-${target}-${new Date().toISOString().replace(/[:.]/g, "-")}.json`;
