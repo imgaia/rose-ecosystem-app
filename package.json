@@ -63,7 +63,7 @@
     "initVersion": "7.40.0"
   },
   "prisma": {
-    "seed": "tsx prisma/seed.ts"
+    "seed": "tsx prisma/seed-reference.ts"
   },
   "packageManager": "npm@11.19.0"
 }

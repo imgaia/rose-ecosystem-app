@@ -30,7 +30,7 @@ It **does** include: a working frontend app, real accounts with roles (Sponsor /
 npm install
 npx prisma generate
 npx prisma db push      # creates your local SQLite file from schema.prisma
-npx prisma db seed      # loads 10 real team members with starting data
+npx prisma db seed      # loads the reference data: roles, capabilities, CHF and RCC (prisma/seed-reference.ts)
 npm run dev
 ```
 
@@ -79,9 +79,9 @@ The live app runs on **Vercel**, connected to this GitHub repo — every push to
 - `TURSO_DATABASE_URL`
 - `TURSO_AUTH_TOKEN`
 
-`src/server/db.ts` checks for these at startup: if present (i.e., running on Vercel), it connects to Turso via the `@prisma/adapter-libsql` driver adapter — passing a plain `{ url, authToken }` config object directly (see Gotchas below for why this matters); otherwise (local dev) it falls back to the plain local SQLite file. `prisma/seed.ts` follows the same pattern, gated behind a `SEED_TARGET=production` flag so a plain local `npx prisma db seed` can never accidentally touch production.
+`src/server/db.ts` checks for these at startup: if present (i.e., running on Vercel), it connects to Turso via the `@prisma/adapter-libsql` driver adapter — passing a plain `{ url, authToken }` config object directly (see Gotchas below for why this matters); otherwise (local dev) it falls back to the plain local SQLite file. `prisma/seed-reference.ts` (what `npx prisma db seed` runs) chooses its database with `SEED_TARGET` (unset is local, or `dev` or `production`), so a plain local `npx prisma db seed` can never accidentally touch production. It is safe to run again: it only adds what is missing.
 
-### Re-seeding production
+### Seeding reference data on production
 
 ```
 npx vercel env pull .env.prod-secrets --environment=production
@@ -133,7 +133,7 @@ For a brand new database only, `npx prisma migrate diff --from-empty --to-schema
 
 - **`@prisma/adapter-libsql` export casing:** the actual export is `PrismaLibSql`, not `PrismaLibSQL` as some docs show.
 - **Pass a config object, not a pre-built client**, to `PrismaLibSql` — i.e. `new PrismaLibSql({ url, authToken })`, not `new PrismaLibSql(createClient({...}))`. The latter fails with a confusing "URL undefined" error. Because of this, `@libsql/client` is **not** a direct dependency of this project — only `@prisma/adapter-libsql` uses it internally.
-- **Seeding order matters** — `Member.deleteMany()` fails with a foreign key error once related Transactions/Rewards/etc. exist. Dependent tables must be cleared first (see `prisma/seed.ts` and `scripts/restore.ts`).
+- **Seeding order matters** — `Member.deleteMany()` fails with a foreign key error once related Transactions/Rewards/etc. exist. Dependent tables must be cleared first (`scripts/restore.ts` avoids this by deferring foreign key checks to the end of its transaction).
 - **`vercel env pull` defaults to the Development environment** regardless of the filename you choose — always pass `--environment=production` explicitly when you want production values.
 - **Duplicate-value errors look different locally vs. in production** — see "Error handling pattern" above. Any new unique field needs the same two-way check, not just a `P2002` check.
 - **Adding a required field to an already-populated table** (e.g. `username`) can't have a fixed shared default at the schema level if the field is also unique — every existing row would get the same value, violating uniqueness immediately. Add it as nullable first, backfill real distinct values via a script, then tighten to required/unique afterward.

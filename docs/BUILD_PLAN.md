@@ -197,6 +197,12 @@ schedule when a payment fails (R-PAY-05). Add a test.
 
 ## Step 8. Move the dev database
 
+**Status: dev database moved on 25 Oct 2026; click-through on the dev site to do** · prep `31aa322`, `7ad4f43`, drop SQL `d996842`
+
+- From backup `backup-dev-2026-10-25T12-46-03-813Z.json` (kept in `backups/`; `scripts/restore.ts` puts the old schema back from it). Dropped the eight old tables (`scripts/migrations/v08-drop-old-tables.sql`), applied `v08-schema.sql`, ran `prisma/seed-reference.ts` and `scripts/migrate-v08.ts`: check passed, all 10 balances equal the old wallets.
+- `run-due-payments.ts` ran once on dev: 0 paid, 0 errors (no interaction has a due date yet).
+- `prisma/seed.ts` (old tables) removed; `npx prisma db seed` now runs `prisma/seed-reference.ts`.
+
 First, before moving anything:
 1. Update `scripts/restore.ts` to read backup format 2 (what `scripts/backup.ts` writes since `cb31e7f`) and test it locally: back up the local database, restore it, and compare.
 2. Rename `.env.production.local` to `.env.prod-secrets`, so Next.js never loads it, and update `scripts/db-target.ts` and `scripts/apply-sql.mjs` to read the new name.

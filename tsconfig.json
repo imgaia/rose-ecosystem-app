@@ -38,9 +38,5 @@
     "**/*.js",
     ".next/types/**/*.ts"
   ],
-  // prisma/seed.ts and scripts/restore.ts still use the pre-v0.8 tables.
-  // They run with tsx (no type check) and are rewritten in step 8; until then
-  // they are left out so the type check and `next build` can pass.
-  // Remove them from this list once they are rewritten.
-  "exclude": ["node_modules", "generated", "prisma/seed.ts", "scripts/restore.ts"]
+  "exclude": ["node_modules", "generated"]
 }
