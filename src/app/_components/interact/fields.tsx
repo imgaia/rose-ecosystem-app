@@ -12,6 +12,8 @@ import { useEffect, useState } from "react";
 
 import { formatAmount, parseAmount } from "~/lib/money";
 import { api, type RouterInputs, type RouterOutputs } from "~/trpc/react";
+import { DateField } from "../date-field";
+import { dateOrderError } from "../describe";
 import { useActingNode } from "../shell/acting-node";
 import { Avatar } from "../shell/header";
 import { Field, Input, Select, TextArea, Toggle } from "../ui";
@@ -197,7 +199,8 @@ export function termsFromDraft(d: TermsDraft, currencies: Currency[]): { terms: 
   if (!d.description.trim()) return { error: "Describe the work" };
   const amount = readAmount(d.amount, currencies.find((c) => c.id === d.currencyId));
   if ("error" in amount) return amount;
-  if (d.startDate && d.endDate && d.endDate < d.startDate) return { error: "The end comes before the start" };
+  const order = dateOrderError(d.startDate, d.endDate);
+  if (order) return { error: order };
   return {
     terms: {
       description: d.description.trim(),
@@ -252,12 +255,19 @@ export function TermsFields({ draft, onChange }: { draft: TermsDraft; onChange: 
           ]}
         />
       </Field>
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid gap-2 min-[400px]:grid-cols-2">
         <Field label="Start">
-          <Input type="date" value={draft.startDate} onChange={(e) => set({ startDate: e.target.value })} />
+          <DateField clearable value={draft.startDate} onChange={(startDate) => set({ startDate })} />
         </Field>
         <Field label="End" hint="Empty: ongoing or when delivered">
-          <Input type="date" value={draft.endDate} onChange={(e) => set({ endDate: e.target.value })} />
+          <DateField
+            clearable
+            value={draft.endDate}
+            onChange={(endDate) => set({ endDate })}
+            min={draft.startDate || undefined}
+            placeholder="Ongoing"
+            error={dateOrderError(draft.startDate, draft.endDate)}
+          />
         </Field>
       </div>
     </>

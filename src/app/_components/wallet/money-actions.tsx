@@ -10,6 +10,7 @@
 import { useState } from "react";
 
 import { api } from "~/trpc/react";
+import { DateField } from "../date-field";
 import { money } from "../describe";
 import { dateInput, readAmount } from "../interact/fields";
 import { useActingNode } from "../shell/acting-node";
@@ -74,9 +75,9 @@ export function AddFunds() {
       <Field label="Into">
         <Input readOnly value={account ? `${account.currency.code ?? account.currency.name} · primary fiat` : "Primary fiat account"} />
       </Field>
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid gap-2 min-[400px]:grid-cols-2">
         <Field label="Date of deposit">
-          <Input type="date" value={depositedOn} onChange={(e) => setDepositedOn(e.target.value)} />
+          <DateField value={depositedOn} onChange={setDepositedOn} />
         </Field>
         <Field label="Bank reference">
           <Input placeholder="From the bank statement" value={reference} onChange={(e) => setReference(e.target.value)} />

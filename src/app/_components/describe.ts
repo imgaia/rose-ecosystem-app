@@ -7,10 +7,28 @@ import { formatAmount } from "~/lib/money";
 type CurrencyLike = { code: string | null; decimals: number };
 type TermsLike = { amount: number; frequency: string; currency: CurrencyLike; description?: string | null };
 
+// Fixed month names, not the browser's language, so a date never reads as
+// 10/09 (October or September?) and looks the same for everyone.
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
 /** "9 Oct 2026" */
 export function formatDate(date: Date | string | null | undefined) {
   if (!date) return "";
-  return new Date(date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+  const d = new Date(date);
+  return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+/** "2026-10-25" (what a date box holds) -> "25 Oct 2026"; "" for none. Read as text, so no time zone can shift the day. */
+export function formatDay(day: string) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(day);
+  if (!match) return "";
+  const [, year, month, date] = match;
+  return `${Number(date)} ${MONTHS[Number(month) - 1]} ${year}`;
+}
+
+/** The message when an end date comes before its start; null when they are fine or one is empty. */
+export function dateOrderError(start: string, end: string) {
+  return start && end && end < start ? `End can't be before Start (${formatDay(start).replace(/ /g, "\u00a0")}).` : null;
 }
 
 export function money(amount: number, currency: CurrencyLike | null | undefined) {

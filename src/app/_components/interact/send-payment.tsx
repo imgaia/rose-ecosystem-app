@@ -11,6 +11,7 @@ import { api } from "~/trpc/react";
 import { money } from "../describe";
 import { useActingNode } from "../shell/acting-node";
 import { useNav } from "../shell/navigation";
+import { DateField } from "../date-field";
 import { Card, ErrorText, Field, GatedButton, Input, Row, SubScreen, Toggle } from "../ui";
 import { AmountField, NodePicker, readAmount, useCurrencies } from "./fields";
 
@@ -107,9 +108,9 @@ export function SendPayment({ toNodeId }: { toNodeId?: string }) {
               ]}
             />
           </Field>
-          <div className="grid grid-cols-2 gap-2">
-            <Field label="First payment">
-              <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+          <div className="grid gap-2 min-[400px]:grid-cols-2">
+            <Field label="First payment" hint="Empty: once accepted">
+              <DateField clearable value={startDate} onChange={setStartDate} placeholder="When accepted" />
             </Field>
             <Field label="Ends after" hint="Payments; empty: no end">
               <Input inputMode="numeric" placeholder="6" value={maxPayments} onChange={(e) => setMaxPayments(e.target.value)} />
