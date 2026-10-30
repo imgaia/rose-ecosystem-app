@@ -116,9 +116,14 @@ export const currenciesRouter = createTRPCRouter({
       otherFiats.map(async (f) => ({ code: f.code, rate: (await core.getRate(ctx.db, currency.id, f.id).catch(() => null))?.text ?? null })),
     );
 
+    const home = await core.homeCurrencyOf(ctx.db, ctx.actor.actingNodeId).catch(() => null);
+
     return {
       ...item,
       issuer: currency.issuer,
+      // R-FIN-04: whether it is, or could be, the acting node's home currency.
+      isHome: home?.id === currency.id,
+      canBeHome: await core.canBeHomeCurrency(ctx.db, ctx.actor.actingNodeId, currency),
       actingIsIssuer: issuerId === ctx.actor.actingNodeId,
       everHeld: await core.everHeld(ctx.db, currency.id),
       openProposalId: open?.id ?? null,
@@ -139,7 +144,7 @@ export const currenciesRouter = createTRPCRouter({
   propose: actingProcedure
     .input(
       z.discriminatedUnion("action", [
-        z.object({ action: z.literal("CREATE"), fields, comment: z.string().max(500).optional() }),
+        z.object({ action: z.literal("CREATE"), fields, makeHome: z.boolean().optional(), comment: z.string().max(500).optional() }),
         z.object({ action: z.literal("EDIT"), currencyId: z.string().min(1), fields: fields.partial(), comment: z.string().max(500).optional() }),
         z.object({ action: z.literal("RETIRE"), currencyId: z.string().min(1), comment: z.string().max(500).optional() }),
         z.object({ action: z.literal("DELETE"), currencyId: z.string().min(1), comment: z.string().max(500).optional() }),

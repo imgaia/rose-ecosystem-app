@@ -237,7 +237,7 @@ const POLICY: Record<string, string> = { reserve: "Reserve", open: "Open" };
 
 /** What a currency proposal would do: the new currency's fields, or what changes. */
 function CurrencyChangeCard({ change, issuer }: { change: NonNullable<ProposalView["currencyChange"]>; issuer: string }) {
-  const { action, currency, fields, fiatCode } = change;
+  const { action, currency, fields, fiatCode, makeHome } = change;
   const heading = { CREATE: "New currency", EDIT: "Changes to a currency", RETIRE: "Retire a currency", DELETE: "Delete a currency" }[action];
   return (
     <Card className="gap-0">
@@ -258,6 +258,7 @@ function CurrencyChangeCard({ change, issuer }: { change: NonNullable<ProposalVi
         </Row>
       )}
       {fields.policy !== undefined && <Row label="Conversion policy">{POLICY[fields.policy] ?? fields.policy}</Row>}
+      {makeHome && <Row label="Home currency">Becomes {issuer}&apos;s home currency</Row>}
       {action === "RETIRE" && <Row label="After">No new units; balances stay usable and convertible</Row>}
       {action === "DELETE" && <Row label="After">Removed for good (nobody has held it)</Row>}
     </Card>

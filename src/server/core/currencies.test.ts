@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
+  canBeHomeCurrency,
   convert,
   currencyBacking,
   homeCurrencyOf,
@@ -338,5 +339,41 @@ describe("home currency and primary fiat (R-FIN-04, R-FIN-13)", () => {
     const primaries = await t.db.account.findMany({ where: { nodeId: ana.id, isPrimaryFiat: true } });
     expect(primaries.map((a) => a.currencyId)).toEqual([eur.id]);
     expect((await refusal(setPrimaryFiat(t.db, as(ana), { currencyId: t.rcc.id })))?.ruleIds).toEqual(["R-FIN-13"]);
+  });
+
+  it("a new currency marked as home becomes it when created: at once for an individual, on approval for a collection", async () => {
+    const ana = await t.person("Ana");
+    await proposeCurrencyChange(t.db, as(ana), { action: "CREATE", fields: { name: "Home coin", code: "HOM" }, makeHome: true });
+    expect((await homeCurrencyOf(t.db, ana.id)).code).toBe("HOM");
+
+    // Olga is an Owner but not a Treasurer: her approval applies the choice Tim made when proposing.
+    const [olga, tim] = [await t.person("Olga"), await t.person("Tim")];
+    const col = await t.collection("Org", [
+      { node: olga, roles: ["MEMBER", "OWNER"] },
+      { node: tim, roles: ["MEMBER", "TREASURER"] },
+    ]);
+    const p = await proposeCurrencyChange(t.db, as(tim, col), { action: "CREATE", fields: { name: "Org coin", code: "OHC" }, makeHome: true });
+    expect(p.status).toBe("OPEN");
+    expect((await homeCurrencyOf(t.db, col.id)).id).toBe(t.chf.id); // unchanged while it waits
+    await approve(olga, p.id);
+    const ohc = await t.db.currency.findFirstOrThrow({ where: { issuerNodeId: col.id } });
+    expect((await homeCurrencyOf(t.db, col.id)).id).toBe(ohc.id);
+
+    // Members could pick it too; a node outside the collection, a non-primary fiat or a retired currency can't.
+    expect(await canBeHomeCurrency(t.db, tim.id, ohc)).toBe(true);
+    expect(await canBeHomeCurrency(t.db, ana.id, ohc)).toBe(false);
+    expect(await canBeHomeCurrency(t.db, ana.id, t.chf)).toBe(true);
+    expect(await canBeHomeCurrency(t.db, col.id, { ...ohc, status: "RETIRED" })).toBe(false);
+  });
+
+  it("a collection's proposal without the choice leaves its home currency alone", async () => {
+    const [olga, tim] = [await t.person("Olga"), await t.person("Tim")];
+    const col = await t.collection("Org", [
+      { node: olga, roles: ["MEMBER", "OWNER"] },
+      { node: tim, roles: ["MEMBER", "TREASURER"] },
+    ]);
+    const p = await proposeCurrencyChange(t.db, as(tim, col), { action: "CREATE", fields: { name: "Plain coin", code: "PLN" } });
+    await approve(olga, p.id);
+    expect((await homeCurrencyOf(t.db, col.id)).id).toBe(t.chf.id);
   });
 });

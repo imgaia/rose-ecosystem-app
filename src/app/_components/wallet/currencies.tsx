@@ -6,15 +6,17 @@
 //   Change; the currencies the node issues and holds; Create a currency.
 // - CurrencyDetail (S27): what a currency is, its price and history, policy
 //   and status; the issuer's Treasurers also see what backs it. Edit, Retire
-//   and (only if never held) Delete.
+//   and (only if never held) Delete; Set as home currency.
 // - CurrencyForm: create or edit one. For a collection it goes out as a
 //   proposal that needs a Treasurer and an Owner, two people (R-FIN-11).
+//   "Make this my home currency" (R-FIN-04) sets it at once on Edit; on
+//   Create it applies with the currency, so for a collection on approval.
 
 import { useState } from "react";
 
 import { api, type RouterOutputs } from "~/trpc/react";
 import { formatDate, money } from "../describe";
-import { useActingNode } from "../shell/acting-node";
+import { needsText, useActingNode } from "../shell/acting-node";
 import { useNav } from "../shell/navigation";
 import { Button, Card, Chip, Empty, ErrorText, Field, GatedButton, Input, Loading, Refusal, Row, SectionLabel, Select, SubScreen, TextArea, Toggle } from "../ui";
 
@@ -251,6 +253,12 @@ function DetailBody({ c }: { c: RouterOutputs["currencies"]["detail"] }) {
       if (input.action === "DELETE") back();
     },
   });
+  const setHome = api.currencies.setHome.useMutation({
+    onSuccess: async () => {
+      await utils.invalidate();
+      notify(`${label(c)} is now the home currency.`);
+    },
+  });
   const setUp = permissionFor("SET_UP_CURRENCY");
   const isCollection = acting.node.kind === "COLLECTION";
   const fiat = c.kind === "FIAT";
@@ -325,6 +333,20 @@ function DetailBody({ c }: { c: RouterOutputs["currencies"]["detail"] }) {
             {b.shareBacked === null ? "No units yet" : `${Math.floor(b.shareBacked * 1000) / 10}%`}
           </Row>
         </Card>
+      )}
+
+      {c.isHome && (
+        <p className="mt-1 text-center">
+          <Chip solid>Home currency</Chip>
+        </p>
+      )}
+      {!c.isHome && c.canBeHome && (
+        <>
+          <GatedButton permission={setUp} disabled={setHome.isPending} onClick={() => setHome.mutate({ actingNodeId: acting.node.id, currencyId: c.id })}>
+            Set as home currency
+          </GatedButton>
+          <Refusal error={setHome.error} />
+        </>
       )}
 
       {c.openProposalId && (
@@ -424,24 +446,23 @@ function FormBody({
     policy: current?.policy ?? "reserve",
   };
   const [form, setForm] = useState(initial);
+  // Read live, not copied into state, so it follows a home currency changed elsewhere.
+  const isHome = !!current?.isHome;
+  const [makeHome, setMakeHome] = useState(false);
   const set = (changes: Partial<typeof form>) => setForm({ ...form, ...changes });
   const [formError, setFormError] = useState<string | null>(null);
 
   const utils = api.useUtils();
-  const propose = api.currencies.propose.useMutation({
-    onSuccess: async (result) => {
-      await utils.invalidate();
-      notify(result.status === "OPEN" ? "Proposed. It applies once a Treasurer and an Owner approve." : current ? "Saved." : "Currency created.");
-      back();
-    },
-  });
+  const propose = api.currencies.propose.useMutation();
+  const setHome = api.currencies.setHome.useMutation();
+  const pending = propose.isPending || setHome.isPending;
 
   // The reserve fiat: the currency's own, or the node's primary fiat for a new one.
   const fiat = current?.price?.fiat ?? (overview.primaryFiat && { code: overview.primaryFiat.code, decimals: overview.primaryFiat.decimals });
   const ratioOk = /^\d+(\.\d+)?$/.test(form.reserveRatio.trim()) && Number(form.reserveRatio) > 0;
   const symbol = form.code.trim() || "unit";
 
-  function submit() {
+  async function submit() {
     setFormError(null);
     if (!form.name.trim()) return setFormError("Give the currency a name");
     if (!form.code.trim()) return setFormError("Give the currency a symbol, like HVS");
@@ -449,16 +470,38 @@ function FormBody({
     const decimals = Number(form.decimals);
     if (!Number.isInteger(decimals) || decimals < 0 || decimals > 6) return setFormError("Decimal places: a whole number from 0 to 6");
     const fields = { ...form, decimals, reserveRatio: form.reserveRatio.trim(), description: form.description || null };
-    if (!current) return propose.mutate({ actingNodeId: acting.node.id, action: "CREATE", fields });
+    const proposed = "Proposed. It applies once a Treasurer and an Owner approve.";
+    const done = async (message: string) => {
+      await utils.invalidate();
+      notify(message);
+      back();
+    };
 
-    // Edit: send only what changed.
-    const changed = Object.fromEntries(
-      (Object.keys(fields) as (keyof typeof fields)[])
-        .filter((k) => String(fields[k] ?? "") !== String(initial[k] ?? ""))
-        .map((k) => [k, fields[k]]),
-    );
-    if (Object.keys(changed).length === 0) return setFormError("Nothing has changed");
-    propose.mutate({ actingNodeId: acting.node.id, action: "EDIT", currencyId: current.id, fields: changed });
+    // Errors show from the mutations' own state (Refusal below), so a failed save just stops here.
+    try {
+      if (!current) {
+        // The home currency choice travels with the proposal and applies when the currency is created.
+        const result = await propose.mutateAsync({ actingNodeId: acting.node.id, action: "CREATE", fields, makeHome });
+        if (result.status === "OPEN") return await done(makeHome ? `${proposed} It becomes the home currency then.` : proposed);
+        return await done(makeHome ? "Currency created. It is now the home currency." : "Currency created.");
+      }
+
+      // Edit: send only what changed. The home currency is separate and set at once.
+      const changed = Object.fromEntries(
+        (Object.keys(fields) as (keyof typeof fields)[])
+          .filter((k) => String(fields[k] ?? "") !== String(initial[k] ?? ""))
+          .map((k) => [k, fields[k]]),
+      );
+      const homeNow = makeHome && !isHome;
+      if (Object.keys(changed).length === 0 && !homeNow) return setFormError("Nothing has changed");
+      const result =
+        Object.keys(changed).length > 0 ? await propose.mutateAsync({ actingNodeId: acting.node.id, action: "EDIT", currencyId: current.id, fields: changed }) : null;
+      if (homeNow) await setHome.mutateAsync({ actingNodeId: acting.node.id, currencyId: current.id });
+      const saved = result?.status === "OPEN" ? proposed : result ? "Saved." : "";
+      await done([saved, homeNow ? `${current.code ?? current.name} is now the home currency.` : ""].filter(Boolean).join(" "));
+    } catch {
+      return;
+    }
   }
 
   return (
@@ -514,11 +557,56 @@ function FormBody({
         </Card>
       )}
 
+      <HomeCheckbox
+        checked={isHome || makeHome}
+        onChange={setMakeHome}
+        owner={isCollection ? `${acting.node.name}'s` : "my"}
+        disabledReason={
+          isHome ? "It is the home currency now; pick another on the Currencies screen." : current && !current.canBeHome ? "A retired currency can't be the home currency." : null
+        }
+        hint={isCollection && !current ? "Applies once the currency is approved." : null}
+      />
+
       <ErrorText error={formError ? { message: formError } : null} />
-      <Refusal error={propose.error} />
-      <GatedButton variant="primary" className="mt-2" permission={permissionFor("SET_UP_CURRENCY")} disabled={propose.isPending} onClick={submit}>
+      <Refusal error={propose.error ?? setHome.error} />
+      <GatedButton variant="primary" className="mt-2" permission={permissionFor("SET_UP_CURRENCY")} disabled={pending} onClick={() => void submit()}>
         {isCollection ? (current ? "Propose changes" : "Propose currency") : current ? "Save changes" : "Create currency"}
       </GatedButton>
     </>
+  );
+}
+
+/** "Make this my home currency" (R-FIN-04). Needs the Treasurer capability like the rest of the form. */
+function HomeCheckbox({
+  checked,
+  onChange,
+  owner,
+  disabledReason,
+  hint,
+}: {
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  owner: string;
+  disabledReason: string | null;
+  hint: string | null;
+}) {
+  const { permissionFor } = useActingNode();
+  const permission = permissionFor("SET_UP_CURRENCY");
+  const refused = !permission?.allowed;
+  const note = refused ? (permission ? needsText(permission) : null) : (disabledReason ?? hint);
+  return (
+    <label className={`mt-1 flex items-start gap-3 ${refused || disabledReason ? "cursor-not-allowed text-rose-muted" : "cursor-pointer"}`}>
+      <input
+        type="checkbox"
+        className="mt-0.5 size-5 flex-none accent-rose-accent"
+        checked={checked}
+        disabled={refused || !!disabledReason}
+        onChange={(e) => onChange(e.target.checked)}
+      />
+      <span className="flex flex-col gap-0.5">
+        <span className="text-sm font-semibold">Make this {owner} home currency</span>
+        {note && <span className="text-xs text-rose-muted">{note}</span>}
+      </span>
+    </label>
   );
 }

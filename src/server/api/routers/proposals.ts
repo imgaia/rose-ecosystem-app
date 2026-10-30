@@ -27,6 +27,7 @@ async function proposalView(ctx: Ctx, proposal: Proposal) {
     // CURRENCY_CHANGE (currencyId above is the currency changed)
     action?: "CREATE" | "EDIT" | "RETIRE" | "DELETE";
     fields?: { name?: string; code?: string; description?: string | null; decimals?: number; reserveRatio?: string; policy?: string };
+    makeHome?: boolean;
   };
   const approval = core.approvalOf(proposal);
   const [proposer, proposedBy, approvers, interaction] = await Promise.all([
@@ -112,6 +113,7 @@ async function proposalView(ctx: Ctx, proposal: Proposal) {
             action: payload.action!,
             currency: changedCurrency,
             fields: payload.fields ?? {},
+            makeHome: !!payload.makeHome,
             // The fiat its price is in: its own reserve fiat, or the issuer's primary fiat for a new one.
             fiatCode: changedCurrency?.reserveCurrency?.code ?? issuerFiat?.code ?? null,
           }

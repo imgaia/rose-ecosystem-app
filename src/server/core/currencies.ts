@@ -131,30 +131,37 @@ export async function setHomeCurrency(db: Db, actor: Actor, input: { currencyId:
     await assertCan(tx, actor.personId, actor.actingNodeId, "SET_UP_CURRENCY");
     const currency = await tx.currency.findUniqueOrThrow({ where: { id: input.currencyId } });
     if (currency.status === "RETIRED") throw new RuleError(`${label(currency)} is retired`, ["R-FIN-12"]);
-
-    let allowed = false;
-    if (currency.kind === "FIAT") allowed = (await primaryFiatOf(tx, actor.actingNodeId)).id === currency.id;
-    else if (currency.issuerNodeId === actor.actingNodeId) allowed = true;
-    else if (currency.issuerNodeId) {
-      const member = await tx.roleAssignment.findFirst({
-        where: { scopeNodeId: currency.issuerNodeId, holderNodeId: actor.actingNodeId, roleKey: "MEMBER", endedAt: null },
-      });
-      allowed = !!member;
-    }
-    if (!allowed) {
+    if (!(await canBeHomeCurrency(tx, actor.actingNodeId, currency))) {
       throw new RuleError("The home currency is the primary fiat, a currency of a collection this node belongs to, or one of its own", [
         "R-FIN-04",
       ]);
     }
-    const node = await tx.node.update({ where: { id: actor.actingNodeId }, data: { homeCurrencyId: currency.id } });
-    await recordActivity(tx, {
-      type: "currency.home_set",
-      refId: currency.id,
-      nodeIds: [node.id],
-      summary: `${await actorName(tx, actor.personId, actor.actingNodeId)} made ${label(currency)} the home currency`,
-    });
-    return node;
+    return writeHomeCurrency(tx, actor.actingNodeId, currency, await actorName(tx, actor.personId, actor.actingNodeId));
   });
+}
+
+/** R-FIN-04: could this node pick the currency as its home currency? (Not if it is retired.) */
+export async function canBeHomeCurrency(db: Db, nodeId: string, currency: Currency) {
+  if (currency.status === "RETIRED") return false;
+  if (currency.kind === "FIAT") return (await primaryFiatOf(db, nodeId).catch(() => null))?.id === currency.id;
+  if (currency.issuerNodeId === nodeId) return true;
+  if (!currency.issuerNodeId) return false;
+  const member = await db.roleAssignment.findFirst({
+    where: { scopeNodeId: currency.issuerNodeId, holderNodeId: nodeId, roleKey: "MEMBER", endedAt: null },
+  });
+  return !!member;
+}
+
+/** Make it the home currency and log it; `by` is who did it, for the activity line. */
+async function writeHomeCurrency(tx: Tx, nodeId: string, currency: Currency, by: string) {
+  const node = await tx.node.update({ where: { id: nodeId }, data: { homeCurrencyId: currency.id } });
+  await recordActivity(tx, {
+    type: "currency.home_set",
+    refId: currency.id,
+    nodeIds: [node.id],
+    summary: `${by} made ${label(currency)} the home currency`,
+  });
+  return node;
 }
 
 /**
@@ -213,14 +220,14 @@ export interface CurrencyFields {
 
 /** What a CURRENCY_CHANGE proposal stores: a new currency's full fields, or the change to one. */
 export type CurrencyChangePayload =
-  | { action: "CREATE"; fields: CurrencyFields }
+  | { action: "CREATE"; fields: CurrencyFields; makeHome?: boolean } // makeHome: the issuer's home currency once created
   | { action: "EDIT"; currencyId: string; fields: Partial<CurrencyFields> }
   | { action: "RETIRE"; currencyId: string }
   | { action: "DELETE"; currencyId: string };
 
 /** What a caller passes: a new currency needs only a name and a symbol, the rest has defaults. */
 export type CurrencyChangeInput =
-  | { action: "CREATE"; fields: Pick<CurrencyFields, "name" | "code"> & Partial<CurrencyFields> }
+  | { action: "CREATE"; fields: Pick<CurrencyFields, "name" | "code"> & Partial<CurrencyFields>; makeHome?: boolean }
   | Exclude<CurrencyChangePayload, { action: "CREATE" }>;
 
 /**
@@ -275,6 +282,7 @@ function normalise(input: CurrencyChangeInput): CurrencyChangePayload {
   const f = clean(input.fields);
   return {
     action: "CREATE",
+    ...(input.makeHome ? { makeHome: true } : {}),
     fields: {
       name: f.name,
       code: f.code,
@@ -371,6 +379,8 @@ const currencyChangeHandler: ProposalHandler = {
       await writePrice(tx, currency, ratio, personId);
       await writePolicy(tx, currency.id, policy);
       await log(tx, proposal, "applied", personId, currency);
+      // Chosen when it was proposed; applies now, with the currency.
+      if (p.makeHome) await writeHomeCurrency(tx, issuerId, currency, (await tx.node.findUniqueOrThrow({ where: { id: issuerId } })).name);
       return;
     }
 
