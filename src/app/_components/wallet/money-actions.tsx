@@ -194,10 +194,10 @@ export function Convert({ fromAccountId: initialFrom, toCurrencyId: initialTo }:
   );
 }
 
-/** "1 RCC = 1.00 CHF", or "Fiat" for real money (it has no price). */
+/** "1 RCC = 1.00 CHF", or "Fiat face value" for real money (it has no price). */
 function priceText(c: Parameters<typeof priceLine>[0] & { kind: string } | undefined) {
   if (!c) return "…";
-  if (c.kind === "FIAT") return "Fiat";
+  if (c.kind === "FIAT") return "Fiat face value";
   return priceLine(c) ?? "No price yet";
 }
 
