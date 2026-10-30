@@ -21,7 +21,10 @@ export type Screen =
   | { name: "counter"; proposalId: string }
   | { name: "amend"; interactionId: string }
   | { name: "add-funds" }
-  | { name: "exchange" }
+  | { name: "convert"; fromAccountId?: string; toCurrencyId?: string }
+  | { name: "currencies" }
+  | { name: "currency"; currencyId: string }
+  | { name: "currency-form"; currencyId?: string }
   | { name: "mint" }
   | { name: "node"; nodeId: string }
   | { name: "search" }

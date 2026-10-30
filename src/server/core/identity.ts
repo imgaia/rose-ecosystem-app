@@ -22,6 +22,7 @@ export interface IdentityInput {
   email?: string | null;
   phone?: string | null;
   photoUrl?: string | null;
+  country?: string | null; // ISO 3166 code; the primary fiat defaults from it (R-FIN-13)
 }
 
 /** UC-ID-02: change the acting node's identity. Fields left out stay as they are; blank ones are cleared. */
@@ -31,10 +32,12 @@ export async function updateIdentity(db: Db, actor: Actor, input: IdentityInput)
     const node = await tx.node.findUniqueOrThrow({ where: { id: actor.actingNodeId } });
 
     const data: Partial<Record<keyof IdentityInput, string | null>> = {};
-    for (const key of ["firstName", "lastName", "name", "description", "email", "phone", "photoUrl"] as const) {
+    for (const key of ["firstName", "lastName", "name", "description", "email", "phone", "photoUrl", "country"] as const) {
       if (input[key] !== undefined) data[key] = textOrNull(input[key]);
     }
     if (data.email) data.email = data.email.toLowerCase();
+    if (data.country) data.country = data.country.toUpperCase();
+    if (data.country && !/^[A-Z]{2}$/.test(data.country)) throw new RuleError("The country is a two-letter code, like CH");
     if (data.photoUrl && !/^https?:\/\/\S+$/i.test(data.photoUrl)) {
       throw new RuleError("The photo must be a web address starting with http:// or https://");
     }

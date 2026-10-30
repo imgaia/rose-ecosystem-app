@@ -280,6 +280,12 @@ Tests: the feed adapter is mocked (no network in tests): a changed rate writes a
 
 ### 10b. Screens
 
+**Status: done** · checked with the tests (167), type check, lint and build, and a headless-browser click-through on a scratch copy of the local database (as Nimesh, as ROSE Org, and as Annie approving): 15 steps, no console errors.
+
+- New: `src/app/_components/wallet/currencies.tsx` (Currencies, Currency detail, Create / Edit), the `currencies` router, Convert in place of Exchange (`wallet.quoteConvert` / `wallet.convert`), country on Edit identity, and currency proposals in the inbox and review screen.
+- The Wallet total is in the home currency. Its fourth button is now Currencies; Withdraw, a placeholder until now, is gone from the Wallet.
+- A refused conversion quote comes back as data naming the rules, not as an API error, so the screen shows the rule without a console error.
+
 From the wireframes: Wallet (total in the home currency; buttons Convert, Add funds, Mint, Currencies), S15 Currencies (home currency, primary fiat, issued by you, you hold, Create a currency), Create / Edit currency form (price preview from the reserve ratio, policy switch, "Needs a Treasurer and an Owner" for collections), S27 Currency detail (anyone: name, symbol, issuer, price and its history, policy, status; Treasurers of the issuer: reserve, units in circulation, share backed), S11 Convert (rate, what you receive, the refusal message naming the rule), and country on Edit identity. Actions a person's roles don't allow stay visible but disabled, labelled with the role they need.
 
 **Done when:** each screen works locally as an individual and as ROSE Org; nothing errors in the browser console.

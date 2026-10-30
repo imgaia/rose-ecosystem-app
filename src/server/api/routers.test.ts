@@ -234,19 +234,22 @@ describe("wallet", () => {
     expect((await refused(as(tess).wallet.mint({ ...input, sourceAccountId: rcc.id }))).ruleIds).toEqual(["R-FIN-02"]);
     expect((await refused(as(tess).wallet.mint({ ...input, sourceAccountId: reserve.id }))).ruleIds).toEqual(["R-FIN-02"]);
     // Buying your own currency is minting, not exchange.
-    const own = await refused(as(tess).wallet.exchange({ actingNodeId: rose.id, fromAccountId: chf.id, toCurrencyId: t.rcc.id, amount: 100 }));
+    const own = await refused(as(tess).wallet.convert({ actingNodeId: rose.id, fromAccountId: chf.id, toCurrencyId: t.rcc.id, amount: 100 }));
     expect(own.message).toMatch(/use Mint/);
     await t.db.currency.update({ where: { id: t.rcc.id }, data: { issuerNodeId: null } });
   });
 
-  it("exchange converts through the reserves: fiat into the issuer's reserve, units minted", async () => {
+  it("convert goes through the reserves: fiat into the issuer's reserve, units minted", async () => {
     const { ana, mo, zed, rose } = await org();
     await t.db.currency.update({ where: { id: t.rcc.id }, data: { issuerNodeId: rose.id } });
     const chf = await t.account(ana.id, t.chf.id, 3_000);
     const input = { actingNodeId: ana.id, fromAccountId: chf.id, toCurrencyId: t.rcc.id, amount: 1_250 };
 
-    expect(await as(ana).wallet.quoteExchange(input)).toMatchObject({ receive: 1_250, rate: "1", mode: "RESERVES" });
-    const { rows } = await as(ana).wallet.exchange(input);
+    expect((await as(ana).wallet.quoteConvert(input)).quote).toMatchObject({ receive: 1_250, rate: "1", mode: "RESERVES" });
+    // A refused quote is an answer naming the rule, not an error.
+    const eurQuote = await as(ana).wallet.quoteConvert({ ...input, toCurrencyId: (await t.db.currency.create({ data: { name: "Euro", code: "EUQ", kind: "FIAT" } })).id });
+    expect(eurQuote).toMatchObject({ quote: null, refused: { data: { blockedBy: [{ ruleId: "R-FIN-14" }] } } });
+    const { rows } = await as(ana).wallet.convert(input);
     const [paid, minted] = rows;
     expect(paid).toMatchObject({ kind: "EXCHANGE", amount: 1_250, fromAccountId: chf.id });
     expect(minted).toMatchObject({ kind: "EXCHANGE", amount: 1_250, fromAccountId: null, groupId: paid!.groupId });
@@ -258,18 +261,79 @@ describe("wallet", () => {
 
     // Out of RCC only as far as the reserve covers (R-FIN-10); never fiat into fiat (R-FIN-14).
     const anaRcc = await t.db.account.findFirstOrThrow({ where: { nodeId: ana.id, currencyId: t.rcc.id } });
-    const out = await refused(as(ana).wallet.exchange({ ...input, fromAccountId: anaRcc.id, toCurrencyId: t.chf.id, amount: 2_000 }));
+    const out = await refused(as(ana).wallet.convert({ ...input, fromAccountId: anaRcc.id, toCurrencyId: t.chf.id, amount: 2_000 }));
     expect(out.ruleIds).toEqual(["R-FIN-10"]);
     const eur = await t.db.currency.create({ data: { name: "Euro", code: "EUR", kind: "FIAT", country: "DE" } });
-    expect((await refused(as(ana).wallet.exchange({ ...input, toCurrencyId: eur.id }))).ruleIds).toEqual(["R-FIN-14"]);
+    expect((await refused(as(ana).wallet.convert({ ...input, toCurrencyId: eur.id }))).ruleIds).toEqual(["R-FIN-14"]);
     const loose = await t.db.currency.create({ data: { name: "No issuer", code: "NOI", kind: "COMMUNITY" } });
-    expect((await refused(as(ana).wallet.exchange({ ...input, toCurrencyId: loose.id }))).message).toMatch(/no issuer/);
+    expect((await refused(as(ana).wallet.convert({ ...input, toCurrencyId: loose.id }))).message).toMatch(/no issuer/);
 
     // Someone else's account, and a Member buying for the collection.
-    expect((await refused(as(zed).wallet.exchange({ ...input, actingNodeId: zed.id }))).message).toMatch(/does not belong/);
-    const forOrg = await refused(as(mo).wallet.exchange({ ...input, actingNodeId: rose.id }));
+    expect((await refused(as(zed).wallet.convert({ ...input, actingNodeId: zed.id }))).message).toMatch(/does not belong/);
+    const forOrg = await refused(as(mo).wallet.convert({ ...input, actingNodeId: rose.id }));
     expect(forOrg.needsRoles).toEqual(["TREASURER"]);
     await t.db.currency.update({ where: { id: t.rcc.id }, data: { issuerNodeId: null } });
+  });
+});
+
+describe("currencies (S15, S27)", () => {
+  it("creates an individual's currency at once, and shows its price, policy and backing to its Treasurer only", async () => {
+    const { ana, zed } = await org();
+    const created = await as(ana).currencies.propose({
+      actingNodeId: ana.id,
+      action: "CREATE",
+      fields: { name: "Harvest shares", code: "HVS", description: null, decimals: 2, reserveRatio: "0.5", policy: "open" },
+    });
+    expect(created.status).toBe("APPROVED");
+
+    const overview = await as(ana).currencies.overview({ actingNodeId: ana.id });
+    expect(overview.primaryFiat?.code).toBe("CHF");
+    expect(overview.issued.map((c) => [c.code, c.price?.rate, c.price?.fiat.code, c.policy])).toEqual([["HVS", "0.5", "CHF", "open"]]);
+    expect(overview.held?.map((c) => c.code)).toEqual(["RCC"]);
+    const hvs = overview.issued[0]!;
+    expect(overview.homeChoices.map((c) => c.id)).toContain(hvs.id);
+
+    const mine = await as(ana).currencies.detail({ actingNodeId: ana.id, currencyId: hvs.id });
+    expect(mine).toMatchObject({ actingIsIssuer: true, everHeld: false, backing: { reserve: 0, units: 0, shareBacked: null } });
+    expect(mine.history.map((h) => [h.rate, h.source])).toEqual([["0.5", "RESERVE_RATIO"]]);
+    // Anyone sees the currency; only the issuer's Treasurers see what backs it.
+    const theirs = await as(zed).currencies.detail({ actingNodeId: zed.id, currencyId: hvs.id });
+    expect(theirs).toMatchObject({ actingIsIssuer: false, backing: null, price: { rate: "0.5" } });
+
+    await as(ana).currencies.setHome({ actingNodeId: ana.id, currencyId: hvs.id });
+    expect((await as(ana).wallet.accounts({ actingNodeId: ana.id })).total?.currency?.id).toBe(hvs.id);
+  });
+
+  it("sends a collection's currency out as a proposal, and refuses a Member", async () => {
+    const { tess, mo, rose } = await org();
+    const fields = { name: "Org coin", code: "ORG", description: null, decimals: 2, reserveRatio: "1", policy: "reserve" as const };
+    expect((await refused(as(mo).currencies.propose({ actingNodeId: rose.id, action: "CREATE", fields }))).needsRoles).toEqual(["TREASURER"]);
+    // Tess is the only Treasurer and the only Owner: R-FIN-11 needs two people.
+    const alone = await refused(as(tess).currencies.propose({ actingNodeId: rose.id, action: "CREATE", fields }));
+    expect(alone.ruleIds).toEqual(["R-FIN-11"]);
+  });
+
+  it("shows a currency change in the review screen", async () => {
+    const [olga, tim] = [await t.person("Olga"), await t.person("Tim")];
+    const col = await t.collection("Pair", [
+      { node: olga, roles: ["MEMBER", "OWNER"] },
+      { node: tim, roles: ["MEMBER", "TREASURER"] },
+    ]);
+    const fields = { name: "Pair coin", code: "PAIR", description: null, decimals: 2, reserveRatio: "2", policy: "reserve" as const };
+    const { id } = await as(tim).currencies.propose({ actingNodeId: col.id, action: "CREATE", fields });
+    const inbox = await as(olga).proposals.inbox({ actingNodeId: olga.id });
+    const review = await as(olga).proposals.review({ actingNodeId: olga.id, proposalId: id });
+    expect(review.currencyChange).toMatchObject({ action: "CREATE", fields: { code: "PAIR", reserveRatio: "2" }, fiatCode: "CHF" });
+    expect(JSON.stringify(inbox)).toContain(id);
+    await as(olga).proposals.decide({ actingNodeId: olga.id, proposalId: id, approve: true });
+    expect((await as(tim).currencies.overview({ actingNodeId: col.id })).issued.map((c) => c.code)).toEqual(["PAIR"]);
+  });
+
+  it("keeps the country on the identity", async () => {
+    const { ana } = await org();
+    await as(ana).identity.update({ actingNodeId: ana.id, country: "de" });
+    expect((await as(ana).identity.get({ actingNodeId: ana.id })).country).toBe("DE");
+    expect((await refused(as(ana).identity.update({ actingNodeId: ana.id, country: "Germany" }))).message).toMatch(/two-letter/);
   });
 });
 

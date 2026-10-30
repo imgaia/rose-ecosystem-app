@@ -40,6 +40,18 @@ export function proposalText(p: ProposalView, actingNodeId: string) {
     };
   }
 
+  if (p.currencyChange && p.collection) {
+    const { action, currency, fields } = p.currencyChange;
+    const name = currency ? (currency.code ?? currency.name) : `${fields.name ?? "A currency"} (${fields.code ?? ""})`;
+    const verb = { CREATE: "Create", EDIT: "Change", RETIRE: "Retire", DELETE: "Delete" }[action];
+    const approvals = `${p.approvers.filter((x) => x.decision === true).length} of ${p.approvers.length} asked have approved`;
+    return {
+      label: `${p.collection.name} · currency`,
+      title: `${verb} ${name}`,
+      detail: `Proposed by ${p.proposedBy.name} · needs a Treasurer and an Owner · ${approvals}`,
+    };
+  }
+
   if (p.kind === "PAYMENT_REQUEST" && p.paymentRequest) {
     const amount = money(p.paymentRequest.amount, p.paymentRequest.currency);
     return { label: "Payment request", title: `${who} requests ${amount}`, detail: `${p.paymentRequest.comment} · ${payer} would pay` };

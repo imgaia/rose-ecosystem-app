@@ -16,11 +16,11 @@ export const identityRouter = createTRPCRouter({
     await requireCan(ctx, "EDIT_IDENTITY");
     return ctx.db.node.findUniqueOrThrow({
       where: { id: ctx.actor.actingNodeId },
-      select: { ...publicNode, email: true, phone: true, username: true },
+      select: { ...publicNode, email: true, phone: true, username: true, country: true },
     });
   }),
 
-  /** UC-ID-02: names, description, email, phone, photo. Fields left out stay; blank ones are cleared. */
+  /** UC-ID-02: names, description, email, phone, photo, country. Fields left out stay; blank ones are cleared. */
   update: actingProcedure
     .input(
       z.object({
@@ -31,6 +31,7 @@ export const identityRouter = createTRPCRouter({
         email: z.union([z.string().email("That email doesn't look right"), z.literal("")]).nullish(),
         phone: optionalText,
         photoUrl: optionalText,
+        country: optionalText,
       }),
     )
     .mutation(async ({ ctx, input }) => {

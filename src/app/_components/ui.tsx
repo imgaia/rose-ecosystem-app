@@ -147,6 +147,29 @@ export function ErrorText({ error }: { error: { message: string } | null | undef
   return <p className="text-sm text-red-400">{error.message}</p>;
 }
 
+/**
+ * Why the rules refused something: the message, then each rule that blocked
+ * it ("R-FIN-10 · Conversion policy ..."), from the API error's blockedBy.
+ */
+export function Refusal({
+  error,
+}: {
+  error: { message: string; data?: { blockedBy?: { ruleId: string; rule: string }[] | null } | null } | null | undefined;
+}) {
+  if (!error) return null;
+  const rules = error.data?.blockedBy ?? [];
+  return (
+    <div className="flex flex-col gap-1 rounded-xl border border-red-400/40 px-3 py-2 text-sm" role="alert">
+      <p className="text-red-400">{error.message}</p>
+      {rules.map((r) => (
+        <p key={r.ruleId} className="text-xs text-rose-muted">
+          <span className="font-semibold">{r.ruleId}</span> · {r.rule}
+        </p>
+      ))}
+    </div>
+  );
+}
+
 export function Loading() {
   return <p className="text-sm text-rose-muted">Loading…</p>;
 }

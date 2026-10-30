@@ -13,6 +13,7 @@ import { formatDate, frequencyLabel, money, nameOrYou, termsSummary, titleCase }
 import { useActingNode } from "../shell/acting-node";
 import { useNav } from "../shell/navigation";
 import { Button, Card, Chip, ErrorText, GatedButton, Loading, Row, SectionLabel, SubScreen, TextArea } from "../ui";
+import { formatRate } from "../wallet/currencies";
 import { proposalText, type ProposalView } from "./proposal-text";
 
 export function ReviewProposal({ proposalId }: { proposalId: string }) {
@@ -88,6 +89,8 @@ function ProposalBody({ proposal: p }: { proposal: ProposalView }) {
         </Card>
       )}
 
+      {p.currencyChange && p.collection && <CurrencyChangeCard change={p.currencyChange} issuer={p.collection.name} />}
+
       {interaction && (
         <Card className="gap-0">
           <SectionLabel className="mb-1">Sides</SectionLabel>
@@ -126,8 +129,14 @@ function ProposalBody({ proposal: p }: { proposal: ProposalView }) {
 
       <Card className="gap-0">
         <SectionLabel className="mb-1">
-          Approvals · {approvedCount} of {p.approval.needed} needed
-          {p.approval.needed < p.approval.total && ` (from ${p.approval.total})`}
+          {p.currencyChange ? (
+            `Approvals · a Treasurer and an Owner, from the ${p.approval.total} asked`
+          ) : (
+            <>
+              Approvals · {approvedCount} of {p.approval.needed} needed
+              {p.approval.needed < p.approval.total && ` (from ${p.approval.total})`}
+            </>
+          )}
         </SectionLabel>
         {p.approvers.map((a) => (
           <div key={a.node?.id} className="flex items-center justify-between gap-3 border-t border-rose-border py-2">
@@ -146,7 +155,9 @@ function ProposalBody({ proposal: p }: { proposal: ProposalView }) {
 
       {isOpen && (
         <p className="text-xs text-rose-muted">
-          {p.roleChange || p.removal
+          {p.currencyChange
+            ? "Needs a Treasurer and an Owner of the collection, two different people (R-FIN-11)."
+            : p.roleChange || p.removal
             ? `${p.approval.needed === p.approval.total ? "Everyone listed must approve" : `${p.approval.needed} of the ${p.approval.total} listed must approve`}; ${
                 p.approval.declines === "any_closes" || p.approval.needed === p.approval.total
                   ? "any decline closes it"
@@ -221,3 +232,34 @@ function label(node: { id: string; name: string } | null, me: string) {
 }
 
 const capital = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+const POLICY: Record<string, string> = { reserve: "Reserve", open: "Open" };
+
+/** What a currency proposal would do: the new currency's fields, or what changes. */
+function CurrencyChangeCard({ change, issuer }: { change: NonNullable<ProposalView["currencyChange"]>; issuer: string }) {
+  const { action, currency, fields, fiatCode } = change;
+  const heading = { CREATE: "New currency", EDIT: "Changes to a currency", RETIRE: "Retire a currency", DELETE: "Delete a currency" }[action];
+  return (
+    <Card className="gap-0">
+      <SectionLabel className="mb-1">{heading}</SectionLabel>
+      <Row label="Issuer">{issuer}</Row>
+      {currency && (
+        <Row label="Currency" strong>
+          {currency.name} · {currency.code}
+        </Row>
+      )}
+      {fields.name !== undefined && <Row label="Name">{fields.name}</Row>}
+      {fields.code !== undefined && <Row label="Symbol">{fields.code}</Row>}
+      {fields.description !== undefined && <Row label="Description">{fields.description ?? "None"}</Row>}
+      {fields.decimals !== undefined && <Row label="Decimal places">{fields.decimals}</Row>}
+      {fields.reserveRatio !== undefined && (
+        <Row label="Price">
+          1 {fields.code ?? currency?.code ?? "unit"} = {formatRate(fields.reserveRatio)} {fiatCode ?? ""}
+        </Row>
+      )}
+      {fields.policy !== undefined && <Row label="Conversion policy">{POLICY[fields.policy] ?? fields.policy}</Row>}
+      {action === "RETIRE" && <Row label="After">No new units; balances stay usable and convertible</Row>}
+      {action === "DELETE" && <Row label="After">Removed for good (nobody has held it)</Row>}
+    </Card>
+  );
+}

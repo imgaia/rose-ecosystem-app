@@ -15,7 +15,8 @@ import { SendPayment } from "./interact/send-payment";
 import { InteractionDetail } from "./relationships/interaction-detail";
 import { RelationshipDetail } from "./relationships/relationship-detail";
 import type { Screen } from "./shell/navigation";
-import { AddFunds, Exchange, Mint } from "./wallet/money-actions";
+import { CurrencyDetail, CurrencyForm, CurrenciesScreen } from "./wallet/currencies";
+import { AddFunds, Convert, Mint } from "./wallet/money-actions";
 
 export function ScreenView({ screen }: { screen: Screen }) {
   switch (screen.name) {
@@ -37,8 +38,14 @@ export function ScreenView({ screen }: { screen: Screen }) {
       return <AmendTerms interactionId={screen.interactionId} />;
     case "add-funds":
       return <AddFunds />;
-    case "exchange":
-      return <Exchange />;
+    case "convert":
+      return <Convert fromAccountId={screen.fromAccountId} toCurrencyId={screen.toCurrencyId} />;
+    case "currencies":
+      return <CurrenciesScreen />;
+    case "currency":
+      return <CurrencyDetail currencyId={screen.currencyId} />;
+    case "currency-form":
+      return <CurrencyForm currencyId={screen.currencyId} />;
     case "mint":
       return <Mint />;
     case "node":

@@ -24,6 +24,9 @@ async function proposalView(ctx: Ctx, proposal: Proposal) {
     // MEMBER_REMOVAL
     memberNodeId?: string;
     reason?: string;
+    // CURRENCY_CHANGE (currencyId above is the currency changed)
+    action?: "CREATE" | "EDIT" | "RETIRE" | "DELETE";
+    fields?: { name?: string; code?: string; description?: string | null; decimals?: number; reserveRatio?: string; policy?: string };
   };
   const approval = core.approvalOf(proposal);
   const [proposer, proposedBy, approvers, interaction] = await Promise.all([
@@ -58,6 +61,11 @@ async function proposalView(ctx: Ctx, proposal: Proposal) {
       ? await core.capabilityForProposal(ctx.db, proposal.id, ctx.actor.actingNodeId).catch(() => null)
       : null;
   const role = payload.roleKey ? await ctx.db.role.findUnique({ where: { key: payload.roleKey } }) : null;
+  const changedCurrency =
+    proposal.kind === "CURRENCY_CHANGE" && payload.currencyId
+      ? await ctx.db.currency.findUnique({ where: { id: payload.currencyId }, select: { id: true, name: true, code: true, reserveCurrency: { select: { code: true } } } })
+      : null;
+  const issuerFiat = proposal.kind === "CURRENCY_CHANGE" && proposal.subjectNodeId ? await core.primaryFiatOf(ctx.db, proposal.subjectNodeId).catch(() => null) : null;
 
   return {
     id: proposal.id,
@@ -96,6 +104,17 @@ async function proposalView(ctx: Ctx, proposal: Proposal) {
     removal:
       proposal.kind === "MEMBER_REMOVAL"
         ? { member: node(payload.memberNodeId!), reason: payload.reason! }
+        : null,
+    // A node's own currency created, changed, retired or deleted (R-FIN-11); the issuer is `collection`.
+    currencyChange:
+      proposal.kind === "CURRENCY_CHANGE"
+        ? {
+            action: payload.action!,
+            currency: changedCurrency,
+            fields: payload.fields ?? {},
+            // The fiat its price is in: its own reserve fiat, or the issuer's primary fiat for a new one.
+            fiatCode: changedCurrency?.reserveCurrency?.code ?? issuerFiat?.code ?? null,
+          }
         : null,
     // How many approvals it needs (all, unless rules.yaml or the node set a share) and how declines count (R-GOV-06).
     approval: {

@@ -2,7 +2,8 @@
 
 // src/app/_components/node/edit-identity.tsx
 // Edit the acting node's identity (UC-ID-02 to UC-ID-04): name, description,
-// email, phone and photo; for a person also their username and password
+// email, phone, photo and country (the primary fiat defaults from it,
+// R-FIN-13); for a person also their username and password
 // (the current password is needed to change it). Needs EDIT_IDENTITY:
 // a person always has it for themselves, a collection's Owners for it.
 
@@ -11,7 +12,7 @@ import { useState } from "react";
 import { api, type RouterOutputs } from "~/trpc/react";
 import { useActingNode } from "../shell/acting-node";
 import { useNav } from "../shell/navigation";
-import { Button, Card, ErrorText, Field, GatedButton, Input, Loading, SectionLabel, SubScreen, TextArea } from "../ui";
+import { Button, Card, ErrorText, Field, GatedButton, Input, Loading, SectionLabel, Select, SubScreen, TextArea } from "../ui";
 
 type Identity = RouterOutputs["identity"]["get"];
 
@@ -53,7 +54,9 @@ function Details({ identity }: { identity: Identity }) {
     email: identity.email ?? "",
     phone: identity.phone ?? "",
     photoUrl: identity.photoUrl ?? "",
+    country: identity.country ?? "",
   });
+  const countries = useCountries(identity.country);
   const set = (changes: Partial<typeof form>) => setForm({ ...form, ...changes });
 
   const utils = api.useUtils();
@@ -65,7 +68,7 @@ function Details({ identity }: { identity: Identity }) {
   });
 
   function save() {
-    const common = { description: form.description, email: form.email, phone: form.phone, photoUrl: form.photoUrl };
+    const common = { description: form.description, email: form.email, phone: form.phone, photoUrl: form.photoUrl, country: form.country };
     update.mutate({
       actingNodeId: acting.node.id,
       ...common,
@@ -102,12 +105,45 @@ function Details({ identity }: { identity: Identity }) {
       <Field label="Photo" hint="A web address of a picture, starting with https://">
         <Input type="url" placeholder="https://" value={form.photoUrl} onChange={(e) => set({ photoUrl: e.target.value })} />
       </Field>
+      <Field label="Country" hint="A new primary fiat defaults from it. To change the primary fiat itself, go to Wallet, Currencies.">
+        <Select value={form.country} onChange={(e) => set({ country: e.target.value })}>
+          <option value="">Not set</option>
+          {countries.map((c) => (
+            <option key={c.code} value={c.code}>
+              {c.name}
+              {c.fiat ? ` · ${c.fiat}` : ""}
+            </option>
+          ))}
+        </Select>
+      </Field>
       <ErrorText error={update.error} />
       <GatedButton variant="primary" permission={permissionFor("EDIT_IDENTITY")} disabled={update.isPending} onClick={save}>
         Save details
       </GatedButton>
     </Card>
   );
+}
+
+/**
+ * The countries the fiat list covers (R-FIN-13), named in the browser's
+ * language, each with the fiat it defaults to; plus the node's own if not listed.
+ */
+function useCountries(current: string | null) {
+  const { acting } = useActingNode();
+  const fiats = api.currencies.fiatList.useQuery({ actingNodeId: acting.node.id });
+  const names = (() => {
+    try {
+      return new Intl.DisplayNames(undefined, { type: "region" });
+    } catch {
+      return null;
+    }
+  })();
+  const list = (fiats.data ?? []).flatMap((f) => (f.country ?? "").split(",").map((code) => ({ code: code.trim(), fiat: f.code })));
+  if (current && !list.some((c) => c.code === current)) list.push({ code: current, fiat: null });
+  return list
+    .filter((c) => c.code)
+    .map((c) => ({ ...c, name: names?.of(c.code) ?? c.code }))
+    .sort((a, b) => a.name.localeCompare(b.name));
 }
 
 function Username({ current }: { current: string }) {

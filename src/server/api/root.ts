@@ -1,3 +1,4 @@
+import { currenciesRouter } from "~/server/api/routers/currencies";
 import { identityRouter } from "~/server/api/routers/identity";
 import { interactionsRouter } from "~/server/api/routers/interactions";
 import { invitationsRouter } from "~/server/api/routers/invitations";
@@ -19,6 +20,7 @@ export const appRouter = createTRPCRouter({
   interactions: interactionsRouter,
   proposals: proposalsRouter,
   wallet: walletRouter,
+  currencies: currenciesRouter,
   invitations: invitationsRouter,
   identity: identityRouter,
   members: membersRouter,

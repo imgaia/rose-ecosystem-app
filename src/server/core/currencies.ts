@@ -51,6 +51,17 @@ export async function conversionPolicy(db: Db, currencyId: string): Promise<Conv
   return (await currencyRule(db, currencyId, "R-FIN-10")) === "open" ? "open" : "reserve";
 }
 
+/**
+ * A node currency's price now: one unit in its reserve fiat (R-FIN-01, read
+ * from the rates table). Null for fiat, or a currency with no price yet.
+ */
+export async function priceOf(db: Db, currencyId: string) {
+  const currency = await db.currency.findUniqueOrThrow({ where: { id: currencyId }, include: { reserveCurrency: true } });
+  if (currency.kind === "FIAT" || !currency.reserveCurrency) return null;
+  const rate = await getRate(db, currency.id, currency.reserveCurrency.id).catch(() => null);
+  return rate ? { rate: rate.text, fiat: currency.reserveCurrency } : null;
+}
+
 /** 1 / ratio, the rate minting uses: one unit costs the ratio in the reserve fiat (R-FIN-01). */
 export function mintRate(ratio: string): Rate {
   const r = parseDecimal(ratio);

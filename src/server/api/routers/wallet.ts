@@ -6,6 +6,7 @@
 
 import { z } from "zod";
 import * as core from "~/server/core";
+import { getRule } from "~/server/rules";
 import { actingProcedure, createTRPCRouter, requireCan } from "~/server/api/trpc";
 import { minorUnits } from "./shared";
 
@@ -17,9 +18,10 @@ export const walletRouter = createTRPCRouter({
   }),
 
   /**
-   * Every account of the acting node, primary fiat marked, reserves flagged.
-   * Pass `totalInCurrencyId` for a total in one currency at today's rates
-   * (reserves left out, since they are locked).
+   * Every account of the acting node, primary fiat marked, reserves flagged
+   * with the currency each one backs. The total is in the home currency
+   * (R-FIN-04), or in `totalInCurrencyId`, at today's rates (reserves left
+   * out, since they are locked).
    */
   accounts: actingProcedure
     .input(z.object({ totalInCurrencyId: z.string().optional() }))
@@ -32,7 +34,11 @@ export const walletRouter = createTRPCRouter({
       });
       const totalCurrency = input.totalInCurrencyId
         ? await ctx.db.currency.findUniqueOrThrow({ where: { id: input.totalInCurrencyId } })
-        : null;
+        : await core.homeCurrencyOf(ctx.db, ctx.actor.actingNodeId).catch(() => null);
+      const backed = await ctx.db.currency.findMany({
+        where: { id: { in: accounts.map((a) => a.backsCurrencyId).filter(Boolean) } },
+        select: { id: true, code: true, name: true },
+      });
 
       let total: { currency: typeof totalCurrency; amount: number; missingRates: string[] } | null = null;
       if (totalCurrency) {
@@ -47,7 +53,7 @@ export const walletRouter = createTRPCRouter({
           }
         }
       }
-      return { accounts, total };
+      return { accounts: accounts.map((a) => ({ ...a, backs: backed.find((c) => c.id === a.backsCurrencyId) ?? null })), total };
     }),
 
   /** UC-PAY-02: the acting node's transactions, newest first, with filters. */
@@ -99,16 +105,26 @@ export const walletRouter = createTRPCRouter({
       });
     }),
 
-  /** UC-FIN-03: what converting would give and how (through the reserves, or a straight swap), before confirming. */
-  quoteExchange: actingProcedure
+  /**
+   * UC-FIN-03: what converting would give and how (through the reserves, or a
+   * straight swap), before confirming. When the rules refuse, the refusal comes
+   * back as data with the rules that block it: it is an answer, not an error.
+   */
+  quoteConvert: actingProcedure
     .input(z.object({ fromAccountId: z.string().min(1), toCurrencyId: z.string().min(1), amount: minorUnits }))
     .query(async ({ ctx, input }) => {
       await requireCan(ctx, "EXCHANGE");
-      return core.quoteConvert(ctx.db, ctx.actor, input);
+      try {
+        return { quote: await core.quoteConvert(ctx.db, ctx.actor, input), refused: null };
+      } catch (err) {
+        if (!(err instanceof core.RuleError) || err.needsRoles.length > 0) throw err;
+        const blockedBy = err.ruleIds.map((ruleId) => ({ ruleId, rule: getRule(ruleId)?.name ?? ruleId }));
+        return { quote: null, refused: { message: err.message, data: { blockedBy } } };
+      }
     }),
 
   /** UC-FIN-03: convert a balance into another currency, through the issuers' reserves (core.convert). */
-  exchange: actingProcedure
+  convert: actingProcedure
     .input(
       z.object({
         fromAccountId: z.string().min(1),
