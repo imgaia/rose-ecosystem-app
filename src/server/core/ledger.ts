@@ -88,7 +88,8 @@ export async function postTransaction(db: Db, input: PostTransactionInput) {
       // One statement does the check and the decrement together:
       // "take amount off, but only if the balance stays at or above -limit".
       // If no row matched, the payment would break the limit.
-      const limit = await negativeBalanceLimit(tx, from.nodeId);
+      // A reserve never goes below zero: it is the fiat behind a currency.
+      const limit = from.isReserve ? 0 : await negativeBalanceLimit(tx, from.nodeId);
       const { count } = await tx.account.updateMany({
         where: { id: from.id, balance: { gte: input.amount - limit } },
         data: { balance: { decrement: input.amount } },

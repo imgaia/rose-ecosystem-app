@@ -1,14 +1,15 @@
 // src/app/api/cron/due-payments/route.ts
-// Runs the scheduled payments (src/server/core/schedules.ts). Vercel cron
-// calls it once a day (vercel.json) with "Authorization: Bearer <CRON_SECRET>";
-// any request without exactly that header is refused, and so is every request
-// while CRON_SECRET is not set.
+// The daily jobs: the scheduled payments (src/server/core/schedules.ts), then
+// the fiat rate feed (src/server/core/rateFeed.ts). Vercel cron calls it once
+// a day (vercel.json) with "Authorization: Bearer <CRON_SECRET>"; any request
+// without exactly that header is refused, and so is every request while
+// CRON_SECRET is not set.
 
 import { createHash, timingSafeEqual } from "crypto";
 import { NextResponse } from "next/server";
 
 import { env } from "~/env";
-import { runDuePayments } from "~/server/core";
+import { runDuePayments, runRateFeed } from "~/server/core";
 import { db } from "~/server/db";
 
 export async function GET(request: Request) {
@@ -24,8 +25,14 @@ export async function GET(request: Request) {
     errors: result.errors,
   };
   console.log("Scheduled payments:", JSON.stringify(summary));
-  // An unexpected error shows as a failed cron run in Vercel; those interactions are tried again tomorrow.
-  return NextResponse.json(summary, { status: result.errors.length > 0 ? 500 : 200 });
+
+  // A failed feed keeps yesterday's rates (rateFeed.ts logs it); it doesn't fail the payments.
+  const feed = await runRateFeed(db).catch((err: Error) => ({ error: err.message, written: [], unchanged: [], missing: [] }));
+  const rates = { written: feed.written.length, unchanged: feed.unchanged.length, missing: feed.missing, error: feed.error };
+  console.log("Rate feed:", JSON.stringify(rates));
+
+  // An unexpected payment error shows as a failed cron run in Vercel; those interactions are tried again tomorrow.
+  return NextResponse.json({ ...summary, rates }, { status: result.errors.length > 0 ? 500 : 200 });
 }
 
 function authorised(header: string | null, secret: string | undefined) {

@@ -1,6 +1,6 @@
 // src/server/api/routers/wallet.ts
 // The acting node's money (PRD 3.5): balances (UC-FIN-02), transaction
-// history (UC-PAY-02), exchange (UC-FIN-03), add funds (UC-FIN-04) and
+// history (UC-PAY-02), convert (UC-FIN-03), add funds (UC-FIN-04) and
 // mint (UC-FIN-05). Seeing a node's balances needs VIEW_BALANCES
 // (Treasurer); for an individual that is the person themselves.
 
@@ -18,7 +18,7 @@ export const walletRouter = createTRPCRouter({
 
   /**
    * Every account of the acting node, primary fiat marked, reserves flagged.
-   * Pass `totalInCurrencyId` for a total in one currency at the rates-file rates
+   * Pass `totalInCurrencyId` for a total in one currency at today's rates
    * (reserves left out, since they are locked).
    */
   accounts: actingProcedure
@@ -40,7 +40,8 @@ export const walletRouter = createTRPCRouter({
         for (const a of accounts.filter((a) => !a.isReserve)) {
           const sign = a.balance < 0 ? -1 : 1;
           try {
-            total.amount += sign * core.convert(Math.abs(a.balance), a.currency, totalCurrency).toAmount;
+            const rate = await core.getRate(ctx.db, a.currencyId, totalCurrency.id);
+            total.amount += sign * core.applyRate(Math.abs(a.balance), a.currency.decimals, totalCurrency.decimals, rate);
           } catch {
             total.missingRates.push(a.currency.code ?? a.currency.name);
           }
@@ -98,15 +99,15 @@ export const walletRouter = createTRPCRouter({
       });
     }),
 
-  /** UC-FIN-03: what buying another node's currency would give, before confirming. */
+  /** UC-FIN-03: what converting would give and how (through the reserves, or a straight swap), before confirming. */
   quoteExchange: actingProcedure
     .input(z.object({ fromAccountId: z.string().min(1), toCurrencyId: z.string().min(1), amount: minorUnits }))
     .query(async ({ ctx, input }) => {
       await requireCan(ctx, "EXCHANGE");
-      return core.quoteExchange(ctx.db, ctx.actor, input);
+      return core.quoteConvert(ctx.db, ctx.actor, input);
     }),
 
-  /** UC-FIN-03: buy another node's currency with fiat; the fiat goes into the issuer's reserve. */
+  /** UC-FIN-03: convert a balance into another currency, through the issuers' reserves (core.convert). */
   exchange: actingProcedure
     .input(
       z.object({
@@ -118,7 +119,7 @@ export const walletRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       await requireCan(ctx, "EXCHANGE");
-      return core.exchange(ctx.db, ctx.actor, input);
+      return core.convert(ctx.db, ctx.actor, input);
     }),
 
   /** UC-FIN-04: record fiat paid into the bank outside the app; credits the primary fiat account. */

@@ -147,15 +147,14 @@ export function Exchange() {
       {quote.data && (
         <Card className="gap-0 py-1">
           <Row label="Rate">{quote.data.rate}</Row>
-          <Row label="Reserve ratio">{quote.data.reserveRatio}</Row>
           <Row label="You will get" strong>
-            {money(quote.data.units, quote.data.currency)}
+            {money(quote.data.receive, quote.data.currency)}
           </Row>
         </Card>
       )}
       {quote.data && (
         <p className="text-xs text-rose-muted">
-          {money(units, from?.currency)} goes into {quote.data.issuer.name}&apos;s reserve, which backs the {quote.data.currency.code}.
+          {money(units, from?.currency)} goes into the reserve that backs the {quote.data.currency.code}.
         </p>
       )}
       {fiat.list.length === 0 && <p className="text-rose-muted">This node has no fiat account to pay from.</p>}
@@ -167,7 +166,7 @@ export function Exchange() {
         disabled={!quote.data || exchange.isPending}
         onClick={() => from && to && exchange.mutate({ actingNodeId, fromAccountId: from.id, toCurrencyId: to.id, amount: units })}
       >
-        {quote.data ? `Exchange for ${money(quote.data.units, quote.data.currency)}` : "Exchange"}
+        {quote.data ? `Exchange for ${money(quote.data.receive, quote.data.currency)}` : "Exchange"}
       </GatedButton>
     </SubScreen>
   );

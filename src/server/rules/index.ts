@@ -27,13 +27,17 @@ const ApproverSpec = z.union([
   z.object({ any_one: Key }).strict(),
   z.object({ every: Key }).strict(),
   z.object({ every_other: Key }).strict(),
+  z.object({ one_of: Key }).strict(),
 ]);
 export type ApproverSpec = z.infer<typeof ApproverSpec>;
 
 /** The role named in an approver entry, if any. */
 export function approverRole(spec: ApproverSpec): string | null {
   if (typeof spec === "string") return spec === "affected" ? null : spec;
-  return "any_one" in spec ? spec.any_one : "every" in spec ? spec.every : spec.every_other;
+  if ("any_one" in spec) return spec.any_one;
+  if ("every" in spec) return spec.every;
+  if ("every_other" in spec) return spec.every_other;
+  return spec.one_of;
 }
 
 const RuleSchema = z
@@ -59,7 +63,9 @@ const RuleSchema = z
     comment_open_ended: z.string().min(1).optional(),
     missed: z.enum(["pay_each", "skip"]).optional(),
     default: z.union([z.string(), z.number()]).optional(),
+    values: z.array(z.string().min(1)).min(2).optional(), // the only values allowed (R-FIN-10's reserve, open)
     node_level: z.boolean().optional(),
+    currency_level: z.boolean().optional(), // one value per currency, set by its issuer (R-FIN-01, R-FIN-10)
     changed_by: z.union([z.literal("proposal"), z.array(Key).min(1)]).optional(),
   })
   // .strict() rejects unknown fields, so a typo like `defualt:` is caught.
@@ -113,6 +119,12 @@ const RulesFileSchema = z
 
       if (rule.type === "parameter" && rule.default === undefined) {
         ctx.addIssue({ code: "custom", path: ["rules", i, "default"], message: `${rule.id} is a parameter and needs a default` });
+      }
+      if (rule.values && !rule.values.includes(String(rule.default))) {
+        ctx.addIssue({ code: "custom", path: ["rules", i, "default"], message: `${rule.id}'s default must be one of its values` });
+      }
+      if (rule.node_level && rule.currency_level) {
+        ctx.addIssue({ code: "custom", path: ["rules", i], message: `${rule.id} can't be both node_level and currency_level` });
       }
     });
   });

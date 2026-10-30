@@ -2,7 +2,7 @@
 # One entry per rule. The app validates this file at startup and refuses to start if it is invalid.
 # Changing it bumps `version`; every interaction records the version it was approved under.
 
-version: "2026-10-24.1"
+version: "2026-10-30.1"
 
 capabilityMap:
   # capability: [roles that carry it]. System-wide; node-level overrides are a parked question.
@@ -15,7 +15,7 @@ capabilityMap:
   MINT: [TREASURER]
   EXCHANGE: [TREASURER]
   WITHDRAW: [TREASURER]
-  SET_UP_CURRENCY: [TREASURER]
+  SET_UP_CURRENCY: [TREASURER]  # create and change the node's currencies, set its home currency and primary fiat
   VIEW_BALANCES: [TREASURER]
   EDIT_IDENTITY: [OWNER]
   EDIT_GOVERNANCE: [OWNER]    # optional roles, role holders, rule values
@@ -96,10 +96,10 @@ rules:
 
   # Financial
   - id: R-FIN-01
-    name: Reserve ratio (minted units = converted value / ratio)
+    name: Reserve ratio (minted units = converted value / ratio); one unit costs the ratio in the reserve fiat, its price
     type: parameter
     default: 1.0
-    node_level: true
+    currency_level: true           # one value per currency, set by its issuer
     changed_by: [TREASURER, OWNER]
   - id: R-FIN-02
     name: Value converted when minting is locked in the reserve
@@ -111,12 +111,12 @@ rules:
     node_level: true
     changed_by: [TREASURER, OWNER]
   - id: R-FIN-04
-    name: Every node has a currency
+    name: Every node has a home currency (its primary fiat, a collection's currency, or its own); leaving that collection falls back to the primary fiat
     type: precondition
   - id: R-FIN-05
-    name: Exchange rates come from the static rates file
+    name: Rates come from the exchange-rate table (fiat rates fetched daily, node currency prices from their reserve ratio); other pairs are worked out from these
     type: configuration
-    default: rates.json
+    default: exchange_rate_table
   - id: R-FIN-06
     name: Each currency has a unique ID and a name
     type: validation
@@ -133,6 +133,33 @@ rules:
     name: Zero-sum across roles for a funded project
     type: tbd
     default: not_enforced
+  - id: R-FIN-10
+    name: Conversion policy (reserve - only as far as the reserves cover; open - a straight swap at the price beyond the reserve, if both currencies are open)
+    type: parameter
+    default: reserve
+    values: [reserve, open]
+    currency_level: true
+    changed_by: [TREASURER, OWNER]
+  - id: R-FIN-11
+    name: Creating, changing or retiring a currency needs a Treasurer and an Owner
+    type: approval
+    # Who approves, read by proposals.ts (same entries as R-GOV-08). For an
+    # individual both are the person, so it applies at once.
+    approvers:
+      - one_of: TREASURER
+      - one_of: OWNER
+  - id: R-FIN-12
+    name: A currency someone has held can't be deleted, only retired; its decimals can't change once units exist
+    type: precondition
+  - id: R-FIN-13
+    name: A node's primary fiat defaults to its country's currency, from the fiat list
+    type: default
+  - id: R-FIN-14
+    name: Fiat is never converted into another fiat; conversion through reserves needs both currencies backed by the same fiat
+    type: precondition
+  - id: R-FIN-15
+    name: Rates are never changed or deleted; a new rate closes the previous one, and every transaction records the rate it used
+    type: precondition
 
   # Governance
   - id: R-GOV-01
@@ -171,6 +198,7 @@ rules:
     #   any_one: ROLE     - the collection itself, decided by any one holder of ROLE there
     #   every: ROLE       - each holder of ROLE in the collection
     #   every_other: ROLE - each holder of ROLE except the affected node
+    #   one_of: ROLE      - any one holder of ROLE, each asked as themselves; one approval among them is enough
     # Proposing counts as approval for every entry the proposer meets.
     approvers:
       - affected

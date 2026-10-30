@@ -14,6 +14,8 @@
 // instead of the caller: pass `approvalRule` (see readApproval below). That is
 // how a collection's role changes (R-GOV-08) and removals (R-COL-04) work,
 // with declines counted as R-GOV-06 says, so a node can set its own values.
+// A `one_of` entry (R-FIN-11's "a Treasurer and an Owner") asks every holder
+// of a role as themselves, and any one of them approving is enough for it.
 
 import type { Proposal, ProposalKind } from "../../../generated/prisma";
 import { getRule, type ApproverSpec } from "~/server/rules";
@@ -46,9 +48,13 @@ export interface ApprovalRule {
 /** Who approves and how, as read when it was proposed. Kept in the proposal's payload. */
 export interface Approval {
   ruleIds: string[];
-  needed: number; // approvals needed out of the approver rows
+  needed: number; // approvals needed out of the `main` approver rows
   declines: "any_closes" | "unreachable"; // R-GOV-06
   deciders: Record<string, Requirement>; // what deciding needs, per approver node
+  /** The approver nodes `needed` counts among; every approver row when absent (proposals made before one_of). */
+  main?: string[];
+  /** One list per one_of entry: any one of its nodes approving is enough for that entry. */
+  oneOf?: string[][];
 }
 
 export interface CreateProposalInput {
@@ -84,12 +90,26 @@ export async function requirementFor(tx: Tx, proposal: Proposal, nodeId: string,
 }
 
 /**
- * Approvals needed and how declines count. Without an approval read from
- * rules.yaml, every approver is needed, so the first decline closes it.
+ * Where a proposal stands, given its approver rows so far. Without an
+ * approval read from rules.yaml, every approver is needed, so the first
+ * decline closes it. Otherwise it applies once `needed` of the main rows and
+ * one node of each one_of entry have approved, and a decline closes it as
+ * R-GOV-06 says: at once, or once that can no longer happen.
  */
-function thresholds(proposal: Proposal, total: number) {
+function outcome(proposal: Proposal, rows: { approverNodeId: string; decision: boolean | null }[]) {
   const approval = approvalOf(proposal);
-  return { needed: approval?.needed ?? total, declines: approval?.declines ?? "unreachable" };
+  const decision = (id: string) => rows.find((r) => r.approverNodeId === id)?.decision ?? null;
+  const main = approval?.main ?? rows.map((r) => r.approverNodeId);
+  const needed = approval?.needed ?? main.length;
+  const oneOf = approval?.oneOf ?? [];
+
+  const approved = main.filter((id) => decision(id) === true).length;
+  if (approved >= needed && oneOf.every((ids) => ids.some((id) => decision(id) === true))) return "APPROVED";
+
+  if (!rows.some((r) => r.decision === false)) return "OPEN";
+  const declined = main.filter((id) => decision(id) === false).length;
+  const unreachable = main.length - declined < needed || oneOf.some((ids) => ids.every((id) => decision(id) === false));
+  return (approval?.declines ?? "unreachable") === "any_closes" || unreachable ? "DECLINED" : "OPEN";
 }
 
 /**
@@ -116,30 +136,42 @@ async function readApproval(tx: Tx, input: ApprovalRule): Promise<Approval> {
   const declines = ((await ownValue("R-GOV-06")) ?? getRule("R-GOV-06")?.declines ?? "unreachable") as Approval["declines"];
 
   const deciders: Record<string, Requirement> = {};
+  const main = new Set<string>();
+  const oneOf: string[][] = [];
   const holders = async (roleKey: string) =>
     (await tx.roleAssignment.findMany({ where: { scopeNodeId: input.scopeNodeId, roleKey, endedAt: null }, select: { holderNodeId: true } })).map(
       (r) => r.holderNodeId,
     );
   for (const spec of specs) {
-    if (spec === "affected") deciders[input.affectedNodeId] = await decidesForItself(tx, input.affectedNodeId);
-    else if (typeof spec === "string" || "any_one" in spec) {
+    if (spec === "affected") {
+      deciders[input.affectedNodeId] = await decidesForItself(tx, input.affectedNodeId);
+      main.add(input.affectedNodeId);
+    } else if (typeof spec === "string" || "any_one" in spec) {
       deciders[input.scopeNodeId] = { anyRole: [typeof spec === "string" ? spec : spec.any_one] };
+      main.add(input.scopeNodeId);
+    } else if ("one_of" in spec) {
+      const ids = await holders(spec.one_of);
+      if (ids.length === 0) throw new RuleError(`No one holds the ${spec.one_of} role to approve this`, [input.approversRuleId]);
+      for (const id of ids) deciders[id] ??= await decidesForItself(tx, id);
+      oneOf.push(ids);
     } else {
       const ids = await holders("every" in spec ? spec.every : spec.every_other);
       for (const id of ids) {
         if ("every_other" in spec && id === input.affectedNodeId) continue;
         deciders[id] ??= await decidesForItself(tx, id);
+        main.add(id);
       }
     }
   }
-  const total = Object.keys(deciders).length;
-  if (total === 0) throw new RuleError("No one is left to approve this", [input.approversRuleId]);
+  if (Object.keys(deciders).length === 0) throw new RuleError("No one is left to approve this", [input.approversRuleId]);
 
   return {
     ruleIds: [...new Set([input.approversRuleId, input.shareRuleId, "R-GOV-06"].filter((id): id is string => !!id))],
-    needed: Math.max(1, Math.ceil(share * total)),
+    needed: main.size === 0 ? 0 : Math.max(1, Math.ceil(share * main.size)),
     declines,
     deciders,
+    main: [...main],
+    ...(oneOf.length > 0 ? { oneOf } : {}),
   };
 }
 
@@ -192,7 +224,8 @@ export async function createProposal(db: Db, input: CreateProposalInput, handler
     const capability = await handler.capabilityFor(tx, proposal, input.proposerNodeId);
     await assertMeets(tx, input.proposedByPersonId, input.proposerNodeId, capability);
 
-    if (preApproved.size >= thresholds(proposal, approverIds.length).needed) {
+    const rows = approverIds.map((approverNodeId) => ({ approverNodeId, decision: preApproved.has(approverNodeId) ? true : null }));
+    if (outcome(proposal, rows) === "APPROVED") {
       await setStatus(tx, proposal, "APPROVED");
       await handler.apply(tx, proposal, input.proposedByPersonId);
     }
@@ -233,19 +266,12 @@ export async function decide(db: Db, input: DecideInput, handler: ProposalHandle
     });
     if (count === 0) throw new RuleError("This node has already decided on this proposal");
 
-    const [approved, declined, total] = await Promise.all([
-      tx.proposalApprover.count({ where: { proposalId: proposal.id, decision: true } }),
-      tx.proposalApprover.count({ where: { proposalId: proposal.id, decision: false } }),
-      tx.proposalApprover.count({ where: { proposalId: proposal.id } }),
-    ]);
-    const { needed, declines } = thresholds(proposal, total);
-    if (!input.approve) {
-      // R-GOV-06: one decline closes it, or only once the share can't be reached any more.
-      if (declines === "any_closes" || total - declined < needed) {
-        await setStatus(tx, proposal, "DECLINED");
-        await handler.onClosed?.(tx, proposal, "DECLINED", input.personId);
-      }
-    } else if (approved >= needed) {
+    const rows = await tx.proposalApprover.findMany({ where: { proposalId: proposal.id }, select: { approverNodeId: true, decision: true } });
+    const now = outcome(proposal, rows);
+    if (now === "DECLINED") {
+      await setStatus(tx, proposal, "DECLINED");
+      await handler.onClosed?.(tx, proposal, "DECLINED", input.personId);
+    } else if (now === "APPROVED") {
       await setStatus(tx, proposal, "APPROVED");
       await handler.apply(tx, proposal, input.personId);
     }

@@ -5,6 +5,7 @@
 import type { Db } from "./db";
 import { RuleError } from "./errors";
 import { inTransaction } from "./db";
+import { currencyHandlers, decideCurrencyChange, withdrawCurrencyChange } from "./currencies";
 import { decideGovernance, governanceHandlers, withdrawGovernance } from "./governance";
 import { interactionHandlers, respond, withdrawProposal, type Actor } from "./interactions";
 import { approvalOf, type DecideInput } from "./proposals";
@@ -17,14 +18,16 @@ export { recordActivity } from "./activity";
 export { approvalOf, type Approval } from "./proposals";
 export * from "./interactions";
 export * from "./wallet";
+export * from "./currencies";
 export * from "./invitations";
 export * from "./identity";
 export * from "./governance";
 export { runDuePayments, type DuePaymentsResult } from "./schedules";
-export { convert, findRate } from "./rates";
+export { getRate, setRate, rateHistory, applyRate, type Rate } from "./rates";
+export { runRateFeed, frankfurter, type RateFeedResult, type RateSourceAdapter } from "./rateFeed";
 
 /** Every kind of proposal the inbox can decide, and the handler that knows how. */
-const handlers = { ...interactionHandlers, ...governanceHandlers };
+const handlers = { ...interactionHandlers, ...governanceHandlers, ...currencyHandlers };
 
 /**
  * What `nodeId` needs to decide this proposal: a capability, or one of some
@@ -57,6 +60,7 @@ export async function decideProposal(db: Db, input: DecideInput) {
   const decision = { proposalId: proposal.id, approve: input.approve, comment: input.comment };
   if (interactionHandlers[proposal.kind]) return respond(db, actor, decision);
   if (governanceHandlers[proposal.kind]) return decideGovernance(db, actor, decision);
+  if (currencyHandlers[proposal.kind]) return decideCurrencyChange(db, actor, decision);
   throw new RuleError(`Deciding ${proposal.kind} proposals is not built yet`);
 }
 
@@ -64,5 +68,6 @@ export async function decideProposal(db: Db, input: DecideInput) {
 export async function withdrawAnyProposal(db: Db, actor: Actor, proposalId: string) {
   const proposal = await db.proposal.findUniqueOrThrow({ where: { id: proposalId } });
   if (governanceHandlers[proposal.kind]) return withdrawGovernance(db, actor, proposalId);
+  if (currencyHandlers[proposal.kind]) return withdrawCurrencyChange(db, actor, proposalId);
   return withdrawProposal(db, actor, proposalId);
 }

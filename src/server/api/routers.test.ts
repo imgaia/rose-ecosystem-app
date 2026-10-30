@@ -239,33 +239,29 @@ describe("wallet", () => {
     await t.db.currency.update({ where: { id: t.rcc.id }, data: { issuerNodeId: null } });
   });
 
-  it("exchange buys another node's currency: the fiat goes into the issuer's reserve", async () => {
+  it("exchange converts through the reserves: fiat into the issuer's reserve, units minted", async () => {
     const { ana, mo, zed, rose } = await org();
     await t.db.currency.update({ where: { id: t.rcc.id }, data: { issuerNodeId: rose.id } });
     const chf = await t.account(ana.id, t.chf.id, 3_000);
     const input = { actingNodeId: ana.id, fromAccountId: chf.id, toCurrencyId: t.rcc.id, amount: 1_250 };
 
-    expect(await as(ana).wallet.quoteExchange(input)).toMatchObject({ units: 1_250, rate: "1", issuer: { id: rose.id } });
-    const { paid, minted } = await as(ana).wallet.exchange(input);
-    expect(paid).toMatchObject({ kind: "EXCHANGE", amount: 1_250, fromAccountId: chf.id, groupId: minted.groupId });
-    expect(minted).toMatchObject({ kind: "MINT", amount: 1_250, fromAccountId: null });
+    expect(await as(ana).wallet.quoteExchange(input)).toMatchObject({ receive: 1_250, rate: "1", mode: "RESERVES" });
+    const { rows } = await as(ana).wallet.exchange(input);
+    const [paid, minted] = rows;
+    expect(paid).toMatchObject({ kind: "EXCHANGE", amount: 1_250, fromAccountId: chf.id });
+    expect(minted).toMatchObject({ kind: "EXCHANGE", amount: 1_250, fromAccountId: null, groupId: paid!.groupId });
     expect(await t.balanceOf(ana.id, t.chf.id)).toBe(1_750);
     expect(await t.balanceOf(ana.id, t.rcc.id)).toBe(11_250);
     const issuerReserve = await t.db.account.findFirstOrThrow({ where: { nodeId: rose.id, isReserve: true } });
     expect(issuerReserve).toMatchObject({ currencyId: t.chf.id, balance: 1_250 });
     expect(await t.balanceOf(rose.id, t.rcc.id)).toBe(5_000); // the issuer's own balance is untouched
 
-    // Units are minted at the issuer's reserve ratio (R-FIN-01).
-    await t.db.nodeRuleValue.create({ data: { nodeId: rose.id, ruleId: "R-FIN-01", value: "0.5" } });
-    expect((await as(ana).wallet.quoteExchange({ ...input, amount: 1_000 })).units).toBe(2_000);
-    await t.db.nodeRuleValue.delete({ where: { nodeId_ruleId: { nodeId: rose.id, ruleId: "R-FIN-01" } } });
-
-    // Not offered: out of a community currency, fiat to fiat, a currency with no issuer.
+    // Out of RCC only as far as the reserve covers (R-FIN-10); never fiat into fiat (R-FIN-14).
     const anaRcc = await t.db.account.findFirstOrThrow({ where: { nodeId: ana.id, currencyId: t.rcc.id } });
-    expect((await refused(as(ana).wallet.exchange({ ...input, fromAccountId: anaRcc.id, toCurrencyId: t.chf.id }))).message).toMatch(
-      /out of a community currency/,
-    );
-    expect((await refused(as(ana).wallet.exchange({ ...input, toCurrencyId: t.chf.id }))).message).toMatch(/between fiat/);
+    const out = await refused(as(ana).wallet.exchange({ ...input, fromAccountId: anaRcc.id, toCurrencyId: t.chf.id, amount: 2_000 }));
+    expect(out.ruleIds).toEqual(["R-FIN-10"]);
+    const eur = await t.db.currency.create({ data: { name: "Euro", code: "EUR", kind: "FIAT", country: "DE" } });
+    expect((await refused(as(ana).wallet.exchange({ ...input, toCurrencyId: eur.id }))).ruleIds).toEqual(["R-FIN-14"]);
     const loose = await t.db.currency.create({ data: { name: "No issuer", code: "NOI", kind: "COMMUNITY" } });
     expect((await refused(as(ana).wallet.exchange({ ...input, toCurrencyId: loose.id }))).message).toMatch(/no issuer/);
 

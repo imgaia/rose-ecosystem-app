@@ -44,6 +44,11 @@ export type RoleAssignment = $Result.DefaultSelection<Prisma.$RoleAssignmentPayl
  */
 export type NodeRuleValue = $Result.DefaultSelection<Prisma.$NodeRuleValuePayload>
 /**
+ * Model CurrencyRuleValue
+ * 
+ */
+export type CurrencyRuleValue = $Result.DefaultSelection<Prisma.$CurrencyRuleValuePayload>
+/**
  * Model Relationship
  * 
  */
@@ -88,6 +93,11 @@ export type ProposalApprover = $Result.DefaultSelection<Prisma.$ProposalApprover
  * 
  */
 export type Currency = $Result.DefaultSelection<Prisma.$CurrencyPayload>
+/**
+ * Model ExchangeRate
+ * 
+ */
+export type ExchangeRate = $Result.DefaultSelection<Prisma.$ExchangeRatePayload>
 /**
  * Model Account
  * 
@@ -191,7 +201,8 @@ export const ProposalKind: {
   ROLE_CHANGE: 'ROLE_CHANGE',
   RULE_VALUE: 'RULE_VALUE',
   MEMBER_REMOVAL: 'MEMBER_REMOVAL',
-  COLLECTION_CREATE: 'COLLECTION_CREATE'
+  COLLECTION_CREATE: 'COLLECTION_CREATE',
+  CURRENCY_CHANGE: 'CURRENCY_CHANGE'
 };
 
 export type ProposalKind = (typeof ProposalKind)[keyof typeof ProposalKind]
@@ -213,6 +224,23 @@ export const CurrencyKind: {
 };
 
 export type CurrencyKind = (typeof CurrencyKind)[keyof typeof CurrencyKind]
+
+
+export const CurrencyStatus: {
+  ACTIVE: 'ACTIVE',
+  RETIRED: 'RETIRED'
+};
+
+export type CurrencyStatus = (typeof CurrencyStatus)[keyof typeof CurrencyStatus]
+
+
+export const RateSource: {
+  FEED: 'FEED',
+  RESERVE_RATIO: 'RESERVE_RATIO',
+  MANUAL: 'MANUAL'
+};
+
+export type RateSource = (typeof RateSource)[keyof typeof RateSource]
 
 
 export const TransactionKind: {
@@ -278,6 +306,14 @@ export const ProposalStatus: typeof $Enums.ProposalStatus
 export type CurrencyKind = $Enums.CurrencyKind
 
 export const CurrencyKind: typeof $Enums.CurrencyKind
+
+export type CurrencyStatus = $Enums.CurrencyStatus
+
+export const CurrencyStatus: typeof $Enums.CurrencyStatus
+
+export type RateSource = $Enums.RateSource
+
+export const RateSource: typeof $Enums.RateSource
 
 export type TransactionKind = $Enums.TransactionKind
 
@@ -466,6 +502,16 @@ export class PrismaClient<
   get nodeRuleValue(): Prisma.NodeRuleValueDelegate<ExtArgs, ClientOptions>;
 
   /**
+   * `prisma.currencyRuleValue`: Exposes CRUD operations for the **CurrencyRuleValue** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more CurrencyRuleValues
+    * const currencyRuleValues = await prisma.currencyRuleValue.findMany()
+    * ```
+    */
+  get currencyRuleValue(): Prisma.CurrencyRuleValueDelegate<ExtArgs, ClientOptions>;
+
+  /**
    * `prisma.relationship`: Exposes CRUD operations for the **Relationship** model.
     * Example usage:
     * ```ts
@@ -554,6 +600,16 @@ export class PrismaClient<
     * ```
     */
   get currency(): Prisma.CurrencyDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.exchangeRate`: Exposes CRUD operations for the **ExchangeRate** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more ExchangeRates
+    * const exchangeRates = await prisma.exchangeRate.findMany()
+    * ```
+    */
+  get exchangeRate(): Prisma.ExchangeRateDelegate<ExtArgs, ClientOptions>;
 
   /**
    * `prisma.account`: Exposes CRUD operations for the **Account** model.
@@ -1051,6 +1107,7 @@ export namespace Prisma {
     RoleCapability: 'RoleCapability',
     RoleAssignment: 'RoleAssignment',
     NodeRuleValue: 'NodeRuleValue',
+    CurrencyRuleValue: 'CurrencyRuleValue',
     Relationship: 'Relationship',
     TrustScore: 'TrustScore',
     Interaction: 'Interaction',
@@ -1060,6 +1117,7 @@ export namespace Prisma {
     Proposal: 'Proposal',
     ProposalApprover: 'ProposalApprover',
     Currency: 'Currency',
+    ExchangeRate: 'ExchangeRate',
     Account: 'Account',
     Transaction: 'Transaction',
     Invitation: 'Invitation',
@@ -1083,7 +1141,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "node" | "role" | "capability" | "roleCapability" | "roleAssignment" | "nodeRuleValue" | "relationship" | "trustScore" | "interaction" | "interactionTerms" | "interactionCurator" | "verification" | "proposal" | "proposalApprover" | "currency" | "account" | "transaction" | "invitation" | "activity" | "passwordResetToken"
+      modelProps: "node" | "role" | "capability" | "roleCapability" | "roleAssignment" | "nodeRuleValue" | "currencyRuleValue" | "relationship" | "trustScore" | "interaction" | "interactionTerms" | "interactionCurator" | "verification" | "proposal" | "proposalApprover" | "currency" | "exchangeRate" | "account" | "transaction" | "invitation" | "activity" | "passwordResetToken"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -1528,6 +1586,80 @@ export namespace Prisma {
           count: {
             args: Prisma.NodeRuleValueCountArgs<ExtArgs>
             result: $Utils.Optional<NodeRuleValueCountAggregateOutputType> | number
+          }
+        }
+      }
+      CurrencyRuleValue: {
+        payload: Prisma.$CurrencyRuleValuePayload<ExtArgs>
+        fields: Prisma.CurrencyRuleValueFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.CurrencyRuleValueFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CurrencyRuleValuePayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.CurrencyRuleValueFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CurrencyRuleValuePayload>
+          }
+          findFirst: {
+            args: Prisma.CurrencyRuleValueFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CurrencyRuleValuePayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.CurrencyRuleValueFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CurrencyRuleValuePayload>
+          }
+          findMany: {
+            args: Prisma.CurrencyRuleValueFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CurrencyRuleValuePayload>[]
+          }
+          create: {
+            args: Prisma.CurrencyRuleValueCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CurrencyRuleValuePayload>
+          }
+          createMany: {
+            args: Prisma.CurrencyRuleValueCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.CurrencyRuleValueCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CurrencyRuleValuePayload>[]
+          }
+          delete: {
+            args: Prisma.CurrencyRuleValueDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CurrencyRuleValuePayload>
+          }
+          update: {
+            args: Prisma.CurrencyRuleValueUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CurrencyRuleValuePayload>
+          }
+          deleteMany: {
+            args: Prisma.CurrencyRuleValueDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.CurrencyRuleValueUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateManyAndReturn: {
+            args: Prisma.CurrencyRuleValueUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CurrencyRuleValuePayload>[]
+          }
+          upsert: {
+            args: Prisma.CurrencyRuleValueUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CurrencyRuleValuePayload>
+          }
+          aggregate: {
+            args: Prisma.CurrencyRuleValueAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateCurrencyRuleValue>
+          }
+          groupBy: {
+            args: Prisma.CurrencyRuleValueGroupByArgs<ExtArgs>
+            result: $Utils.Optional<CurrencyRuleValueGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.CurrencyRuleValueCountArgs<ExtArgs>
+            result: $Utils.Optional<CurrencyRuleValueCountAggregateOutputType> | number
           }
         }
       }
@@ -2197,6 +2329,80 @@ export namespace Prisma {
           }
         }
       }
+      ExchangeRate: {
+        payload: Prisma.$ExchangeRatePayload<ExtArgs>
+        fields: Prisma.ExchangeRateFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.ExchangeRateFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ExchangeRatePayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.ExchangeRateFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ExchangeRatePayload>
+          }
+          findFirst: {
+            args: Prisma.ExchangeRateFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ExchangeRatePayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.ExchangeRateFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ExchangeRatePayload>
+          }
+          findMany: {
+            args: Prisma.ExchangeRateFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ExchangeRatePayload>[]
+          }
+          create: {
+            args: Prisma.ExchangeRateCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ExchangeRatePayload>
+          }
+          createMany: {
+            args: Prisma.ExchangeRateCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.ExchangeRateCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ExchangeRatePayload>[]
+          }
+          delete: {
+            args: Prisma.ExchangeRateDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ExchangeRatePayload>
+          }
+          update: {
+            args: Prisma.ExchangeRateUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ExchangeRatePayload>
+          }
+          deleteMany: {
+            args: Prisma.ExchangeRateDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.ExchangeRateUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateManyAndReturn: {
+            args: Prisma.ExchangeRateUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ExchangeRatePayload>[]
+          }
+          upsert: {
+            args: Prisma.ExchangeRateUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ExchangeRatePayload>
+          }
+          aggregate: {
+            args: Prisma.ExchangeRateAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateExchangeRate>
+          }
+          groupBy: {
+            args: Prisma.ExchangeRateGroupByArgs<ExtArgs>
+            result: $Utils.Optional<ExchangeRateGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.ExchangeRateCountArgs<ExtArgs>
+            result: $Utils.Optional<ExchangeRateCountAggregateOutputType> | number
+          }
+        }
+      }
       Account: {
         payload: Prisma.$AccountPayload<ExtArgs>
         fields: Prisma.AccountFieldRefs
@@ -2669,6 +2875,7 @@ export namespace Prisma {
     roleCapability?: RoleCapabilityOmit
     roleAssignment?: RoleAssignmentOmit
     nodeRuleValue?: NodeRuleValueOmit
+    currencyRuleValue?: CurrencyRuleValueOmit
     relationship?: RelationshipOmit
     trustScore?: TrustScoreOmit
     interaction?: InteractionOmit
@@ -2678,6 +2885,7 @@ export namespace Prisma {
     proposal?: ProposalOmit
     proposalApprover?: ProposalApproverOmit
     currency?: CurrencyOmit
+    exchangeRate?: ExchangeRateOmit
     account?: AccountOmit
     transaction?: TransactionOmit
     invitation?: InvitationOmit
@@ -3066,13 +3274,23 @@ export namespace Prisma {
    */
 
   export type CurrencyCountOutputType = {
+    backs: number
+    homeOf: number
     accounts: number
     terms: number
+    ratesFrom: number
+    ratesTo: number
+    ruleValues: number
   }
 
   export type CurrencyCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    backs?: boolean | CurrencyCountOutputTypeCountBacksArgs
+    homeOf?: boolean | CurrencyCountOutputTypeCountHomeOfArgs
     accounts?: boolean | CurrencyCountOutputTypeCountAccountsArgs
     terms?: boolean | CurrencyCountOutputTypeCountTermsArgs
+    ratesFrom?: boolean | CurrencyCountOutputTypeCountRatesFromArgs
+    ratesTo?: boolean | CurrencyCountOutputTypeCountRatesToArgs
+    ruleValues?: boolean | CurrencyCountOutputTypeCountRuleValuesArgs
   }
 
   // Custom InputTypes
@@ -3089,6 +3307,20 @@ export namespace Prisma {
   /**
    * CurrencyCountOutputType without action
    */
+  export type CurrencyCountOutputTypeCountBacksArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: CurrencyWhereInput
+  }
+
+  /**
+   * CurrencyCountOutputType without action
+   */
+  export type CurrencyCountOutputTypeCountHomeOfArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: NodeWhereInput
+  }
+
+  /**
+   * CurrencyCountOutputType without action
+   */
   export type CurrencyCountOutputTypeCountAccountsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: AccountWhereInput
   }
@@ -3098,6 +3330,27 @@ export namespace Prisma {
    */
   export type CurrencyCountOutputTypeCountTermsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: InteractionTermsWhereInput
+  }
+
+  /**
+   * CurrencyCountOutputType without action
+   */
+  export type CurrencyCountOutputTypeCountRatesFromArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ExchangeRateWhereInput
+  }
+
+  /**
+   * CurrencyCountOutputType without action
+   */
+  export type CurrencyCountOutputTypeCountRatesToArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ExchangeRateWhereInput
+  }
+
+  /**
+   * CurrencyCountOutputType without action
+   */
+  export type CurrencyCountOutputTypeCountRuleValuesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: CurrencyRuleValueWhereInput
   }
 
 
@@ -3168,6 +3421,8 @@ export namespace Prisma {
     passwordHash: string | null
     email: string | null
     phone: string | null
+    country: string | null
+    homeCurrencyId: string | null
     createdAt: Date | null
   }
 
@@ -3184,6 +3439,8 @@ export namespace Prisma {
     passwordHash: string | null
     email: string | null
     phone: string | null
+    country: string | null
+    homeCurrencyId: string | null
     createdAt: Date | null
   }
 
@@ -3200,6 +3457,8 @@ export namespace Prisma {
     passwordHash: number
     email: number
     phone: number
+    country: number
+    homeCurrencyId: number
     createdAt: number
     _all: number
   }
@@ -3218,6 +3477,8 @@ export namespace Prisma {
     passwordHash?: true
     email?: true
     phone?: true
+    country?: true
+    homeCurrencyId?: true
     createdAt?: true
   }
 
@@ -3234,6 +3495,8 @@ export namespace Prisma {
     passwordHash?: true
     email?: true
     phone?: true
+    country?: true
+    homeCurrencyId?: true
     createdAt?: true
   }
 
@@ -3250,6 +3513,8 @@ export namespace Prisma {
     passwordHash?: true
     email?: true
     phone?: true
+    country?: true
+    homeCurrencyId?: true
     createdAt?: true
     _all?: true
   }
@@ -3339,6 +3604,8 @@ export namespace Prisma {
     passwordHash: string | null
     email: string | null
     phone: string | null
+    country: string | null
+    homeCurrencyId: string | null
     createdAt: Date
     _count: NodeCountAggregateOutputType | null
     _min: NodeMinAggregateOutputType | null
@@ -3372,7 +3639,10 @@ export namespace Prisma {
     passwordHash?: boolean
     email?: boolean
     phone?: boolean
+    country?: boolean
+    homeCurrencyId?: boolean
     createdAt?: boolean
+    homeCurrency?: boolean | Node$homeCurrencyArgs<ExtArgs>
     rolesHeldHere?: boolean | Node$rolesHeldHereArgs<ExtArgs>
     rolesHeldByMe?: boolean | Node$rolesHeldByMeArgs<ExtArgs>
     accounts?: boolean | Node$accountsArgs<ExtArgs>
@@ -3398,7 +3668,10 @@ export namespace Prisma {
     passwordHash?: boolean
     email?: boolean
     phone?: boolean
+    country?: boolean
+    homeCurrencyId?: boolean
     createdAt?: boolean
+    homeCurrency?: boolean | Node$homeCurrencyArgs<ExtArgs>
   }, ExtArgs["result"]["node"]>
 
   export type NodeSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
@@ -3414,7 +3687,10 @@ export namespace Prisma {
     passwordHash?: boolean
     email?: boolean
     phone?: boolean
+    country?: boolean
+    homeCurrencyId?: boolean
     createdAt?: boolean
+    homeCurrency?: boolean | Node$homeCurrencyArgs<ExtArgs>
   }, ExtArgs["result"]["node"]>
 
   export type NodeSelectScalar = {
@@ -3430,11 +3706,14 @@ export namespace Prisma {
     passwordHash?: boolean
     email?: boolean
     phone?: boolean
+    country?: boolean
+    homeCurrencyId?: boolean
     createdAt?: boolean
   }
 
-  export type NodeOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "kind" | "status" | "name" | "firstName" | "lastName" | "description" | "photoUrl" | "username" | "passwordHash" | "email" | "phone" | "createdAt", ExtArgs["result"]["node"]>
+  export type NodeOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "kind" | "status" | "name" | "firstName" | "lastName" | "description" | "photoUrl" | "username" | "passwordHash" | "email" | "phone" | "country" | "homeCurrencyId" | "createdAt", ExtArgs["result"]["node"]>
   export type NodeInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    homeCurrency?: boolean | Node$homeCurrencyArgs<ExtArgs>
     rolesHeldHere?: boolean | Node$rolesHeldHereArgs<ExtArgs>
     rolesHeldByMe?: boolean | Node$rolesHeldByMeArgs<ExtArgs>
     accounts?: boolean | Node$accountsArgs<ExtArgs>
@@ -3446,12 +3725,17 @@ export namespace Prisma {
     activity?: boolean | Node$activityArgs<ExtArgs>
     _count?: boolean | NodeCountOutputTypeDefaultArgs<ExtArgs>
   }
-  export type NodeIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {}
-  export type NodeIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {}
+  export type NodeIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    homeCurrency?: boolean | Node$homeCurrencyArgs<ExtArgs>
+  }
+  export type NodeIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    homeCurrency?: boolean | Node$homeCurrencyArgs<ExtArgs>
+  }
 
   export type $NodePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "Node"
     objects: {
+      homeCurrency: Prisma.$CurrencyPayload<ExtArgs> | null
       rolesHeldHere: Prisma.$RoleAssignmentPayload<ExtArgs>[]
       rolesHeldByMe: Prisma.$RoleAssignmentPayload<ExtArgs>[]
       accounts: Prisma.$AccountPayload<ExtArgs>[]
@@ -3475,6 +3759,8 @@ export namespace Prisma {
       passwordHash: string | null
       email: string | null
       phone: string | null
+      country: string | null
+      homeCurrencyId: string | null
       createdAt: Date
     }, ExtArgs["result"]["node"]>
     composites: {}
@@ -3870,6 +4156,7 @@ export namespace Prisma {
    */
   export interface Prisma__NodeClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
+    homeCurrency<T extends Node$homeCurrencyArgs<ExtArgs> = {}>(args?: Subset<T, Node$homeCurrencyArgs<ExtArgs>>): Prisma__CurrencyClient<$Result.GetResult<Prisma.$CurrencyPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
     rolesHeldHere<T extends Node$rolesHeldHereArgs<ExtArgs> = {}>(args?: Subset<T, Node$rolesHeldHereArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RoleAssignmentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     rolesHeldByMe<T extends Node$rolesHeldByMeArgs<ExtArgs> = {}>(args?: Subset<T, Node$rolesHeldByMeArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RoleAssignmentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     accounts<T extends Node$accountsArgs<ExtArgs> = {}>(args?: Subset<T, Node$accountsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$AccountPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -3920,6 +4207,8 @@ export namespace Prisma {
     readonly passwordHash: FieldRef<"Node", 'String'>
     readonly email: FieldRef<"Node", 'String'>
     readonly phone: FieldRef<"Node", 'String'>
+    readonly country: FieldRef<"Node", 'String'>
+    readonly homeCurrencyId: FieldRef<"Node", 'String'>
     readonly createdAt: FieldRef<"Node", 'DateTime'>
   }
     
@@ -4168,6 +4457,10 @@ export namespace Prisma {
      * The data used to create many Nodes.
      */
     data: NodeCreateManyInput | NodeCreateManyInput[]
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: NodeIncludeCreateManyAndReturn<ExtArgs> | null
   }
 
   /**
@@ -4238,6 +4531,10 @@ export namespace Prisma {
      * Limit how many Nodes to update.
      */
     limit?: number
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: NodeIncludeUpdateManyAndReturn<ExtArgs> | null
   }
 
   /**
@@ -4304,6 +4601,25 @@ export namespace Prisma {
      * Limit how many Nodes to delete.
      */
     limit?: number
+  }
+
+  /**
+   * Node.homeCurrency
+   */
+  export type Node$homeCurrencyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Currency
+     */
+    select?: CurrencySelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Currency
+     */
+    omit?: CurrencyOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CurrencyInclude<ExtArgs> | null
+    where?: CurrencyWhereInput
   }
 
   /**
@@ -9790,6 +10106,1036 @@ export namespace Prisma {
      * Choose, which related nodes to fetch as well
      */
     include?: NodeRuleValueInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model CurrencyRuleValue
+   */
+
+  export type AggregateCurrencyRuleValue = {
+    _count: CurrencyRuleValueCountAggregateOutputType | null
+    _min: CurrencyRuleValueMinAggregateOutputType | null
+    _max: CurrencyRuleValueMaxAggregateOutputType | null
+  }
+
+  export type CurrencyRuleValueMinAggregateOutputType = {
+    currencyId: string | null
+    ruleId: string | null
+    value: string | null
+  }
+
+  export type CurrencyRuleValueMaxAggregateOutputType = {
+    currencyId: string | null
+    ruleId: string | null
+    value: string | null
+  }
+
+  export type CurrencyRuleValueCountAggregateOutputType = {
+    currencyId: number
+    ruleId: number
+    value: number
+    _all: number
+  }
+
+
+  export type CurrencyRuleValueMinAggregateInputType = {
+    currencyId?: true
+    ruleId?: true
+    value?: true
+  }
+
+  export type CurrencyRuleValueMaxAggregateInputType = {
+    currencyId?: true
+    ruleId?: true
+    value?: true
+  }
+
+  export type CurrencyRuleValueCountAggregateInputType = {
+    currencyId?: true
+    ruleId?: true
+    value?: true
+    _all?: true
+  }
+
+  export type CurrencyRuleValueAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which CurrencyRuleValue to aggregate.
+     */
+    where?: CurrencyRuleValueWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CurrencyRuleValues to fetch.
+     */
+    orderBy?: CurrencyRuleValueOrderByWithRelationInput | CurrencyRuleValueOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: CurrencyRuleValueWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CurrencyRuleValues from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CurrencyRuleValues.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned CurrencyRuleValues
+    **/
+    _count?: true | CurrencyRuleValueCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: CurrencyRuleValueMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: CurrencyRuleValueMaxAggregateInputType
+  }
+
+  export type GetCurrencyRuleValueAggregateType<T extends CurrencyRuleValueAggregateArgs> = {
+        [P in keyof T & keyof AggregateCurrencyRuleValue]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateCurrencyRuleValue[P]>
+      : GetScalarType<T[P], AggregateCurrencyRuleValue[P]>
+  }
+
+
+
+
+  export type CurrencyRuleValueGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: CurrencyRuleValueWhereInput
+    orderBy?: CurrencyRuleValueOrderByWithAggregationInput | CurrencyRuleValueOrderByWithAggregationInput[]
+    by: CurrencyRuleValueScalarFieldEnum[] | CurrencyRuleValueScalarFieldEnum
+    having?: CurrencyRuleValueScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: CurrencyRuleValueCountAggregateInputType | true
+    _min?: CurrencyRuleValueMinAggregateInputType
+    _max?: CurrencyRuleValueMaxAggregateInputType
+  }
+
+  export type CurrencyRuleValueGroupByOutputType = {
+    currencyId: string
+    ruleId: string
+    value: string
+    _count: CurrencyRuleValueCountAggregateOutputType | null
+    _min: CurrencyRuleValueMinAggregateOutputType | null
+    _max: CurrencyRuleValueMaxAggregateOutputType | null
+  }
+
+  type GetCurrencyRuleValueGroupByPayload<T extends CurrencyRuleValueGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<CurrencyRuleValueGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof CurrencyRuleValueGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], CurrencyRuleValueGroupByOutputType[P]>
+            : GetScalarType<T[P], CurrencyRuleValueGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type CurrencyRuleValueSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    currencyId?: boolean
+    ruleId?: boolean
+    value?: boolean
+    currency?: boolean | CurrencyDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["currencyRuleValue"]>
+
+  export type CurrencyRuleValueSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    currencyId?: boolean
+    ruleId?: boolean
+    value?: boolean
+    currency?: boolean | CurrencyDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["currencyRuleValue"]>
+
+  export type CurrencyRuleValueSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    currencyId?: boolean
+    ruleId?: boolean
+    value?: boolean
+    currency?: boolean | CurrencyDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["currencyRuleValue"]>
+
+  export type CurrencyRuleValueSelectScalar = {
+    currencyId?: boolean
+    ruleId?: boolean
+    value?: boolean
+  }
+
+  export type CurrencyRuleValueOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"currencyId" | "ruleId" | "value", ExtArgs["result"]["currencyRuleValue"]>
+  export type CurrencyRuleValueInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    currency?: boolean | CurrencyDefaultArgs<ExtArgs>
+  }
+  export type CurrencyRuleValueIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    currency?: boolean | CurrencyDefaultArgs<ExtArgs>
+  }
+  export type CurrencyRuleValueIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    currency?: boolean | CurrencyDefaultArgs<ExtArgs>
+  }
+
+  export type $CurrencyRuleValuePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "CurrencyRuleValue"
+    objects: {
+      currency: Prisma.$CurrencyPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      currencyId: string
+      ruleId: string
+      value: string
+    }, ExtArgs["result"]["currencyRuleValue"]>
+    composites: {}
+  }
+
+  type CurrencyRuleValueGetPayload<S extends boolean | null | undefined | CurrencyRuleValueDefaultArgs> = $Result.GetResult<Prisma.$CurrencyRuleValuePayload, S>
+
+  type CurrencyRuleValueCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<CurrencyRuleValueFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: CurrencyRuleValueCountAggregateInputType | true
+    }
+
+  export interface CurrencyRuleValueDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['CurrencyRuleValue'], meta: { name: 'CurrencyRuleValue' } }
+    /**
+     * Find zero or one CurrencyRuleValue that matches the filter.
+     * @param {CurrencyRuleValueFindUniqueArgs} args - Arguments to find a CurrencyRuleValue
+     * @example
+     * // Get one CurrencyRuleValue
+     * const currencyRuleValue = await prisma.currencyRuleValue.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends CurrencyRuleValueFindUniqueArgs>(args: SelectSubset<T, CurrencyRuleValueFindUniqueArgs<ExtArgs>>): Prisma__CurrencyRuleValueClient<$Result.GetResult<Prisma.$CurrencyRuleValuePayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one CurrencyRuleValue that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {CurrencyRuleValueFindUniqueOrThrowArgs} args - Arguments to find a CurrencyRuleValue
+     * @example
+     * // Get one CurrencyRuleValue
+     * const currencyRuleValue = await prisma.currencyRuleValue.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends CurrencyRuleValueFindUniqueOrThrowArgs>(args: SelectSubset<T, CurrencyRuleValueFindUniqueOrThrowArgs<ExtArgs>>): Prisma__CurrencyRuleValueClient<$Result.GetResult<Prisma.$CurrencyRuleValuePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first CurrencyRuleValue that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CurrencyRuleValueFindFirstArgs} args - Arguments to find a CurrencyRuleValue
+     * @example
+     * // Get one CurrencyRuleValue
+     * const currencyRuleValue = await prisma.currencyRuleValue.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends CurrencyRuleValueFindFirstArgs>(args?: SelectSubset<T, CurrencyRuleValueFindFirstArgs<ExtArgs>>): Prisma__CurrencyRuleValueClient<$Result.GetResult<Prisma.$CurrencyRuleValuePayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first CurrencyRuleValue that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CurrencyRuleValueFindFirstOrThrowArgs} args - Arguments to find a CurrencyRuleValue
+     * @example
+     * // Get one CurrencyRuleValue
+     * const currencyRuleValue = await prisma.currencyRuleValue.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends CurrencyRuleValueFindFirstOrThrowArgs>(args?: SelectSubset<T, CurrencyRuleValueFindFirstOrThrowArgs<ExtArgs>>): Prisma__CurrencyRuleValueClient<$Result.GetResult<Prisma.$CurrencyRuleValuePayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more CurrencyRuleValues that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CurrencyRuleValueFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all CurrencyRuleValues
+     * const currencyRuleValues = await prisma.currencyRuleValue.findMany()
+     * 
+     * // Get first 10 CurrencyRuleValues
+     * const currencyRuleValues = await prisma.currencyRuleValue.findMany({ take: 10 })
+     * 
+     * // Only select the `currencyId`
+     * const currencyRuleValueWithCurrencyIdOnly = await prisma.currencyRuleValue.findMany({ select: { currencyId: true } })
+     * 
+     */
+    findMany<T extends CurrencyRuleValueFindManyArgs>(args?: SelectSubset<T, CurrencyRuleValueFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CurrencyRuleValuePayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a CurrencyRuleValue.
+     * @param {CurrencyRuleValueCreateArgs} args - Arguments to create a CurrencyRuleValue.
+     * @example
+     * // Create one CurrencyRuleValue
+     * const CurrencyRuleValue = await prisma.currencyRuleValue.create({
+     *   data: {
+     *     // ... data to create a CurrencyRuleValue
+     *   }
+     * })
+     * 
+     */
+    create<T extends CurrencyRuleValueCreateArgs>(args: SelectSubset<T, CurrencyRuleValueCreateArgs<ExtArgs>>): Prisma__CurrencyRuleValueClient<$Result.GetResult<Prisma.$CurrencyRuleValuePayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many CurrencyRuleValues.
+     * @param {CurrencyRuleValueCreateManyArgs} args - Arguments to create many CurrencyRuleValues.
+     * @example
+     * // Create many CurrencyRuleValues
+     * const currencyRuleValue = await prisma.currencyRuleValue.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends CurrencyRuleValueCreateManyArgs>(args?: SelectSubset<T, CurrencyRuleValueCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many CurrencyRuleValues and returns the data saved in the database.
+     * @param {CurrencyRuleValueCreateManyAndReturnArgs} args - Arguments to create many CurrencyRuleValues.
+     * @example
+     * // Create many CurrencyRuleValues
+     * const currencyRuleValue = await prisma.currencyRuleValue.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many CurrencyRuleValues and only return the `currencyId`
+     * const currencyRuleValueWithCurrencyIdOnly = await prisma.currencyRuleValue.createManyAndReturn({
+     *   select: { currencyId: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends CurrencyRuleValueCreateManyAndReturnArgs>(args?: SelectSubset<T, CurrencyRuleValueCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CurrencyRuleValuePayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Delete a CurrencyRuleValue.
+     * @param {CurrencyRuleValueDeleteArgs} args - Arguments to delete one CurrencyRuleValue.
+     * @example
+     * // Delete one CurrencyRuleValue
+     * const CurrencyRuleValue = await prisma.currencyRuleValue.delete({
+     *   where: {
+     *     // ... filter to delete one CurrencyRuleValue
+     *   }
+     * })
+     * 
+     */
+    delete<T extends CurrencyRuleValueDeleteArgs>(args: SelectSubset<T, CurrencyRuleValueDeleteArgs<ExtArgs>>): Prisma__CurrencyRuleValueClient<$Result.GetResult<Prisma.$CurrencyRuleValuePayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one CurrencyRuleValue.
+     * @param {CurrencyRuleValueUpdateArgs} args - Arguments to update one CurrencyRuleValue.
+     * @example
+     * // Update one CurrencyRuleValue
+     * const currencyRuleValue = await prisma.currencyRuleValue.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends CurrencyRuleValueUpdateArgs>(args: SelectSubset<T, CurrencyRuleValueUpdateArgs<ExtArgs>>): Prisma__CurrencyRuleValueClient<$Result.GetResult<Prisma.$CurrencyRuleValuePayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more CurrencyRuleValues.
+     * @param {CurrencyRuleValueDeleteManyArgs} args - Arguments to filter CurrencyRuleValues to delete.
+     * @example
+     * // Delete a few CurrencyRuleValues
+     * const { count } = await prisma.currencyRuleValue.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends CurrencyRuleValueDeleteManyArgs>(args?: SelectSubset<T, CurrencyRuleValueDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more CurrencyRuleValues.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CurrencyRuleValueUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many CurrencyRuleValues
+     * const currencyRuleValue = await prisma.currencyRuleValue.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends CurrencyRuleValueUpdateManyArgs>(args: SelectSubset<T, CurrencyRuleValueUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more CurrencyRuleValues and returns the data updated in the database.
+     * @param {CurrencyRuleValueUpdateManyAndReturnArgs} args - Arguments to update many CurrencyRuleValues.
+     * @example
+     * // Update many CurrencyRuleValues
+     * const currencyRuleValue = await prisma.currencyRuleValue.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Update zero or more CurrencyRuleValues and only return the `currencyId`
+     * const currencyRuleValueWithCurrencyIdOnly = await prisma.currencyRuleValue.updateManyAndReturn({
+     *   select: { currencyId: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    updateManyAndReturn<T extends CurrencyRuleValueUpdateManyAndReturnArgs>(args: SelectSubset<T, CurrencyRuleValueUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CurrencyRuleValuePayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Create or update one CurrencyRuleValue.
+     * @param {CurrencyRuleValueUpsertArgs} args - Arguments to update or create a CurrencyRuleValue.
+     * @example
+     * // Update or create a CurrencyRuleValue
+     * const currencyRuleValue = await prisma.currencyRuleValue.upsert({
+     *   create: {
+     *     // ... data to create a CurrencyRuleValue
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the CurrencyRuleValue we want to update
+     *   }
+     * })
+     */
+    upsert<T extends CurrencyRuleValueUpsertArgs>(args: SelectSubset<T, CurrencyRuleValueUpsertArgs<ExtArgs>>): Prisma__CurrencyRuleValueClient<$Result.GetResult<Prisma.$CurrencyRuleValuePayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of CurrencyRuleValues.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CurrencyRuleValueCountArgs} args - Arguments to filter CurrencyRuleValues to count.
+     * @example
+     * // Count the number of CurrencyRuleValues
+     * const count = await prisma.currencyRuleValue.count({
+     *   where: {
+     *     // ... the filter for the CurrencyRuleValues we want to count
+     *   }
+     * })
+    **/
+    count<T extends CurrencyRuleValueCountArgs>(
+      args?: Subset<T, CurrencyRuleValueCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], CurrencyRuleValueCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a CurrencyRuleValue.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CurrencyRuleValueAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends CurrencyRuleValueAggregateArgs>(args: Subset<T, CurrencyRuleValueAggregateArgs>): Prisma.PrismaPromise<GetCurrencyRuleValueAggregateType<T>>
+
+    /**
+     * Group by CurrencyRuleValue.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CurrencyRuleValueGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends CurrencyRuleValueGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: CurrencyRuleValueGroupByArgs['orderBy'] }
+        : { orderBy?: CurrencyRuleValueGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, CurrencyRuleValueGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetCurrencyRuleValueGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the CurrencyRuleValue model
+   */
+  readonly fields: CurrencyRuleValueFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for CurrencyRuleValue.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__CurrencyRuleValueClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    currency<T extends CurrencyDefaultArgs<ExtArgs> = {}>(args?: Subset<T, CurrencyDefaultArgs<ExtArgs>>): Prisma__CurrencyClient<$Result.GetResult<Prisma.$CurrencyPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the CurrencyRuleValue model
+   */
+  interface CurrencyRuleValueFieldRefs {
+    readonly currencyId: FieldRef<"CurrencyRuleValue", 'String'>
+    readonly ruleId: FieldRef<"CurrencyRuleValue", 'String'>
+    readonly value: FieldRef<"CurrencyRuleValue", 'String'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * CurrencyRuleValue findUnique
+   */
+  export type CurrencyRuleValueFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CurrencyRuleValue
+     */
+    select?: CurrencyRuleValueSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the CurrencyRuleValue
+     */
+    omit?: CurrencyRuleValueOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CurrencyRuleValueInclude<ExtArgs> | null
+    /**
+     * Filter, which CurrencyRuleValue to fetch.
+     */
+    where: CurrencyRuleValueWhereUniqueInput
+  }
+
+  /**
+   * CurrencyRuleValue findUniqueOrThrow
+   */
+  export type CurrencyRuleValueFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CurrencyRuleValue
+     */
+    select?: CurrencyRuleValueSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the CurrencyRuleValue
+     */
+    omit?: CurrencyRuleValueOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CurrencyRuleValueInclude<ExtArgs> | null
+    /**
+     * Filter, which CurrencyRuleValue to fetch.
+     */
+    where: CurrencyRuleValueWhereUniqueInput
+  }
+
+  /**
+   * CurrencyRuleValue findFirst
+   */
+  export type CurrencyRuleValueFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CurrencyRuleValue
+     */
+    select?: CurrencyRuleValueSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the CurrencyRuleValue
+     */
+    omit?: CurrencyRuleValueOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CurrencyRuleValueInclude<ExtArgs> | null
+    /**
+     * Filter, which CurrencyRuleValue to fetch.
+     */
+    where?: CurrencyRuleValueWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CurrencyRuleValues to fetch.
+     */
+    orderBy?: CurrencyRuleValueOrderByWithRelationInput | CurrencyRuleValueOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for CurrencyRuleValues.
+     */
+    cursor?: CurrencyRuleValueWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CurrencyRuleValues from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CurrencyRuleValues.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of CurrencyRuleValues.
+     */
+    distinct?: CurrencyRuleValueScalarFieldEnum | CurrencyRuleValueScalarFieldEnum[]
+  }
+
+  /**
+   * CurrencyRuleValue findFirstOrThrow
+   */
+  export type CurrencyRuleValueFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CurrencyRuleValue
+     */
+    select?: CurrencyRuleValueSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the CurrencyRuleValue
+     */
+    omit?: CurrencyRuleValueOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CurrencyRuleValueInclude<ExtArgs> | null
+    /**
+     * Filter, which CurrencyRuleValue to fetch.
+     */
+    where?: CurrencyRuleValueWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CurrencyRuleValues to fetch.
+     */
+    orderBy?: CurrencyRuleValueOrderByWithRelationInput | CurrencyRuleValueOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for CurrencyRuleValues.
+     */
+    cursor?: CurrencyRuleValueWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CurrencyRuleValues from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CurrencyRuleValues.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of CurrencyRuleValues.
+     */
+    distinct?: CurrencyRuleValueScalarFieldEnum | CurrencyRuleValueScalarFieldEnum[]
+  }
+
+  /**
+   * CurrencyRuleValue findMany
+   */
+  export type CurrencyRuleValueFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CurrencyRuleValue
+     */
+    select?: CurrencyRuleValueSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the CurrencyRuleValue
+     */
+    omit?: CurrencyRuleValueOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CurrencyRuleValueInclude<ExtArgs> | null
+    /**
+     * Filter, which CurrencyRuleValues to fetch.
+     */
+    where?: CurrencyRuleValueWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CurrencyRuleValues to fetch.
+     */
+    orderBy?: CurrencyRuleValueOrderByWithRelationInput | CurrencyRuleValueOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing CurrencyRuleValues.
+     */
+    cursor?: CurrencyRuleValueWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CurrencyRuleValues from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CurrencyRuleValues.
+     */
+    skip?: number
+    distinct?: CurrencyRuleValueScalarFieldEnum | CurrencyRuleValueScalarFieldEnum[]
+  }
+
+  /**
+   * CurrencyRuleValue create
+   */
+  export type CurrencyRuleValueCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CurrencyRuleValue
+     */
+    select?: CurrencyRuleValueSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the CurrencyRuleValue
+     */
+    omit?: CurrencyRuleValueOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CurrencyRuleValueInclude<ExtArgs> | null
+    /**
+     * The data needed to create a CurrencyRuleValue.
+     */
+    data: XOR<CurrencyRuleValueCreateInput, CurrencyRuleValueUncheckedCreateInput>
+  }
+
+  /**
+   * CurrencyRuleValue createMany
+   */
+  export type CurrencyRuleValueCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many CurrencyRuleValues.
+     */
+    data: CurrencyRuleValueCreateManyInput | CurrencyRuleValueCreateManyInput[]
+  }
+
+  /**
+   * CurrencyRuleValue createManyAndReturn
+   */
+  export type CurrencyRuleValueCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CurrencyRuleValue
+     */
+    select?: CurrencyRuleValueSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the CurrencyRuleValue
+     */
+    omit?: CurrencyRuleValueOmit<ExtArgs> | null
+    /**
+     * The data used to create many CurrencyRuleValues.
+     */
+    data: CurrencyRuleValueCreateManyInput | CurrencyRuleValueCreateManyInput[]
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CurrencyRuleValueIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * CurrencyRuleValue update
+   */
+  export type CurrencyRuleValueUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CurrencyRuleValue
+     */
+    select?: CurrencyRuleValueSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the CurrencyRuleValue
+     */
+    omit?: CurrencyRuleValueOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CurrencyRuleValueInclude<ExtArgs> | null
+    /**
+     * The data needed to update a CurrencyRuleValue.
+     */
+    data: XOR<CurrencyRuleValueUpdateInput, CurrencyRuleValueUncheckedUpdateInput>
+    /**
+     * Choose, which CurrencyRuleValue to update.
+     */
+    where: CurrencyRuleValueWhereUniqueInput
+  }
+
+  /**
+   * CurrencyRuleValue updateMany
+   */
+  export type CurrencyRuleValueUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update CurrencyRuleValues.
+     */
+    data: XOR<CurrencyRuleValueUpdateManyMutationInput, CurrencyRuleValueUncheckedUpdateManyInput>
+    /**
+     * Filter which CurrencyRuleValues to update
+     */
+    where?: CurrencyRuleValueWhereInput
+    /**
+     * Limit how many CurrencyRuleValues to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * CurrencyRuleValue updateManyAndReturn
+   */
+  export type CurrencyRuleValueUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CurrencyRuleValue
+     */
+    select?: CurrencyRuleValueSelectUpdateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the CurrencyRuleValue
+     */
+    omit?: CurrencyRuleValueOmit<ExtArgs> | null
+    /**
+     * The data used to update CurrencyRuleValues.
+     */
+    data: XOR<CurrencyRuleValueUpdateManyMutationInput, CurrencyRuleValueUncheckedUpdateManyInput>
+    /**
+     * Filter which CurrencyRuleValues to update
+     */
+    where?: CurrencyRuleValueWhereInput
+    /**
+     * Limit how many CurrencyRuleValues to update.
+     */
+    limit?: number
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CurrencyRuleValueIncludeUpdateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * CurrencyRuleValue upsert
+   */
+  export type CurrencyRuleValueUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CurrencyRuleValue
+     */
+    select?: CurrencyRuleValueSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the CurrencyRuleValue
+     */
+    omit?: CurrencyRuleValueOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CurrencyRuleValueInclude<ExtArgs> | null
+    /**
+     * The filter to search for the CurrencyRuleValue to update in case it exists.
+     */
+    where: CurrencyRuleValueWhereUniqueInput
+    /**
+     * In case the CurrencyRuleValue found by the `where` argument doesn't exist, create a new CurrencyRuleValue with this data.
+     */
+    create: XOR<CurrencyRuleValueCreateInput, CurrencyRuleValueUncheckedCreateInput>
+    /**
+     * In case the CurrencyRuleValue was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<CurrencyRuleValueUpdateInput, CurrencyRuleValueUncheckedUpdateInput>
+  }
+
+  /**
+   * CurrencyRuleValue delete
+   */
+  export type CurrencyRuleValueDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CurrencyRuleValue
+     */
+    select?: CurrencyRuleValueSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the CurrencyRuleValue
+     */
+    omit?: CurrencyRuleValueOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CurrencyRuleValueInclude<ExtArgs> | null
+    /**
+     * Filter which CurrencyRuleValue to delete.
+     */
+    where: CurrencyRuleValueWhereUniqueInput
+  }
+
+  /**
+   * CurrencyRuleValue deleteMany
+   */
+  export type CurrencyRuleValueDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which CurrencyRuleValues to delete
+     */
+    where?: CurrencyRuleValueWhereInput
+    /**
+     * Limit how many CurrencyRuleValues to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * CurrencyRuleValue without action
+   */
+  export type CurrencyRuleValueDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CurrencyRuleValue
+     */
+    select?: CurrencyRuleValueSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the CurrencyRuleValue
+     */
+    omit?: CurrencyRuleValueOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CurrencyRuleValueInclude<ExtArgs> | null
   }
 
 
@@ -18822,9 +20168,13 @@ export namespace Prisma {
     id: string | null
     name: string | null
     code: string | null
+    description: string | null
     kind: $Enums.CurrencyKind | null
+    status: $Enums.CurrencyStatus | null
     decimals: number | null
     issuerNodeId: string | null
+    reserveCurrencyId: string | null
+    country: string | null
     createdAt: Date | null
   }
 
@@ -18832,9 +20182,13 @@ export namespace Prisma {
     id: string | null
     name: string | null
     code: string | null
+    description: string | null
     kind: $Enums.CurrencyKind | null
+    status: $Enums.CurrencyStatus | null
     decimals: number | null
     issuerNodeId: string | null
+    reserveCurrencyId: string | null
+    country: string | null
     createdAt: Date | null
   }
 
@@ -18842,9 +20196,13 @@ export namespace Prisma {
     id: number
     name: number
     code: number
+    description: number
     kind: number
+    status: number
     decimals: number
     issuerNodeId: number
+    reserveCurrencyId: number
+    country: number
     createdAt: number
     _all: number
   }
@@ -18862,9 +20220,13 @@ export namespace Prisma {
     id?: true
     name?: true
     code?: true
+    description?: true
     kind?: true
+    status?: true
     decimals?: true
     issuerNodeId?: true
+    reserveCurrencyId?: true
+    country?: true
     createdAt?: true
   }
 
@@ -18872,9 +20234,13 @@ export namespace Prisma {
     id?: true
     name?: true
     code?: true
+    description?: true
     kind?: true
+    status?: true
     decimals?: true
     issuerNodeId?: true
+    reserveCurrencyId?: true
+    country?: true
     createdAt?: true
   }
 
@@ -18882,9 +20248,13 @@ export namespace Prisma {
     id?: true
     name?: true
     code?: true
+    description?: true
     kind?: true
+    status?: true
     decimals?: true
     issuerNodeId?: true
+    reserveCurrencyId?: true
+    country?: true
     createdAt?: true
     _all?: true
   }
@@ -18979,9 +20349,13 @@ export namespace Prisma {
     id: string
     name: string
     code: string | null
+    description: string | null
     kind: $Enums.CurrencyKind
+    status: $Enums.CurrencyStatus
     decimals: number
     issuerNodeId: string | null
+    reserveCurrencyId: string | null
+    country: string | null
     createdAt: Date
     _count: CurrencyCountAggregateOutputType | null
     _avg: CurrencyAvgAggregateOutputType | null
@@ -19008,13 +20382,23 @@ export namespace Prisma {
     id?: boolean
     name?: boolean
     code?: boolean
+    description?: boolean
     kind?: boolean
+    status?: boolean
     decimals?: boolean
     issuerNodeId?: boolean
+    reserveCurrencyId?: boolean
+    country?: boolean
     createdAt?: boolean
     issuer?: boolean | Currency$issuerArgs<ExtArgs>
+    reserveCurrency?: boolean | Currency$reserveCurrencyArgs<ExtArgs>
+    backs?: boolean | Currency$backsArgs<ExtArgs>
+    homeOf?: boolean | Currency$homeOfArgs<ExtArgs>
     accounts?: boolean | Currency$accountsArgs<ExtArgs>
     terms?: boolean | Currency$termsArgs<ExtArgs>
+    ratesFrom?: boolean | Currency$ratesFromArgs<ExtArgs>
+    ratesTo?: boolean | Currency$ratesToArgs<ExtArgs>
+    ruleValues?: boolean | Currency$ruleValuesArgs<ExtArgs>
     _count?: boolean | CurrencyCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["currency"]>
 
@@ -19022,62 +20406,94 @@ export namespace Prisma {
     id?: boolean
     name?: boolean
     code?: boolean
+    description?: boolean
     kind?: boolean
+    status?: boolean
     decimals?: boolean
     issuerNodeId?: boolean
+    reserveCurrencyId?: boolean
+    country?: boolean
     createdAt?: boolean
     issuer?: boolean | Currency$issuerArgs<ExtArgs>
+    reserveCurrency?: boolean | Currency$reserveCurrencyArgs<ExtArgs>
   }, ExtArgs["result"]["currency"]>
 
   export type CurrencySelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     name?: boolean
     code?: boolean
+    description?: boolean
     kind?: boolean
+    status?: boolean
     decimals?: boolean
     issuerNodeId?: boolean
+    reserveCurrencyId?: boolean
+    country?: boolean
     createdAt?: boolean
     issuer?: boolean | Currency$issuerArgs<ExtArgs>
+    reserveCurrency?: boolean | Currency$reserveCurrencyArgs<ExtArgs>
   }, ExtArgs["result"]["currency"]>
 
   export type CurrencySelectScalar = {
     id?: boolean
     name?: boolean
     code?: boolean
+    description?: boolean
     kind?: boolean
+    status?: boolean
     decimals?: boolean
     issuerNodeId?: boolean
+    reserveCurrencyId?: boolean
+    country?: boolean
     createdAt?: boolean
   }
 
-  export type CurrencyOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "code" | "kind" | "decimals" | "issuerNodeId" | "createdAt", ExtArgs["result"]["currency"]>
+  export type CurrencyOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "code" | "description" | "kind" | "status" | "decimals" | "issuerNodeId" | "reserveCurrencyId" | "country" | "createdAt", ExtArgs["result"]["currency"]>
   export type CurrencyInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     issuer?: boolean | Currency$issuerArgs<ExtArgs>
+    reserveCurrency?: boolean | Currency$reserveCurrencyArgs<ExtArgs>
+    backs?: boolean | Currency$backsArgs<ExtArgs>
+    homeOf?: boolean | Currency$homeOfArgs<ExtArgs>
     accounts?: boolean | Currency$accountsArgs<ExtArgs>
     terms?: boolean | Currency$termsArgs<ExtArgs>
+    ratesFrom?: boolean | Currency$ratesFromArgs<ExtArgs>
+    ratesTo?: boolean | Currency$ratesToArgs<ExtArgs>
+    ruleValues?: boolean | Currency$ruleValuesArgs<ExtArgs>
     _count?: boolean | CurrencyCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type CurrencyIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     issuer?: boolean | Currency$issuerArgs<ExtArgs>
+    reserveCurrency?: boolean | Currency$reserveCurrencyArgs<ExtArgs>
   }
   export type CurrencyIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     issuer?: boolean | Currency$issuerArgs<ExtArgs>
+    reserveCurrency?: boolean | Currency$reserveCurrencyArgs<ExtArgs>
   }
 
   export type $CurrencyPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "Currency"
     objects: {
       issuer: Prisma.$NodePayload<ExtArgs> | null
+      reserveCurrency: Prisma.$CurrencyPayload<ExtArgs> | null
+      backs: Prisma.$CurrencyPayload<ExtArgs>[]
+      homeOf: Prisma.$NodePayload<ExtArgs>[]
       accounts: Prisma.$AccountPayload<ExtArgs>[]
       terms: Prisma.$InteractionTermsPayload<ExtArgs>[]
+      ratesFrom: Prisma.$ExchangeRatePayload<ExtArgs>[]
+      ratesTo: Prisma.$ExchangeRatePayload<ExtArgs>[]
+      ruleValues: Prisma.$CurrencyRuleValuePayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
       name: string
       code: string | null
+      description: string | null
       kind: $Enums.CurrencyKind
+      status: $Enums.CurrencyStatus
       decimals: number
       issuerNodeId: string | null
+      reserveCurrencyId: string | null
+      country: string | null
       createdAt: Date
     }, ExtArgs["result"]["currency"]>
     composites: {}
@@ -19474,8 +20890,14 @@ export namespace Prisma {
   export interface Prisma__CurrencyClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     issuer<T extends Currency$issuerArgs<ExtArgs> = {}>(args?: Subset<T, Currency$issuerArgs<ExtArgs>>): Prisma__NodeClient<$Result.GetResult<Prisma.$NodePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+    reserveCurrency<T extends Currency$reserveCurrencyArgs<ExtArgs> = {}>(args?: Subset<T, Currency$reserveCurrencyArgs<ExtArgs>>): Prisma__CurrencyClient<$Result.GetResult<Prisma.$CurrencyPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+    backs<T extends Currency$backsArgs<ExtArgs> = {}>(args?: Subset<T, Currency$backsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CurrencyPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    homeOf<T extends Currency$homeOfArgs<ExtArgs> = {}>(args?: Subset<T, Currency$homeOfArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$NodePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     accounts<T extends Currency$accountsArgs<ExtArgs> = {}>(args?: Subset<T, Currency$accountsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$AccountPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     terms<T extends Currency$termsArgs<ExtArgs> = {}>(args?: Subset<T, Currency$termsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$InteractionTermsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    ratesFrom<T extends Currency$ratesFromArgs<ExtArgs> = {}>(args?: Subset<T, Currency$ratesFromArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ExchangeRatePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    ratesTo<T extends Currency$ratesToArgs<ExtArgs> = {}>(args?: Subset<T, Currency$ratesToArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ExchangeRatePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    ruleValues<T extends Currency$ruleValuesArgs<ExtArgs> = {}>(args?: Subset<T, Currency$ruleValuesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CurrencyRuleValuePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -19508,9 +20930,13 @@ export namespace Prisma {
     readonly id: FieldRef<"Currency", 'String'>
     readonly name: FieldRef<"Currency", 'String'>
     readonly code: FieldRef<"Currency", 'String'>
+    readonly description: FieldRef<"Currency", 'String'>
     readonly kind: FieldRef<"Currency", 'CurrencyKind'>
+    readonly status: FieldRef<"Currency", 'CurrencyStatus'>
     readonly decimals: FieldRef<"Currency", 'Int'>
     readonly issuerNodeId: FieldRef<"Currency", 'String'>
+    readonly reserveCurrencyId: FieldRef<"Currency", 'String'>
+    readonly country: FieldRef<"Currency", 'String'>
     readonly createdAt: FieldRef<"Currency", 'DateTime'>
   }
     
@@ -19925,6 +21351,73 @@ export namespace Prisma {
   }
 
   /**
+   * Currency.reserveCurrency
+   */
+  export type Currency$reserveCurrencyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Currency
+     */
+    select?: CurrencySelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Currency
+     */
+    omit?: CurrencyOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CurrencyInclude<ExtArgs> | null
+    where?: CurrencyWhereInput
+  }
+
+  /**
+   * Currency.backs
+   */
+  export type Currency$backsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Currency
+     */
+    select?: CurrencySelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Currency
+     */
+    omit?: CurrencyOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CurrencyInclude<ExtArgs> | null
+    where?: CurrencyWhereInput
+    orderBy?: CurrencyOrderByWithRelationInput | CurrencyOrderByWithRelationInput[]
+    cursor?: CurrencyWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: CurrencyScalarFieldEnum | CurrencyScalarFieldEnum[]
+  }
+
+  /**
+   * Currency.homeOf
+   */
+  export type Currency$homeOfArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Node
+     */
+    select?: NodeSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Node
+     */
+    omit?: NodeOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: NodeInclude<ExtArgs> | null
+    where?: NodeWhereInput
+    orderBy?: NodeOrderByWithRelationInput | NodeOrderByWithRelationInput[]
+    cursor?: NodeWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: NodeScalarFieldEnum | NodeScalarFieldEnum[]
+  }
+
+  /**
    * Currency.accounts
    */
   export type Currency$accountsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -19973,6 +21466,78 @@ export namespace Prisma {
   }
 
   /**
+   * Currency.ratesFrom
+   */
+  export type Currency$ratesFromArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ExchangeRate
+     */
+    select?: ExchangeRateSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ExchangeRate
+     */
+    omit?: ExchangeRateOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ExchangeRateInclude<ExtArgs> | null
+    where?: ExchangeRateWhereInput
+    orderBy?: ExchangeRateOrderByWithRelationInput | ExchangeRateOrderByWithRelationInput[]
+    cursor?: ExchangeRateWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: ExchangeRateScalarFieldEnum | ExchangeRateScalarFieldEnum[]
+  }
+
+  /**
+   * Currency.ratesTo
+   */
+  export type Currency$ratesToArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ExchangeRate
+     */
+    select?: ExchangeRateSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ExchangeRate
+     */
+    omit?: ExchangeRateOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ExchangeRateInclude<ExtArgs> | null
+    where?: ExchangeRateWhereInput
+    orderBy?: ExchangeRateOrderByWithRelationInput | ExchangeRateOrderByWithRelationInput[]
+    cursor?: ExchangeRateWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: ExchangeRateScalarFieldEnum | ExchangeRateScalarFieldEnum[]
+  }
+
+  /**
+   * Currency.ruleValues
+   */
+  export type Currency$ruleValuesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CurrencyRuleValue
+     */
+    select?: CurrencyRuleValueSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the CurrencyRuleValue
+     */
+    omit?: CurrencyRuleValueOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CurrencyRuleValueInclude<ExtArgs> | null
+    where?: CurrencyRuleValueWhereInput
+    orderBy?: CurrencyRuleValueOrderByWithRelationInput | CurrencyRuleValueOrderByWithRelationInput[]
+    cursor?: CurrencyRuleValueWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: CurrencyRuleValueScalarFieldEnum | CurrencyRuleValueScalarFieldEnum[]
+  }
+
+  /**
    * Currency without action
    */
   export type CurrencyDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -19988,6 +21553,1122 @@ export namespace Prisma {
      * Choose, which related nodes to fetch as well
      */
     include?: CurrencyInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model ExchangeRate
+   */
+
+  export type AggregateExchangeRate = {
+    _count: ExchangeRateCountAggregateOutputType | null
+    _min: ExchangeRateMinAggregateOutputType | null
+    _max: ExchangeRateMaxAggregateOutputType | null
+  }
+
+  export type ExchangeRateMinAggregateOutputType = {
+    id: string | null
+    fromCurrencyId: string | null
+    toCurrencyId: string | null
+    rate: string | null
+    validFrom: Date | null
+    validTo: Date | null
+    source: $Enums.RateSource | null
+    setBy: string | null
+    createdAt: Date | null
+  }
+
+  export type ExchangeRateMaxAggregateOutputType = {
+    id: string | null
+    fromCurrencyId: string | null
+    toCurrencyId: string | null
+    rate: string | null
+    validFrom: Date | null
+    validTo: Date | null
+    source: $Enums.RateSource | null
+    setBy: string | null
+    createdAt: Date | null
+  }
+
+  export type ExchangeRateCountAggregateOutputType = {
+    id: number
+    fromCurrencyId: number
+    toCurrencyId: number
+    rate: number
+    validFrom: number
+    validTo: number
+    source: number
+    setBy: number
+    createdAt: number
+    _all: number
+  }
+
+
+  export type ExchangeRateMinAggregateInputType = {
+    id?: true
+    fromCurrencyId?: true
+    toCurrencyId?: true
+    rate?: true
+    validFrom?: true
+    validTo?: true
+    source?: true
+    setBy?: true
+    createdAt?: true
+  }
+
+  export type ExchangeRateMaxAggregateInputType = {
+    id?: true
+    fromCurrencyId?: true
+    toCurrencyId?: true
+    rate?: true
+    validFrom?: true
+    validTo?: true
+    source?: true
+    setBy?: true
+    createdAt?: true
+  }
+
+  export type ExchangeRateCountAggregateInputType = {
+    id?: true
+    fromCurrencyId?: true
+    toCurrencyId?: true
+    rate?: true
+    validFrom?: true
+    validTo?: true
+    source?: true
+    setBy?: true
+    createdAt?: true
+    _all?: true
+  }
+
+  export type ExchangeRateAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ExchangeRate to aggregate.
+     */
+    where?: ExchangeRateWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ExchangeRates to fetch.
+     */
+    orderBy?: ExchangeRateOrderByWithRelationInput | ExchangeRateOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: ExchangeRateWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ExchangeRates from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ExchangeRates.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned ExchangeRates
+    **/
+    _count?: true | ExchangeRateCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: ExchangeRateMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: ExchangeRateMaxAggregateInputType
+  }
+
+  export type GetExchangeRateAggregateType<T extends ExchangeRateAggregateArgs> = {
+        [P in keyof T & keyof AggregateExchangeRate]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateExchangeRate[P]>
+      : GetScalarType<T[P], AggregateExchangeRate[P]>
+  }
+
+
+
+
+  export type ExchangeRateGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ExchangeRateWhereInput
+    orderBy?: ExchangeRateOrderByWithAggregationInput | ExchangeRateOrderByWithAggregationInput[]
+    by: ExchangeRateScalarFieldEnum[] | ExchangeRateScalarFieldEnum
+    having?: ExchangeRateScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: ExchangeRateCountAggregateInputType | true
+    _min?: ExchangeRateMinAggregateInputType
+    _max?: ExchangeRateMaxAggregateInputType
+  }
+
+  export type ExchangeRateGroupByOutputType = {
+    id: string
+    fromCurrencyId: string
+    toCurrencyId: string
+    rate: string
+    validFrom: Date
+    validTo: Date | null
+    source: $Enums.RateSource
+    setBy: string
+    createdAt: Date
+    _count: ExchangeRateCountAggregateOutputType | null
+    _min: ExchangeRateMinAggregateOutputType | null
+    _max: ExchangeRateMaxAggregateOutputType | null
+  }
+
+  type GetExchangeRateGroupByPayload<T extends ExchangeRateGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<ExchangeRateGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof ExchangeRateGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], ExchangeRateGroupByOutputType[P]>
+            : GetScalarType<T[P], ExchangeRateGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type ExchangeRateSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    fromCurrencyId?: boolean
+    toCurrencyId?: boolean
+    rate?: boolean
+    validFrom?: boolean
+    validTo?: boolean
+    source?: boolean
+    setBy?: boolean
+    createdAt?: boolean
+    from?: boolean | CurrencyDefaultArgs<ExtArgs>
+    to?: boolean | CurrencyDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["exchangeRate"]>
+
+  export type ExchangeRateSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    fromCurrencyId?: boolean
+    toCurrencyId?: boolean
+    rate?: boolean
+    validFrom?: boolean
+    validTo?: boolean
+    source?: boolean
+    setBy?: boolean
+    createdAt?: boolean
+    from?: boolean | CurrencyDefaultArgs<ExtArgs>
+    to?: boolean | CurrencyDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["exchangeRate"]>
+
+  export type ExchangeRateSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    fromCurrencyId?: boolean
+    toCurrencyId?: boolean
+    rate?: boolean
+    validFrom?: boolean
+    validTo?: boolean
+    source?: boolean
+    setBy?: boolean
+    createdAt?: boolean
+    from?: boolean | CurrencyDefaultArgs<ExtArgs>
+    to?: boolean | CurrencyDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["exchangeRate"]>
+
+  export type ExchangeRateSelectScalar = {
+    id?: boolean
+    fromCurrencyId?: boolean
+    toCurrencyId?: boolean
+    rate?: boolean
+    validFrom?: boolean
+    validTo?: boolean
+    source?: boolean
+    setBy?: boolean
+    createdAt?: boolean
+  }
+
+  export type ExchangeRateOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "fromCurrencyId" | "toCurrencyId" | "rate" | "validFrom" | "validTo" | "source" | "setBy" | "createdAt", ExtArgs["result"]["exchangeRate"]>
+  export type ExchangeRateInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    from?: boolean | CurrencyDefaultArgs<ExtArgs>
+    to?: boolean | CurrencyDefaultArgs<ExtArgs>
+  }
+  export type ExchangeRateIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    from?: boolean | CurrencyDefaultArgs<ExtArgs>
+    to?: boolean | CurrencyDefaultArgs<ExtArgs>
+  }
+  export type ExchangeRateIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    from?: boolean | CurrencyDefaultArgs<ExtArgs>
+    to?: boolean | CurrencyDefaultArgs<ExtArgs>
+  }
+
+  export type $ExchangeRatePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "ExchangeRate"
+    objects: {
+      from: Prisma.$CurrencyPayload<ExtArgs>
+      to: Prisma.$CurrencyPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      fromCurrencyId: string
+      toCurrencyId: string
+      rate: string
+      validFrom: Date
+      validTo: Date | null
+      source: $Enums.RateSource
+      setBy: string
+      createdAt: Date
+    }, ExtArgs["result"]["exchangeRate"]>
+    composites: {}
+  }
+
+  type ExchangeRateGetPayload<S extends boolean | null | undefined | ExchangeRateDefaultArgs> = $Result.GetResult<Prisma.$ExchangeRatePayload, S>
+
+  type ExchangeRateCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<ExchangeRateFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: ExchangeRateCountAggregateInputType | true
+    }
+
+  export interface ExchangeRateDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['ExchangeRate'], meta: { name: 'ExchangeRate' } }
+    /**
+     * Find zero or one ExchangeRate that matches the filter.
+     * @param {ExchangeRateFindUniqueArgs} args - Arguments to find a ExchangeRate
+     * @example
+     * // Get one ExchangeRate
+     * const exchangeRate = await prisma.exchangeRate.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends ExchangeRateFindUniqueArgs>(args: SelectSubset<T, ExchangeRateFindUniqueArgs<ExtArgs>>): Prisma__ExchangeRateClient<$Result.GetResult<Prisma.$ExchangeRatePayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one ExchangeRate that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {ExchangeRateFindUniqueOrThrowArgs} args - Arguments to find a ExchangeRate
+     * @example
+     * // Get one ExchangeRate
+     * const exchangeRate = await prisma.exchangeRate.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends ExchangeRateFindUniqueOrThrowArgs>(args: SelectSubset<T, ExchangeRateFindUniqueOrThrowArgs<ExtArgs>>): Prisma__ExchangeRateClient<$Result.GetResult<Prisma.$ExchangeRatePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first ExchangeRate that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ExchangeRateFindFirstArgs} args - Arguments to find a ExchangeRate
+     * @example
+     * // Get one ExchangeRate
+     * const exchangeRate = await prisma.exchangeRate.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends ExchangeRateFindFirstArgs>(args?: SelectSubset<T, ExchangeRateFindFirstArgs<ExtArgs>>): Prisma__ExchangeRateClient<$Result.GetResult<Prisma.$ExchangeRatePayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first ExchangeRate that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ExchangeRateFindFirstOrThrowArgs} args - Arguments to find a ExchangeRate
+     * @example
+     * // Get one ExchangeRate
+     * const exchangeRate = await prisma.exchangeRate.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends ExchangeRateFindFirstOrThrowArgs>(args?: SelectSubset<T, ExchangeRateFindFirstOrThrowArgs<ExtArgs>>): Prisma__ExchangeRateClient<$Result.GetResult<Prisma.$ExchangeRatePayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more ExchangeRates that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ExchangeRateFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all ExchangeRates
+     * const exchangeRates = await prisma.exchangeRate.findMany()
+     * 
+     * // Get first 10 ExchangeRates
+     * const exchangeRates = await prisma.exchangeRate.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const exchangeRateWithIdOnly = await prisma.exchangeRate.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends ExchangeRateFindManyArgs>(args?: SelectSubset<T, ExchangeRateFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ExchangeRatePayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a ExchangeRate.
+     * @param {ExchangeRateCreateArgs} args - Arguments to create a ExchangeRate.
+     * @example
+     * // Create one ExchangeRate
+     * const ExchangeRate = await prisma.exchangeRate.create({
+     *   data: {
+     *     // ... data to create a ExchangeRate
+     *   }
+     * })
+     * 
+     */
+    create<T extends ExchangeRateCreateArgs>(args: SelectSubset<T, ExchangeRateCreateArgs<ExtArgs>>): Prisma__ExchangeRateClient<$Result.GetResult<Prisma.$ExchangeRatePayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many ExchangeRates.
+     * @param {ExchangeRateCreateManyArgs} args - Arguments to create many ExchangeRates.
+     * @example
+     * // Create many ExchangeRates
+     * const exchangeRate = await prisma.exchangeRate.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends ExchangeRateCreateManyArgs>(args?: SelectSubset<T, ExchangeRateCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many ExchangeRates and returns the data saved in the database.
+     * @param {ExchangeRateCreateManyAndReturnArgs} args - Arguments to create many ExchangeRates.
+     * @example
+     * // Create many ExchangeRates
+     * const exchangeRate = await prisma.exchangeRate.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many ExchangeRates and only return the `id`
+     * const exchangeRateWithIdOnly = await prisma.exchangeRate.createManyAndReturn({
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends ExchangeRateCreateManyAndReturnArgs>(args?: SelectSubset<T, ExchangeRateCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ExchangeRatePayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Delete a ExchangeRate.
+     * @param {ExchangeRateDeleteArgs} args - Arguments to delete one ExchangeRate.
+     * @example
+     * // Delete one ExchangeRate
+     * const ExchangeRate = await prisma.exchangeRate.delete({
+     *   where: {
+     *     // ... filter to delete one ExchangeRate
+     *   }
+     * })
+     * 
+     */
+    delete<T extends ExchangeRateDeleteArgs>(args: SelectSubset<T, ExchangeRateDeleteArgs<ExtArgs>>): Prisma__ExchangeRateClient<$Result.GetResult<Prisma.$ExchangeRatePayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one ExchangeRate.
+     * @param {ExchangeRateUpdateArgs} args - Arguments to update one ExchangeRate.
+     * @example
+     * // Update one ExchangeRate
+     * const exchangeRate = await prisma.exchangeRate.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends ExchangeRateUpdateArgs>(args: SelectSubset<T, ExchangeRateUpdateArgs<ExtArgs>>): Prisma__ExchangeRateClient<$Result.GetResult<Prisma.$ExchangeRatePayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more ExchangeRates.
+     * @param {ExchangeRateDeleteManyArgs} args - Arguments to filter ExchangeRates to delete.
+     * @example
+     * // Delete a few ExchangeRates
+     * const { count } = await prisma.exchangeRate.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends ExchangeRateDeleteManyArgs>(args?: SelectSubset<T, ExchangeRateDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more ExchangeRates.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ExchangeRateUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many ExchangeRates
+     * const exchangeRate = await prisma.exchangeRate.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends ExchangeRateUpdateManyArgs>(args: SelectSubset<T, ExchangeRateUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more ExchangeRates and returns the data updated in the database.
+     * @param {ExchangeRateUpdateManyAndReturnArgs} args - Arguments to update many ExchangeRates.
+     * @example
+     * // Update many ExchangeRates
+     * const exchangeRate = await prisma.exchangeRate.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Update zero or more ExchangeRates and only return the `id`
+     * const exchangeRateWithIdOnly = await prisma.exchangeRate.updateManyAndReturn({
+     *   select: { id: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    updateManyAndReturn<T extends ExchangeRateUpdateManyAndReturnArgs>(args: SelectSubset<T, ExchangeRateUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ExchangeRatePayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Create or update one ExchangeRate.
+     * @param {ExchangeRateUpsertArgs} args - Arguments to update or create a ExchangeRate.
+     * @example
+     * // Update or create a ExchangeRate
+     * const exchangeRate = await prisma.exchangeRate.upsert({
+     *   create: {
+     *     // ... data to create a ExchangeRate
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the ExchangeRate we want to update
+     *   }
+     * })
+     */
+    upsert<T extends ExchangeRateUpsertArgs>(args: SelectSubset<T, ExchangeRateUpsertArgs<ExtArgs>>): Prisma__ExchangeRateClient<$Result.GetResult<Prisma.$ExchangeRatePayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of ExchangeRates.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ExchangeRateCountArgs} args - Arguments to filter ExchangeRates to count.
+     * @example
+     * // Count the number of ExchangeRates
+     * const count = await prisma.exchangeRate.count({
+     *   where: {
+     *     // ... the filter for the ExchangeRates we want to count
+     *   }
+     * })
+    **/
+    count<T extends ExchangeRateCountArgs>(
+      args?: Subset<T, ExchangeRateCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], ExchangeRateCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a ExchangeRate.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ExchangeRateAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends ExchangeRateAggregateArgs>(args: Subset<T, ExchangeRateAggregateArgs>): Prisma.PrismaPromise<GetExchangeRateAggregateType<T>>
+
+    /**
+     * Group by ExchangeRate.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ExchangeRateGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends ExchangeRateGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: ExchangeRateGroupByArgs['orderBy'] }
+        : { orderBy?: ExchangeRateGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, ExchangeRateGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetExchangeRateGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the ExchangeRate model
+   */
+  readonly fields: ExchangeRateFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for ExchangeRate.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__ExchangeRateClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    from<T extends CurrencyDefaultArgs<ExtArgs> = {}>(args?: Subset<T, CurrencyDefaultArgs<ExtArgs>>): Prisma__CurrencyClient<$Result.GetResult<Prisma.$CurrencyPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    to<T extends CurrencyDefaultArgs<ExtArgs> = {}>(args?: Subset<T, CurrencyDefaultArgs<ExtArgs>>): Prisma__CurrencyClient<$Result.GetResult<Prisma.$CurrencyPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the ExchangeRate model
+   */
+  interface ExchangeRateFieldRefs {
+    readonly id: FieldRef<"ExchangeRate", 'String'>
+    readonly fromCurrencyId: FieldRef<"ExchangeRate", 'String'>
+    readonly toCurrencyId: FieldRef<"ExchangeRate", 'String'>
+    readonly rate: FieldRef<"ExchangeRate", 'String'>
+    readonly validFrom: FieldRef<"ExchangeRate", 'DateTime'>
+    readonly validTo: FieldRef<"ExchangeRate", 'DateTime'>
+    readonly source: FieldRef<"ExchangeRate", 'RateSource'>
+    readonly setBy: FieldRef<"ExchangeRate", 'String'>
+    readonly createdAt: FieldRef<"ExchangeRate", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * ExchangeRate findUnique
+   */
+  export type ExchangeRateFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ExchangeRate
+     */
+    select?: ExchangeRateSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ExchangeRate
+     */
+    omit?: ExchangeRateOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ExchangeRateInclude<ExtArgs> | null
+    /**
+     * Filter, which ExchangeRate to fetch.
+     */
+    where: ExchangeRateWhereUniqueInput
+  }
+
+  /**
+   * ExchangeRate findUniqueOrThrow
+   */
+  export type ExchangeRateFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ExchangeRate
+     */
+    select?: ExchangeRateSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ExchangeRate
+     */
+    omit?: ExchangeRateOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ExchangeRateInclude<ExtArgs> | null
+    /**
+     * Filter, which ExchangeRate to fetch.
+     */
+    where: ExchangeRateWhereUniqueInput
+  }
+
+  /**
+   * ExchangeRate findFirst
+   */
+  export type ExchangeRateFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ExchangeRate
+     */
+    select?: ExchangeRateSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ExchangeRate
+     */
+    omit?: ExchangeRateOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ExchangeRateInclude<ExtArgs> | null
+    /**
+     * Filter, which ExchangeRate to fetch.
+     */
+    where?: ExchangeRateWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ExchangeRates to fetch.
+     */
+    orderBy?: ExchangeRateOrderByWithRelationInput | ExchangeRateOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for ExchangeRates.
+     */
+    cursor?: ExchangeRateWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ExchangeRates from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ExchangeRates.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ExchangeRates.
+     */
+    distinct?: ExchangeRateScalarFieldEnum | ExchangeRateScalarFieldEnum[]
+  }
+
+  /**
+   * ExchangeRate findFirstOrThrow
+   */
+  export type ExchangeRateFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ExchangeRate
+     */
+    select?: ExchangeRateSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ExchangeRate
+     */
+    omit?: ExchangeRateOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ExchangeRateInclude<ExtArgs> | null
+    /**
+     * Filter, which ExchangeRate to fetch.
+     */
+    where?: ExchangeRateWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ExchangeRates to fetch.
+     */
+    orderBy?: ExchangeRateOrderByWithRelationInput | ExchangeRateOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for ExchangeRates.
+     */
+    cursor?: ExchangeRateWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ExchangeRates from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ExchangeRates.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ExchangeRates.
+     */
+    distinct?: ExchangeRateScalarFieldEnum | ExchangeRateScalarFieldEnum[]
+  }
+
+  /**
+   * ExchangeRate findMany
+   */
+  export type ExchangeRateFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ExchangeRate
+     */
+    select?: ExchangeRateSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ExchangeRate
+     */
+    omit?: ExchangeRateOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ExchangeRateInclude<ExtArgs> | null
+    /**
+     * Filter, which ExchangeRates to fetch.
+     */
+    where?: ExchangeRateWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ExchangeRates to fetch.
+     */
+    orderBy?: ExchangeRateOrderByWithRelationInput | ExchangeRateOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing ExchangeRates.
+     */
+    cursor?: ExchangeRateWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ExchangeRates from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ExchangeRates.
+     */
+    skip?: number
+    distinct?: ExchangeRateScalarFieldEnum | ExchangeRateScalarFieldEnum[]
+  }
+
+  /**
+   * ExchangeRate create
+   */
+  export type ExchangeRateCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ExchangeRate
+     */
+    select?: ExchangeRateSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ExchangeRate
+     */
+    omit?: ExchangeRateOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ExchangeRateInclude<ExtArgs> | null
+    /**
+     * The data needed to create a ExchangeRate.
+     */
+    data: XOR<ExchangeRateCreateInput, ExchangeRateUncheckedCreateInput>
+  }
+
+  /**
+   * ExchangeRate createMany
+   */
+  export type ExchangeRateCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many ExchangeRates.
+     */
+    data: ExchangeRateCreateManyInput | ExchangeRateCreateManyInput[]
+  }
+
+  /**
+   * ExchangeRate createManyAndReturn
+   */
+  export type ExchangeRateCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ExchangeRate
+     */
+    select?: ExchangeRateSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the ExchangeRate
+     */
+    omit?: ExchangeRateOmit<ExtArgs> | null
+    /**
+     * The data used to create many ExchangeRates.
+     */
+    data: ExchangeRateCreateManyInput | ExchangeRateCreateManyInput[]
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ExchangeRateIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * ExchangeRate update
+   */
+  export type ExchangeRateUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ExchangeRate
+     */
+    select?: ExchangeRateSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ExchangeRate
+     */
+    omit?: ExchangeRateOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ExchangeRateInclude<ExtArgs> | null
+    /**
+     * The data needed to update a ExchangeRate.
+     */
+    data: XOR<ExchangeRateUpdateInput, ExchangeRateUncheckedUpdateInput>
+    /**
+     * Choose, which ExchangeRate to update.
+     */
+    where: ExchangeRateWhereUniqueInput
+  }
+
+  /**
+   * ExchangeRate updateMany
+   */
+  export type ExchangeRateUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update ExchangeRates.
+     */
+    data: XOR<ExchangeRateUpdateManyMutationInput, ExchangeRateUncheckedUpdateManyInput>
+    /**
+     * Filter which ExchangeRates to update
+     */
+    where?: ExchangeRateWhereInput
+    /**
+     * Limit how many ExchangeRates to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * ExchangeRate updateManyAndReturn
+   */
+  export type ExchangeRateUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ExchangeRate
+     */
+    select?: ExchangeRateSelectUpdateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the ExchangeRate
+     */
+    omit?: ExchangeRateOmit<ExtArgs> | null
+    /**
+     * The data used to update ExchangeRates.
+     */
+    data: XOR<ExchangeRateUpdateManyMutationInput, ExchangeRateUncheckedUpdateManyInput>
+    /**
+     * Filter which ExchangeRates to update
+     */
+    where?: ExchangeRateWhereInput
+    /**
+     * Limit how many ExchangeRates to update.
+     */
+    limit?: number
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ExchangeRateIncludeUpdateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * ExchangeRate upsert
+   */
+  export type ExchangeRateUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ExchangeRate
+     */
+    select?: ExchangeRateSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ExchangeRate
+     */
+    omit?: ExchangeRateOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ExchangeRateInclude<ExtArgs> | null
+    /**
+     * The filter to search for the ExchangeRate to update in case it exists.
+     */
+    where: ExchangeRateWhereUniqueInput
+    /**
+     * In case the ExchangeRate found by the `where` argument doesn't exist, create a new ExchangeRate with this data.
+     */
+    create: XOR<ExchangeRateCreateInput, ExchangeRateUncheckedCreateInput>
+    /**
+     * In case the ExchangeRate was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<ExchangeRateUpdateInput, ExchangeRateUncheckedUpdateInput>
+  }
+
+  /**
+   * ExchangeRate delete
+   */
+  export type ExchangeRateDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ExchangeRate
+     */
+    select?: ExchangeRateSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ExchangeRate
+     */
+    omit?: ExchangeRateOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ExchangeRateInclude<ExtArgs> | null
+    /**
+     * Filter which ExchangeRate to delete.
+     */
+    where: ExchangeRateWhereUniqueInput
+  }
+
+  /**
+   * ExchangeRate deleteMany
+   */
+  export type ExchangeRateDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ExchangeRates to delete
+     */
+    where?: ExchangeRateWhereInput
+    /**
+     * Limit how many ExchangeRates to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * ExchangeRate without action
+   */
+  export type ExchangeRateDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ExchangeRate
+     */
+    select?: ExchangeRateSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ExchangeRate
+     */
+    omit?: ExchangeRateOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ExchangeRateInclude<ExtArgs> | null
   }
 
 
@@ -25677,6 +28358,8 @@ export namespace Prisma {
     passwordHash: 'passwordHash',
     email: 'email',
     phone: 'phone',
+    country: 'country',
+    homeCurrencyId: 'homeCurrencyId',
     createdAt: 'createdAt'
   };
 
@@ -25728,6 +28411,15 @@ export namespace Prisma {
   };
 
   export type NodeRuleValueScalarFieldEnum = (typeof NodeRuleValueScalarFieldEnum)[keyof typeof NodeRuleValueScalarFieldEnum]
+
+
+  export const CurrencyRuleValueScalarFieldEnum: {
+    currencyId: 'currencyId',
+    ruleId: 'ruleId',
+    value: 'value'
+  };
+
+  export type CurrencyRuleValueScalarFieldEnum = (typeof CurrencyRuleValueScalarFieldEnum)[keyof typeof CurrencyRuleValueScalarFieldEnum]
 
 
   export const RelationshipScalarFieldEnum: {
@@ -25839,13 +28531,32 @@ export namespace Prisma {
     id: 'id',
     name: 'name',
     code: 'code',
+    description: 'description',
     kind: 'kind',
+    status: 'status',
     decimals: 'decimals',
     issuerNodeId: 'issuerNodeId',
+    reserveCurrencyId: 'reserveCurrencyId',
+    country: 'country',
     createdAt: 'createdAt'
   };
 
   export type CurrencyScalarFieldEnum = (typeof CurrencyScalarFieldEnum)[keyof typeof CurrencyScalarFieldEnum]
+
+
+  export const ExchangeRateScalarFieldEnum: {
+    id: 'id',
+    fromCurrencyId: 'fromCurrencyId',
+    toCurrencyId: 'toCurrencyId',
+    rate: 'rate',
+    validFrom: 'validFrom',
+    validTo: 'validTo',
+    source: 'source',
+    setBy: 'setBy',
+    createdAt: 'createdAt'
+  };
+
+  export type ExchangeRateScalarFieldEnum = (typeof ExchangeRateScalarFieldEnum)[keyof typeof ExchangeRateScalarFieldEnum]
 
 
   export const AccountScalarFieldEnum: {
@@ -26048,6 +28759,20 @@ export namespace Prisma {
 
 
   /**
+   * Reference to a field of type 'CurrencyStatus'
+   */
+  export type EnumCurrencyStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'CurrencyStatus'>
+    
+
+
+  /**
+   * Reference to a field of type 'RateSource'
+   */
+  export type EnumRateSourceFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'RateSource'>
+    
+
+
+  /**
    * Reference to a field of type 'TransactionKind'
    */
   export type EnumTransactionKindFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'TransactionKind'>
@@ -26080,7 +28805,10 @@ export namespace Prisma {
     passwordHash?: StringNullableFilter<"Node"> | string | null
     email?: StringNullableFilter<"Node"> | string | null
     phone?: StringNullableFilter<"Node"> | string | null
+    country?: StringNullableFilter<"Node"> | string | null
+    homeCurrencyId?: StringNullableFilter<"Node"> | string | null
     createdAt?: DateTimeFilter<"Node"> | Date | string
+    homeCurrency?: XOR<CurrencyNullableScalarRelationFilter, CurrencyWhereInput> | null
     rolesHeldHere?: RoleAssignmentListRelationFilter
     rolesHeldByMe?: RoleAssignmentListRelationFilter
     accounts?: AccountListRelationFilter
@@ -26105,7 +28833,10 @@ export namespace Prisma {
     passwordHash?: SortOrderInput | SortOrder
     email?: SortOrderInput | SortOrder
     phone?: SortOrderInput | SortOrder
+    country?: SortOrderInput | SortOrder
+    homeCurrencyId?: SortOrderInput | SortOrder
     createdAt?: SortOrder
+    homeCurrency?: CurrencyOrderByWithRelationInput
     rolesHeldHere?: RoleAssignmentOrderByRelationAggregateInput
     rolesHeldByMe?: RoleAssignmentOrderByRelationAggregateInput
     accounts?: AccountOrderByRelationAggregateInput
@@ -26133,7 +28864,10 @@ export namespace Prisma {
     description?: StringNullableFilter<"Node"> | string | null
     photoUrl?: StringNullableFilter<"Node"> | string | null
     passwordHash?: StringNullableFilter<"Node"> | string | null
+    country?: StringNullableFilter<"Node"> | string | null
+    homeCurrencyId?: StringNullableFilter<"Node"> | string | null
     createdAt?: DateTimeFilter<"Node"> | Date | string
+    homeCurrency?: XOR<CurrencyNullableScalarRelationFilter, CurrencyWhereInput> | null
     rolesHeldHere?: RoleAssignmentListRelationFilter
     rolesHeldByMe?: RoleAssignmentListRelationFilter
     accounts?: AccountListRelationFilter
@@ -26158,6 +28892,8 @@ export namespace Prisma {
     passwordHash?: SortOrderInput | SortOrder
     email?: SortOrderInput | SortOrder
     phone?: SortOrderInput | SortOrder
+    country?: SortOrderInput | SortOrder
+    homeCurrencyId?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     _count?: NodeCountOrderByAggregateInput
     _max?: NodeMaxOrderByAggregateInput
@@ -26180,6 +28916,8 @@ export namespace Prisma {
     passwordHash?: StringNullableWithAggregatesFilter<"Node"> | string | null
     email?: StringNullableWithAggregatesFilter<"Node"> | string | null
     phone?: StringNullableWithAggregatesFilter<"Node"> | string | null
+    country?: StringNullableWithAggregatesFilter<"Node"> | string | null
+    homeCurrencyId?: StringNullableWithAggregatesFilter<"Node"> | string | null
     createdAt?: DateTimeWithAggregatesFilter<"Node"> | Date | string
   }
 
@@ -26430,6 +29168,52 @@ export namespace Prisma {
     nodeId?: StringWithAggregatesFilter<"NodeRuleValue"> | string
     ruleId?: StringWithAggregatesFilter<"NodeRuleValue"> | string
     value?: StringWithAggregatesFilter<"NodeRuleValue"> | string
+  }
+
+  export type CurrencyRuleValueWhereInput = {
+    AND?: CurrencyRuleValueWhereInput | CurrencyRuleValueWhereInput[]
+    OR?: CurrencyRuleValueWhereInput[]
+    NOT?: CurrencyRuleValueWhereInput | CurrencyRuleValueWhereInput[]
+    currencyId?: StringFilter<"CurrencyRuleValue"> | string
+    ruleId?: StringFilter<"CurrencyRuleValue"> | string
+    value?: StringFilter<"CurrencyRuleValue"> | string
+    currency?: XOR<CurrencyScalarRelationFilter, CurrencyWhereInput>
+  }
+
+  export type CurrencyRuleValueOrderByWithRelationInput = {
+    currencyId?: SortOrder
+    ruleId?: SortOrder
+    value?: SortOrder
+    currency?: CurrencyOrderByWithRelationInput
+  }
+
+  export type CurrencyRuleValueWhereUniqueInput = Prisma.AtLeast<{
+    currencyId_ruleId?: CurrencyRuleValueCurrencyIdRuleIdCompoundUniqueInput
+    AND?: CurrencyRuleValueWhereInput | CurrencyRuleValueWhereInput[]
+    OR?: CurrencyRuleValueWhereInput[]
+    NOT?: CurrencyRuleValueWhereInput | CurrencyRuleValueWhereInput[]
+    currencyId?: StringFilter<"CurrencyRuleValue"> | string
+    ruleId?: StringFilter<"CurrencyRuleValue"> | string
+    value?: StringFilter<"CurrencyRuleValue"> | string
+    currency?: XOR<CurrencyScalarRelationFilter, CurrencyWhereInput>
+  }, "currencyId_ruleId">
+
+  export type CurrencyRuleValueOrderByWithAggregationInput = {
+    currencyId?: SortOrder
+    ruleId?: SortOrder
+    value?: SortOrder
+    _count?: CurrencyRuleValueCountOrderByAggregateInput
+    _max?: CurrencyRuleValueMaxOrderByAggregateInput
+    _min?: CurrencyRuleValueMinOrderByAggregateInput
+  }
+
+  export type CurrencyRuleValueScalarWhereWithAggregatesInput = {
+    AND?: CurrencyRuleValueScalarWhereWithAggregatesInput | CurrencyRuleValueScalarWhereWithAggregatesInput[]
+    OR?: CurrencyRuleValueScalarWhereWithAggregatesInput[]
+    NOT?: CurrencyRuleValueScalarWhereWithAggregatesInput | CurrencyRuleValueScalarWhereWithAggregatesInput[]
+    currencyId?: StringWithAggregatesFilter<"CurrencyRuleValue"> | string
+    ruleId?: StringWithAggregatesFilter<"CurrencyRuleValue"> | string
+    value?: StringWithAggregatesFilter<"CurrencyRuleValue"> | string
   }
 
   export type RelationshipWhereInput = {
@@ -27002,26 +29786,46 @@ export namespace Prisma {
     id?: StringFilter<"Currency"> | string
     name?: StringFilter<"Currency"> | string
     code?: StringNullableFilter<"Currency"> | string | null
+    description?: StringNullableFilter<"Currency"> | string | null
     kind?: EnumCurrencyKindFilter<"Currency"> | $Enums.CurrencyKind
+    status?: EnumCurrencyStatusFilter<"Currency"> | $Enums.CurrencyStatus
     decimals?: IntFilter<"Currency"> | number
     issuerNodeId?: StringNullableFilter<"Currency"> | string | null
+    reserveCurrencyId?: StringNullableFilter<"Currency"> | string | null
+    country?: StringNullableFilter<"Currency"> | string | null
     createdAt?: DateTimeFilter<"Currency"> | Date | string
     issuer?: XOR<NodeNullableScalarRelationFilter, NodeWhereInput> | null
+    reserveCurrency?: XOR<CurrencyNullableScalarRelationFilter, CurrencyWhereInput> | null
+    backs?: CurrencyListRelationFilter
+    homeOf?: NodeListRelationFilter
     accounts?: AccountListRelationFilter
     terms?: InteractionTermsListRelationFilter
+    ratesFrom?: ExchangeRateListRelationFilter
+    ratesTo?: ExchangeRateListRelationFilter
+    ruleValues?: CurrencyRuleValueListRelationFilter
   }
 
   export type CurrencyOrderByWithRelationInput = {
     id?: SortOrder
     name?: SortOrder
     code?: SortOrderInput | SortOrder
+    description?: SortOrderInput | SortOrder
     kind?: SortOrder
+    status?: SortOrder
     decimals?: SortOrder
     issuerNodeId?: SortOrderInput | SortOrder
+    reserveCurrencyId?: SortOrderInput | SortOrder
+    country?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     issuer?: NodeOrderByWithRelationInput
+    reserveCurrency?: CurrencyOrderByWithRelationInput
+    backs?: CurrencyOrderByRelationAggregateInput
+    homeOf?: NodeOrderByRelationAggregateInput
     accounts?: AccountOrderByRelationAggregateInput
     terms?: InteractionTermsOrderByRelationAggregateInput
+    ratesFrom?: ExchangeRateOrderByRelationAggregateInput
+    ratesTo?: ExchangeRateOrderByRelationAggregateInput
+    ruleValues?: CurrencyRuleValueOrderByRelationAggregateInput
   }
 
   export type CurrencyWhereUniqueInput = Prisma.AtLeast<{
@@ -27031,22 +29835,36 @@ export namespace Prisma {
     NOT?: CurrencyWhereInput | CurrencyWhereInput[]
     name?: StringFilter<"Currency"> | string
     code?: StringNullableFilter<"Currency"> | string | null
+    description?: StringNullableFilter<"Currency"> | string | null
     kind?: EnumCurrencyKindFilter<"Currency"> | $Enums.CurrencyKind
+    status?: EnumCurrencyStatusFilter<"Currency"> | $Enums.CurrencyStatus
     decimals?: IntFilter<"Currency"> | number
     issuerNodeId?: StringNullableFilter<"Currency"> | string | null
+    reserveCurrencyId?: StringNullableFilter<"Currency"> | string | null
+    country?: StringNullableFilter<"Currency"> | string | null
     createdAt?: DateTimeFilter<"Currency"> | Date | string
     issuer?: XOR<NodeNullableScalarRelationFilter, NodeWhereInput> | null
+    reserveCurrency?: XOR<CurrencyNullableScalarRelationFilter, CurrencyWhereInput> | null
+    backs?: CurrencyListRelationFilter
+    homeOf?: NodeListRelationFilter
     accounts?: AccountListRelationFilter
     terms?: InteractionTermsListRelationFilter
+    ratesFrom?: ExchangeRateListRelationFilter
+    ratesTo?: ExchangeRateListRelationFilter
+    ruleValues?: CurrencyRuleValueListRelationFilter
   }, "id">
 
   export type CurrencyOrderByWithAggregationInput = {
     id?: SortOrder
     name?: SortOrder
     code?: SortOrderInput | SortOrder
+    description?: SortOrderInput | SortOrder
     kind?: SortOrder
+    status?: SortOrder
     decimals?: SortOrder
     issuerNodeId?: SortOrderInput | SortOrder
+    reserveCurrencyId?: SortOrderInput | SortOrder
+    country?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     _count?: CurrencyCountOrderByAggregateInput
     _avg?: CurrencyAvgOrderByAggregateInput
@@ -27062,10 +29880,92 @@ export namespace Prisma {
     id?: StringWithAggregatesFilter<"Currency"> | string
     name?: StringWithAggregatesFilter<"Currency"> | string
     code?: StringNullableWithAggregatesFilter<"Currency"> | string | null
+    description?: StringNullableWithAggregatesFilter<"Currency"> | string | null
     kind?: EnumCurrencyKindWithAggregatesFilter<"Currency"> | $Enums.CurrencyKind
+    status?: EnumCurrencyStatusWithAggregatesFilter<"Currency"> | $Enums.CurrencyStatus
     decimals?: IntWithAggregatesFilter<"Currency"> | number
     issuerNodeId?: StringNullableWithAggregatesFilter<"Currency"> | string | null
+    reserveCurrencyId?: StringNullableWithAggregatesFilter<"Currency"> | string | null
+    country?: StringNullableWithAggregatesFilter<"Currency"> | string | null
     createdAt?: DateTimeWithAggregatesFilter<"Currency"> | Date | string
+  }
+
+  export type ExchangeRateWhereInput = {
+    AND?: ExchangeRateWhereInput | ExchangeRateWhereInput[]
+    OR?: ExchangeRateWhereInput[]
+    NOT?: ExchangeRateWhereInput | ExchangeRateWhereInput[]
+    id?: StringFilter<"ExchangeRate"> | string
+    fromCurrencyId?: StringFilter<"ExchangeRate"> | string
+    toCurrencyId?: StringFilter<"ExchangeRate"> | string
+    rate?: StringFilter<"ExchangeRate"> | string
+    validFrom?: DateTimeFilter<"ExchangeRate"> | Date | string
+    validTo?: DateTimeNullableFilter<"ExchangeRate"> | Date | string | null
+    source?: EnumRateSourceFilter<"ExchangeRate"> | $Enums.RateSource
+    setBy?: StringFilter<"ExchangeRate"> | string
+    createdAt?: DateTimeFilter<"ExchangeRate"> | Date | string
+    from?: XOR<CurrencyScalarRelationFilter, CurrencyWhereInput>
+    to?: XOR<CurrencyScalarRelationFilter, CurrencyWhereInput>
+  }
+
+  export type ExchangeRateOrderByWithRelationInput = {
+    id?: SortOrder
+    fromCurrencyId?: SortOrder
+    toCurrencyId?: SortOrder
+    rate?: SortOrder
+    validFrom?: SortOrder
+    validTo?: SortOrderInput | SortOrder
+    source?: SortOrder
+    setBy?: SortOrder
+    createdAt?: SortOrder
+    from?: CurrencyOrderByWithRelationInput
+    to?: CurrencyOrderByWithRelationInput
+  }
+
+  export type ExchangeRateWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    AND?: ExchangeRateWhereInput | ExchangeRateWhereInput[]
+    OR?: ExchangeRateWhereInput[]
+    NOT?: ExchangeRateWhereInput | ExchangeRateWhereInput[]
+    fromCurrencyId?: StringFilter<"ExchangeRate"> | string
+    toCurrencyId?: StringFilter<"ExchangeRate"> | string
+    rate?: StringFilter<"ExchangeRate"> | string
+    validFrom?: DateTimeFilter<"ExchangeRate"> | Date | string
+    validTo?: DateTimeNullableFilter<"ExchangeRate"> | Date | string | null
+    source?: EnumRateSourceFilter<"ExchangeRate"> | $Enums.RateSource
+    setBy?: StringFilter<"ExchangeRate"> | string
+    createdAt?: DateTimeFilter<"ExchangeRate"> | Date | string
+    from?: XOR<CurrencyScalarRelationFilter, CurrencyWhereInput>
+    to?: XOR<CurrencyScalarRelationFilter, CurrencyWhereInput>
+  }, "id">
+
+  export type ExchangeRateOrderByWithAggregationInput = {
+    id?: SortOrder
+    fromCurrencyId?: SortOrder
+    toCurrencyId?: SortOrder
+    rate?: SortOrder
+    validFrom?: SortOrder
+    validTo?: SortOrderInput | SortOrder
+    source?: SortOrder
+    setBy?: SortOrder
+    createdAt?: SortOrder
+    _count?: ExchangeRateCountOrderByAggregateInput
+    _max?: ExchangeRateMaxOrderByAggregateInput
+    _min?: ExchangeRateMinOrderByAggregateInput
+  }
+
+  export type ExchangeRateScalarWhereWithAggregatesInput = {
+    AND?: ExchangeRateScalarWhereWithAggregatesInput | ExchangeRateScalarWhereWithAggregatesInput[]
+    OR?: ExchangeRateScalarWhereWithAggregatesInput[]
+    NOT?: ExchangeRateScalarWhereWithAggregatesInput | ExchangeRateScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"ExchangeRate"> | string
+    fromCurrencyId?: StringWithAggregatesFilter<"ExchangeRate"> | string
+    toCurrencyId?: StringWithAggregatesFilter<"ExchangeRate"> | string
+    rate?: StringWithAggregatesFilter<"ExchangeRate"> | string
+    validFrom?: DateTimeWithAggregatesFilter<"ExchangeRate"> | Date | string
+    validTo?: DateTimeNullableWithAggregatesFilter<"ExchangeRate"> | Date | string | null
+    source?: EnumRateSourceWithAggregatesFilter<"ExchangeRate"> | $Enums.RateSource
+    setBy?: StringWithAggregatesFilter<"ExchangeRate"> | string
+    createdAt?: DateTimeWithAggregatesFilter<"ExchangeRate"> | Date | string
   }
 
   export type AccountWhereInput = {
@@ -27463,7 +30363,9 @@ export namespace Prisma {
     passwordHash?: string | null
     email?: string | null
     phone?: string | null
+    country?: string | null
     createdAt?: Date | string
+    homeCurrency?: CurrencyCreateNestedOneWithoutHomeOfInput
     rolesHeldHere?: RoleAssignmentCreateNestedManyWithoutScopeInput
     rolesHeldByMe?: RoleAssignmentCreateNestedManyWithoutHolderInput
     accounts?: AccountCreateNestedManyWithoutNodeInput
@@ -27488,6 +30390,8 @@ export namespace Prisma {
     passwordHash?: string | null
     email?: string | null
     phone?: string | null
+    country?: string | null
+    homeCurrencyId?: string | null
     createdAt?: Date | string
     rolesHeldHere?: RoleAssignmentUncheckedCreateNestedManyWithoutScopeInput
     rolesHeldByMe?: RoleAssignmentUncheckedCreateNestedManyWithoutHolderInput
@@ -27513,7 +30417,9 @@ export namespace Prisma {
     passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     phone?: NullableStringFieldUpdateOperationsInput | string | null
+    country?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    homeCurrency?: CurrencyUpdateOneWithoutHomeOfNestedInput
     rolesHeldHere?: RoleAssignmentUpdateManyWithoutScopeNestedInput
     rolesHeldByMe?: RoleAssignmentUpdateManyWithoutHolderNestedInput
     accounts?: AccountUpdateManyWithoutNodeNestedInput
@@ -27538,6 +30444,8 @@ export namespace Prisma {
     passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     phone?: NullableStringFieldUpdateOperationsInput | string | null
+    country?: NullableStringFieldUpdateOperationsInput | string | null
+    homeCurrencyId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     rolesHeldHere?: RoleAssignmentUncheckedUpdateManyWithoutScopeNestedInput
     rolesHeldByMe?: RoleAssignmentUncheckedUpdateManyWithoutHolderNestedInput
@@ -27563,6 +30471,8 @@ export namespace Prisma {
     passwordHash?: string | null
     email?: string | null
     phone?: string | null
+    country?: string | null
+    homeCurrencyId?: string | null
     createdAt?: Date | string
   }
 
@@ -27579,6 +30489,7 @@ export namespace Prisma {
     passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     phone?: NullableStringFieldUpdateOperationsInput | string | null
+    country?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -27595,6 +30506,8 @@ export namespace Prisma {
     passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     phone?: NullableStringFieldUpdateOperationsInput | string | null
+    country?: NullableStringFieldUpdateOperationsInput | string | null
+    homeCurrencyId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -27825,6 +30738,47 @@ export namespace Prisma {
 
   export type NodeRuleValueUncheckedUpdateManyInput = {
     nodeId?: StringFieldUpdateOperationsInput | string
+    ruleId?: StringFieldUpdateOperationsInput | string
+    value?: StringFieldUpdateOperationsInput | string
+  }
+
+  export type CurrencyRuleValueCreateInput = {
+    ruleId: string
+    value: string
+    currency: CurrencyCreateNestedOneWithoutRuleValuesInput
+  }
+
+  export type CurrencyRuleValueUncheckedCreateInput = {
+    currencyId: string
+    ruleId: string
+    value: string
+  }
+
+  export type CurrencyRuleValueUpdateInput = {
+    ruleId?: StringFieldUpdateOperationsInput | string
+    value?: StringFieldUpdateOperationsInput | string
+    currency?: CurrencyUpdateOneRequiredWithoutRuleValuesNestedInput
+  }
+
+  export type CurrencyRuleValueUncheckedUpdateInput = {
+    currencyId?: StringFieldUpdateOperationsInput | string
+    ruleId?: StringFieldUpdateOperationsInput | string
+    value?: StringFieldUpdateOperationsInput | string
+  }
+
+  export type CurrencyRuleValueCreateManyInput = {
+    currencyId: string
+    ruleId: string
+    value: string
+  }
+
+  export type CurrencyRuleValueUpdateManyMutationInput = {
+    ruleId?: StringFieldUpdateOperationsInput | string
+    value?: StringFieldUpdateOperationsInput | string
+  }
+
+  export type CurrencyRuleValueUncheckedUpdateManyInput = {
+    currencyId?: StringFieldUpdateOperationsInput | string
     ruleId?: StringFieldUpdateOperationsInput | string
     value?: StringFieldUpdateOperationsInput | string
   }
@@ -28422,57 +31376,97 @@ export namespace Prisma {
     id?: string
     name: string
     code?: string | null
+    description?: string | null
     kind: $Enums.CurrencyKind
+    status?: $Enums.CurrencyStatus
     decimals?: number
+    country?: string | null
     createdAt?: Date | string
     issuer?: NodeCreateNestedOneWithoutIssuedCurrenciesInput
+    reserveCurrency?: CurrencyCreateNestedOneWithoutBacksInput
+    backs?: CurrencyCreateNestedManyWithoutReserveCurrencyInput
+    homeOf?: NodeCreateNestedManyWithoutHomeCurrencyInput
     accounts?: AccountCreateNestedManyWithoutCurrencyInput
     terms?: InteractionTermsCreateNestedManyWithoutCurrencyInput
+    ratesFrom?: ExchangeRateCreateNestedManyWithoutFromInput
+    ratesTo?: ExchangeRateCreateNestedManyWithoutToInput
+    ruleValues?: CurrencyRuleValueCreateNestedManyWithoutCurrencyInput
   }
 
   export type CurrencyUncheckedCreateInput = {
     id?: string
     name: string
     code?: string | null
+    description?: string | null
     kind: $Enums.CurrencyKind
+    status?: $Enums.CurrencyStatus
     decimals?: number
     issuerNodeId?: string | null
+    reserveCurrencyId?: string | null
+    country?: string | null
     createdAt?: Date | string
+    backs?: CurrencyUncheckedCreateNestedManyWithoutReserveCurrencyInput
+    homeOf?: NodeUncheckedCreateNestedManyWithoutHomeCurrencyInput
     accounts?: AccountUncheckedCreateNestedManyWithoutCurrencyInput
     terms?: InteractionTermsUncheckedCreateNestedManyWithoutCurrencyInput
+    ratesFrom?: ExchangeRateUncheckedCreateNestedManyWithoutFromInput
+    ratesTo?: ExchangeRateUncheckedCreateNestedManyWithoutToInput
+    ruleValues?: CurrencyRuleValueUncheckedCreateNestedManyWithoutCurrencyInput
   }
 
   export type CurrencyUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     code?: NullableStringFieldUpdateOperationsInput | string | null
+    description?: NullableStringFieldUpdateOperationsInput | string | null
     kind?: EnumCurrencyKindFieldUpdateOperationsInput | $Enums.CurrencyKind
+    status?: EnumCurrencyStatusFieldUpdateOperationsInput | $Enums.CurrencyStatus
     decimals?: IntFieldUpdateOperationsInput | number
+    country?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     issuer?: NodeUpdateOneWithoutIssuedCurrenciesNestedInput
+    reserveCurrency?: CurrencyUpdateOneWithoutBacksNestedInput
+    backs?: CurrencyUpdateManyWithoutReserveCurrencyNestedInput
+    homeOf?: NodeUpdateManyWithoutHomeCurrencyNestedInput
     accounts?: AccountUpdateManyWithoutCurrencyNestedInput
     terms?: InteractionTermsUpdateManyWithoutCurrencyNestedInput
+    ratesFrom?: ExchangeRateUpdateManyWithoutFromNestedInput
+    ratesTo?: ExchangeRateUpdateManyWithoutToNestedInput
+    ruleValues?: CurrencyRuleValueUpdateManyWithoutCurrencyNestedInput
   }
 
   export type CurrencyUncheckedUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     code?: NullableStringFieldUpdateOperationsInput | string | null
+    description?: NullableStringFieldUpdateOperationsInput | string | null
     kind?: EnumCurrencyKindFieldUpdateOperationsInput | $Enums.CurrencyKind
+    status?: EnumCurrencyStatusFieldUpdateOperationsInput | $Enums.CurrencyStatus
     decimals?: IntFieldUpdateOperationsInput | number
     issuerNodeId?: NullableStringFieldUpdateOperationsInput | string | null
+    reserveCurrencyId?: NullableStringFieldUpdateOperationsInput | string | null
+    country?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    backs?: CurrencyUncheckedUpdateManyWithoutReserveCurrencyNestedInput
+    homeOf?: NodeUncheckedUpdateManyWithoutHomeCurrencyNestedInput
     accounts?: AccountUncheckedUpdateManyWithoutCurrencyNestedInput
     terms?: InteractionTermsUncheckedUpdateManyWithoutCurrencyNestedInput
+    ratesFrom?: ExchangeRateUncheckedUpdateManyWithoutFromNestedInput
+    ratesTo?: ExchangeRateUncheckedUpdateManyWithoutToNestedInput
+    ruleValues?: CurrencyRuleValueUncheckedUpdateManyWithoutCurrencyNestedInput
   }
 
   export type CurrencyCreateManyInput = {
     id?: string
     name: string
     code?: string | null
+    description?: string | null
     kind: $Enums.CurrencyKind
+    status?: $Enums.CurrencyStatus
     decimals?: number
     issuerNodeId?: string | null
+    reserveCurrencyId?: string | null
+    country?: string | null
     createdAt?: Date | string
   }
 
@@ -28480,8 +31474,11 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     code?: NullableStringFieldUpdateOperationsInput | string | null
+    description?: NullableStringFieldUpdateOperationsInput | string | null
     kind?: EnumCurrencyKindFieldUpdateOperationsInput | $Enums.CurrencyKind
+    status?: EnumCurrencyStatusFieldUpdateOperationsInput | $Enums.CurrencyStatus
     decimals?: IntFieldUpdateOperationsInput | number
+    country?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -28489,9 +31486,95 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     code?: NullableStringFieldUpdateOperationsInput | string | null
+    description?: NullableStringFieldUpdateOperationsInput | string | null
     kind?: EnumCurrencyKindFieldUpdateOperationsInput | $Enums.CurrencyKind
+    status?: EnumCurrencyStatusFieldUpdateOperationsInput | $Enums.CurrencyStatus
     decimals?: IntFieldUpdateOperationsInput | number
     issuerNodeId?: NullableStringFieldUpdateOperationsInput | string | null
+    reserveCurrencyId?: NullableStringFieldUpdateOperationsInput | string | null
+    country?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ExchangeRateCreateInput = {
+    id?: string
+    rate: string
+    validFrom: Date | string
+    validTo?: Date | string | null
+    source: $Enums.RateSource
+    setBy: string
+    createdAt?: Date | string
+    from: CurrencyCreateNestedOneWithoutRatesFromInput
+    to: CurrencyCreateNestedOneWithoutRatesToInput
+  }
+
+  export type ExchangeRateUncheckedCreateInput = {
+    id?: string
+    fromCurrencyId: string
+    toCurrencyId: string
+    rate: string
+    validFrom: Date | string
+    validTo?: Date | string | null
+    source: $Enums.RateSource
+    setBy: string
+    createdAt?: Date | string
+  }
+
+  export type ExchangeRateUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    rate?: StringFieldUpdateOperationsInput | string
+    validFrom?: DateTimeFieldUpdateOperationsInput | Date | string
+    validTo?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    source?: EnumRateSourceFieldUpdateOperationsInput | $Enums.RateSource
+    setBy?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    from?: CurrencyUpdateOneRequiredWithoutRatesFromNestedInput
+    to?: CurrencyUpdateOneRequiredWithoutRatesToNestedInput
+  }
+
+  export type ExchangeRateUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    fromCurrencyId?: StringFieldUpdateOperationsInput | string
+    toCurrencyId?: StringFieldUpdateOperationsInput | string
+    rate?: StringFieldUpdateOperationsInput | string
+    validFrom?: DateTimeFieldUpdateOperationsInput | Date | string
+    validTo?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    source?: EnumRateSourceFieldUpdateOperationsInput | $Enums.RateSource
+    setBy?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ExchangeRateCreateManyInput = {
+    id?: string
+    fromCurrencyId: string
+    toCurrencyId: string
+    rate: string
+    validFrom: Date | string
+    validTo?: Date | string | null
+    source: $Enums.RateSource
+    setBy: string
+    createdAt?: Date | string
+  }
+
+  export type ExchangeRateUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    rate?: StringFieldUpdateOperationsInput | string
+    validFrom?: DateTimeFieldUpdateOperationsInput | Date | string
+    validTo?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    source?: EnumRateSourceFieldUpdateOperationsInput | $Enums.RateSource
+    setBy?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ExchangeRateUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    fromCurrencyId?: StringFieldUpdateOperationsInput | string
+    toCurrencyId?: StringFieldUpdateOperationsInput | string
+    rate?: StringFieldUpdateOperationsInput | string
+    validFrom?: DateTimeFieldUpdateOperationsInput | Date | string
+    validTo?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    source?: EnumRateSourceFieldUpdateOperationsInput | $Enums.RateSource
+    setBy?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -28955,6 +32038,11 @@ export namespace Prisma {
     not?: NestedDateTimeFilter<$PrismaModel> | Date | string
   }
 
+  export type CurrencyNullableScalarRelationFilter = {
+    is?: CurrencyWhereInput | null
+    isNot?: CurrencyWhereInput | null
+  }
+
   export type RoleAssignmentListRelationFilter = {
     every?: RoleAssignmentWhereInput
     some?: RoleAssignmentWhereInput
@@ -29043,6 +32131,8 @@ export namespace Prisma {
     passwordHash?: SortOrder
     email?: SortOrder
     phone?: SortOrder
+    country?: SortOrder
+    homeCurrencyId?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -29059,6 +32149,8 @@ export namespace Prisma {
     passwordHash?: SortOrder
     email?: SortOrder
     phone?: SortOrder
+    country?: SortOrder
+    homeCurrencyId?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -29075,6 +32167,8 @@ export namespace Prisma {
     passwordHash?: SortOrder
     email?: SortOrder
     phone?: SortOrder
+    country?: SortOrder
+    homeCurrencyId?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -29311,6 +32405,34 @@ export namespace Prisma {
 
   export type NodeRuleValueMinOrderByAggregateInput = {
     nodeId?: SortOrder
+    ruleId?: SortOrder
+    value?: SortOrder
+  }
+
+  export type CurrencyScalarRelationFilter = {
+    is?: CurrencyWhereInput
+    isNot?: CurrencyWhereInput
+  }
+
+  export type CurrencyRuleValueCurrencyIdRuleIdCompoundUniqueInput = {
+    currencyId: string
+    ruleId: string
+  }
+
+  export type CurrencyRuleValueCountOrderByAggregateInput = {
+    currencyId?: SortOrder
+    ruleId?: SortOrder
+    value?: SortOrder
+  }
+
+  export type CurrencyRuleValueMaxOrderByAggregateInput = {
+    currencyId?: SortOrder
+    ruleId?: SortOrder
+    value?: SortOrder
+  }
+
+  export type CurrencyRuleValueMinOrderByAggregateInput = {
+    currencyId?: SortOrder
     ruleId?: SortOrder
     value?: SortOrder
   }
@@ -29596,11 +32718,6 @@ export namespace Prisma {
   export type InteractionScalarRelationFilter = {
     is?: InteractionWhereInput
     isNot?: InteractionWhereInput
-  }
-
-  export type CurrencyScalarRelationFilter = {
-    is?: CurrencyWhereInput
-    isNot?: CurrencyWhereInput
   }
 
   export type InteractionTermsInteractionIdVersionCompoundUniqueInput = {
@@ -29918,18 +33035,59 @@ export namespace Prisma {
     not?: NestedEnumCurrencyKindFilter<$PrismaModel> | $Enums.CurrencyKind
   }
 
+  export type EnumCurrencyStatusFilter<$PrismaModel = never> = {
+    equals?: $Enums.CurrencyStatus | EnumCurrencyStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.CurrencyStatus[]
+    notIn?: $Enums.CurrencyStatus[]
+    not?: NestedEnumCurrencyStatusFilter<$PrismaModel> | $Enums.CurrencyStatus
+  }
+
   export type NodeNullableScalarRelationFilter = {
     is?: NodeWhereInput | null
     isNot?: NodeWhereInput | null
+  }
+
+  export type NodeListRelationFilter = {
+    every?: NodeWhereInput
+    some?: NodeWhereInput
+    none?: NodeWhereInput
+  }
+
+  export type ExchangeRateListRelationFilter = {
+    every?: ExchangeRateWhereInput
+    some?: ExchangeRateWhereInput
+    none?: ExchangeRateWhereInput
+  }
+
+  export type CurrencyRuleValueListRelationFilter = {
+    every?: CurrencyRuleValueWhereInput
+    some?: CurrencyRuleValueWhereInput
+    none?: CurrencyRuleValueWhereInput
+  }
+
+  export type NodeOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type ExchangeRateOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type CurrencyRuleValueOrderByRelationAggregateInput = {
+    _count?: SortOrder
   }
 
   export type CurrencyCountOrderByAggregateInput = {
     id?: SortOrder
     name?: SortOrder
     code?: SortOrder
+    description?: SortOrder
     kind?: SortOrder
+    status?: SortOrder
     decimals?: SortOrder
     issuerNodeId?: SortOrder
+    reserveCurrencyId?: SortOrder
+    country?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -29941,9 +33099,13 @@ export namespace Prisma {
     id?: SortOrder
     name?: SortOrder
     code?: SortOrder
+    description?: SortOrder
     kind?: SortOrder
+    status?: SortOrder
     decimals?: SortOrder
     issuerNodeId?: SortOrder
+    reserveCurrencyId?: SortOrder
+    country?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -29951,9 +33113,13 @@ export namespace Prisma {
     id?: SortOrder
     name?: SortOrder
     code?: SortOrder
+    description?: SortOrder
     kind?: SortOrder
+    status?: SortOrder
     decimals?: SortOrder
     issuerNodeId?: SortOrder
+    reserveCurrencyId?: SortOrder
+    country?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -29969,6 +33135,69 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumCurrencyKindFilter<$PrismaModel>
     _max?: NestedEnumCurrencyKindFilter<$PrismaModel>
+  }
+
+  export type EnumCurrencyStatusWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.CurrencyStatus | EnumCurrencyStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.CurrencyStatus[]
+    notIn?: $Enums.CurrencyStatus[]
+    not?: NestedEnumCurrencyStatusWithAggregatesFilter<$PrismaModel> | $Enums.CurrencyStatus
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumCurrencyStatusFilter<$PrismaModel>
+    _max?: NestedEnumCurrencyStatusFilter<$PrismaModel>
+  }
+
+  export type EnumRateSourceFilter<$PrismaModel = never> = {
+    equals?: $Enums.RateSource | EnumRateSourceFieldRefInput<$PrismaModel>
+    in?: $Enums.RateSource[]
+    notIn?: $Enums.RateSource[]
+    not?: NestedEnumRateSourceFilter<$PrismaModel> | $Enums.RateSource
+  }
+
+  export type ExchangeRateCountOrderByAggregateInput = {
+    id?: SortOrder
+    fromCurrencyId?: SortOrder
+    toCurrencyId?: SortOrder
+    rate?: SortOrder
+    validFrom?: SortOrder
+    validTo?: SortOrder
+    source?: SortOrder
+    setBy?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type ExchangeRateMaxOrderByAggregateInput = {
+    id?: SortOrder
+    fromCurrencyId?: SortOrder
+    toCurrencyId?: SortOrder
+    rate?: SortOrder
+    validFrom?: SortOrder
+    validTo?: SortOrder
+    source?: SortOrder
+    setBy?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type ExchangeRateMinOrderByAggregateInput = {
+    id?: SortOrder
+    fromCurrencyId?: SortOrder
+    toCurrencyId?: SortOrder
+    rate?: SortOrder
+    validFrom?: SortOrder
+    validTo?: SortOrder
+    source?: SortOrder
+    setBy?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type EnumRateSourceWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.RateSource | EnumRateSourceFieldRefInput<$PrismaModel>
+    in?: $Enums.RateSource[]
+    notIn?: $Enums.RateSource[]
+    not?: NestedEnumRateSourceWithAggregatesFilter<$PrismaModel> | $Enums.RateSource
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumRateSourceFilter<$PrismaModel>
+    _max?: NestedEnumRateSourceFilter<$PrismaModel>
   }
 
   export type AccountNodeIdCurrencyIdIsReserveCompoundUniqueInput = {
@@ -30208,6 +33437,12 @@ export namespace Prisma {
     createdAt?: SortOrder
   }
 
+  export type CurrencyCreateNestedOneWithoutHomeOfInput = {
+    create?: XOR<CurrencyCreateWithoutHomeOfInput, CurrencyUncheckedCreateWithoutHomeOfInput>
+    connectOrCreate?: CurrencyCreateOrConnectWithoutHomeOfInput
+    connect?: CurrencyWhereUniqueInput
+  }
+
   export type RoleAssignmentCreateNestedManyWithoutScopeInput = {
     create?: XOR<RoleAssignmentCreateWithoutScopeInput, RoleAssignmentUncheckedCreateWithoutScopeInput> | RoleAssignmentCreateWithoutScopeInput[] | RoleAssignmentUncheckedCreateWithoutScopeInput[]
     connectOrCreate?: RoleAssignmentCreateOrConnectWithoutScopeInput | RoleAssignmentCreateOrConnectWithoutScopeInput[]
@@ -30352,6 +33587,16 @@ export namespace Prisma {
 
   export type DateTimeFieldUpdateOperationsInput = {
     set?: Date | string
+  }
+
+  export type CurrencyUpdateOneWithoutHomeOfNestedInput = {
+    create?: XOR<CurrencyCreateWithoutHomeOfInput, CurrencyUncheckedCreateWithoutHomeOfInput>
+    connectOrCreate?: CurrencyCreateOrConnectWithoutHomeOfInput
+    upsert?: CurrencyUpsertWithoutHomeOfInput
+    disconnect?: CurrencyWhereInput | boolean
+    delete?: CurrencyWhereInput | boolean
+    connect?: CurrencyWhereUniqueInput
+    update?: XOR<XOR<CurrencyUpdateToOneWithWhereWithoutHomeOfInput, CurrencyUpdateWithoutHomeOfInput>, CurrencyUncheckedUpdateWithoutHomeOfInput>
   }
 
   export type RoleAssignmentUpdateManyWithoutScopeNestedInput = {
@@ -30822,6 +34067,20 @@ export namespace Prisma {
     upsert?: NodeUpsertWithoutRuleValuesInput
     connect?: NodeWhereUniqueInput
     update?: XOR<XOR<NodeUpdateToOneWithWhereWithoutRuleValuesInput, NodeUpdateWithoutRuleValuesInput>, NodeUncheckedUpdateWithoutRuleValuesInput>
+  }
+
+  export type CurrencyCreateNestedOneWithoutRuleValuesInput = {
+    create?: XOR<CurrencyCreateWithoutRuleValuesInput, CurrencyUncheckedCreateWithoutRuleValuesInput>
+    connectOrCreate?: CurrencyCreateOrConnectWithoutRuleValuesInput
+    connect?: CurrencyWhereUniqueInput
+  }
+
+  export type CurrencyUpdateOneRequiredWithoutRuleValuesNestedInput = {
+    create?: XOR<CurrencyCreateWithoutRuleValuesInput, CurrencyUncheckedCreateWithoutRuleValuesInput>
+    connectOrCreate?: CurrencyCreateOrConnectWithoutRuleValuesInput
+    upsert?: CurrencyUpsertWithoutRuleValuesInput
+    connect?: CurrencyWhereUniqueInput
+    update?: XOR<XOR<CurrencyUpdateToOneWithWhereWithoutRuleValuesInput, CurrencyUpdateWithoutRuleValuesInput>, CurrencyUncheckedUpdateWithoutRuleValuesInput>
   }
 
   export type NodeCreateNestedOneWithoutRelationshipsAInput = {
@@ -31354,6 +34613,26 @@ export namespace Prisma {
     connect?: NodeWhereUniqueInput
   }
 
+  export type CurrencyCreateNestedOneWithoutBacksInput = {
+    create?: XOR<CurrencyCreateWithoutBacksInput, CurrencyUncheckedCreateWithoutBacksInput>
+    connectOrCreate?: CurrencyCreateOrConnectWithoutBacksInput
+    connect?: CurrencyWhereUniqueInput
+  }
+
+  export type CurrencyCreateNestedManyWithoutReserveCurrencyInput = {
+    create?: XOR<CurrencyCreateWithoutReserveCurrencyInput, CurrencyUncheckedCreateWithoutReserveCurrencyInput> | CurrencyCreateWithoutReserveCurrencyInput[] | CurrencyUncheckedCreateWithoutReserveCurrencyInput[]
+    connectOrCreate?: CurrencyCreateOrConnectWithoutReserveCurrencyInput | CurrencyCreateOrConnectWithoutReserveCurrencyInput[]
+    createMany?: CurrencyCreateManyReserveCurrencyInputEnvelope
+    connect?: CurrencyWhereUniqueInput | CurrencyWhereUniqueInput[]
+  }
+
+  export type NodeCreateNestedManyWithoutHomeCurrencyInput = {
+    create?: XOR<NodeCreateWithoutHomeCurrencyInput, NodeUncheckedCreateWithoutHomeCurrencyInput> | NodeCreateWithoutHomeCurrencyInput[] | NodeUncheckedCreateWithoutHomeCurrencyInput[]
+    connectOrCreate?: NodeCreateOrConnectWithoutHomeCurrencyInput | NodeCreateOrConnectWithoutHomeCurrencyInput[]
+    createMany?: NodeCreateManyHomeCurrencyInputEnvelope
+    connect?: NodeWhereUniqueInput | NodeWhereUniqueInput[]
+  }
+
   export type AccountCreateNestedManyWithoutCurrencyInput = {
     create?: XOR<AccountCreateWithoutCurrencyInput, AccountUncheckedCreateWithoutCurrencyInput> | AccountCreateWithoutCurrencyInput[] | AccountUncheckedCreateWithoutCurrencyInput[]
     connectOrCreate?: AccountCreateOrConnectWithoutCurrencyInput | AccountCreateOrConnectWithoutCurrencyInput[]
@@ -31366,6 +34645,41 @@ export namespace Prisma {
     connectOrCreate?: InteractionTermsCreateOrConnectWithoutCurrencyInput | InteractionTermsCreateOrConnectWithoutCurrencyInput[]
     createMany?: InteractionTermsCreateManyCurrencyInputEnvelope
     connect?: InteractionTermsWhereUniqueInput | InteractionTermsWhereUniqueInput[]
+  }
+
+  export type ExchangeRateCreateNestedManyWithoutFromInput = {
+    create?: XOR<ExchangeRateCreateWithoutFromInput, ExchangeRateUncheckedCreateWithoutFromInput> | ExchangeRateCreateWithoutFromInput[] | ExchangeRateUncheckedCreateWithoutFromInput[]
+    connectOrCreate?: ExchangeRateCreateOrConnectWithoutFromInput | ExchangeRateCreateOrConnectWithoutFromInput[]
+    createMany?: ExchangeRateCreateManyFromInputEnvelope
+    connect?: ExchangeRateWhereUniqueInput | ExchangeRateWhereUniqueInput[]
+  }
+
+  export type ExchangeRateCreateNestedManyWithoutToInput = {
+    create?: XOR<ExchangeRateCreateWithoutToInput, ExchangeRateUncheckedCreateWithoutToInput> | ExchangeRateCreateWithoutToInput[] | ExchangeRateUncheckedCreateWithoutToInput[]
+    connectOrCreate?: ExchangeRateCreateOrConnectWithoutToInput | ExchangeRateCreateOrConnectWithoutToInput[]
+    createMany?: ExchangeRateCreateManyToInputEnvelope
+    connect?: ExchangeRateWhereUniqueInput | ExchangeRateWhereUniqueInput[]
+  }
+
+  export type CurrencyRuleValueCreateNestedManyWithoutCurrencyInput = {
+    create?: XOR<CurrencyRuleValueCreateWithoutCurrencyInput, CurrencyRuleValueUncheckedCreateWithoutCurrencyInput> | CurrencyRuleValueCreateWithoutCurrencyInput[] | CurrencyRuleValueUncheckedCreateWithoutCurrencyInput[]
+    connectOrCreate?: CurrencyRuleValueCreateOrConnectWithoutCurrencyInput | CurrencyRuleValueCreateOrConnectWithoutCurrencyInput[]
+    createMany?: CurrencyRuleValueCreateManyCurrencyInputEnvelope
+    connect?: CurrencyRuleValueWhereUniqueInput | CurrencyRuleValueWhereUniqueInput[]
+  }
+
+  export type CurrencyUncheckedCreateNestedManyWithoutReserveCurrencyInput = {
+    create?: XOR<CurrencyCreateWithoutReserveCurrencyInput, CurrencyUncheckedCreateWithoutReserveCurrencyInput> | CurrencyCreateWithoutReserveCurrencyInput[] | CurrencyUncheckedCreateWithoutReserveCurrencyInput[]
+    connectOrCreate?: CurrencyCreateOrConnectWithoutReserveCurrencyInput | CurrencyCreateOrConnectWithoutReserveCurrencyInput[]
+    createMany?: CurrencyCreateManyReserveCurrencyInputEnvelope
+    connect?: CurrencyWhereUniqueInput | CurrencyWhereUniqueInput[]
+  }
+
+  export type NodeUncheckedCreateNestedManyWithoutHomeCurrencyInput = {
+    create?: XOR<NodeCreateWithoutHomeCurrencyInput, NodeUncheckedCreateWithoutHomeCurrencyInput> | NodeCreateWithoutHomeCurrencyInput[] | NodeUncheckedCreateWithoutHomeCurrencyInput[]
+    connectOrCreate?: NodeCreateOrConnectWithoutHomeCurrencyInput | NodeCreateOrConnectWithoutHomeCurrencyInput[]
+    createMany?: NodeCreateManyHomeCurrencyInputEnvelope
+    connect?: NodeWhereUniqueInput | NodeWhereUniqueInput[]
   }
 
   export type AccountUncheckedCreateNestedManyWithoutCurrencyInput = {
@@ -31382,8 +34696,33 @@ export namespace Prisma {
     connect?: InteractionTermsWhereUniqueInput | InteractionTermsWhereUniqueInput[]
   }
 
+  export type ExchangeRateUncheckedCreateNestedManyWithoutFromInput = {
+    create?: XOR<ExchangeRateCreateWithoutFromInput, ExchangeRateUncheckedCreateWithoutFromInput> | ExchangeRateCreateWithoutFromInput[] | ExchangeRateUncheckedCreateWithoutFromInput[]
+    connectOrCreate?: ExchangeRateCreateOrConnectWithoutFromInput | ExchangeRateCreateOrConnectWithoutFromInput[]
+    createMany?: ExchangeRateCreateManyFromInputEnvelope
+    connect?: ExchangeRateWhereUniqueInput | ExchangeRateWhereUniqueInput[]
+  }
+
+  export type ExchangeRateUncheckedCreateNestedManyWithoutToInput = {
+    create?: XOR<ExchangeRateCreateWithoutToInput, ExchangeRateUncheckedCreateWithoutToInput> | ExchangeRateCreateWithoutToInput[] | ExchangeRateUncheckedCreateWithoutToInput[]
+    connectOrCreate?: ExchangeRateCreateOrConnectWithoutToInput | ExchangeRateCreateOrConnectWithoutToInput[]
+    createMany?: ExchangeRateCreateManyToInputEnvelope
+    connect?: ExchangeRateWhereUniqueInput | ExchangeRateWhereUniqueInput[]
+  }
+
+  export type CurrencyRuleValueUncheckedCreateNestedManyWithoutCurrencyInput = {
+    create?: XOR<CurrencyRuleValueCreateWithoutCurrencyInput, CurrencyRuleValueUncheckedCreateWithoutCurrencyInput> | CurrencyRuleValueCreateWithoutCurrencyInput[] | CurrencyRuleValueUncheckedCreateWithoutCurrencyInput[]
+    connectOrCreate?: CurrencyRuleValueCreateOrConnectWithoutCurrencyInput | CurrencyRuleValueCreateOrConnectWithoutCurrencyInput[]
+    createMany?: CurrencyRuleValueCreateManyCurrencyInputEnvelope
+    connect?: CurrencyRuleValueWhereUniqueInput | CurrencyRuleValueWhereUniqueInput[]
+  }
+
   export type EnumCurrencyKindFieldUpdateOperationsInput = {
     set?: $Enums.CurrencyKind
+  }
+
+  export type EnumCurrencyStatusFieldUpdateOperationsInput = {
+    set?: $Enums.CurrencyStatus
   }
 
   export type NodeUpdateOneWithoutIssuedCurrenciesNestedInput = {
@@ -31394,6 +34733,44 @@ export namespace Prisma {
     delete?: NodeWhereInput | boolean
     connect?: NodeWhereUniqueInput
     update?: XOR<XOR<NodeUpdateToOneWithWhereWithoutIssuedCurrenciesInput, NodeUpdateWithoutIssuedCurrenciesInput>, NodeUncheckedUpdateWithoutIssuedCurrenciesInput>
+  }
+
+  export type CurrencyUpdateOneWithoutBacksNestedInput = {
+    create?: XOR<CurrencyCreateWithoutBacksInput, CurrencyUncheckedCreateWithoutBacksInput>
+    connectOrCreate?: CurrencyCreateOrConnectWithoutBacksInput
+    upsert?: CurrencyUpsertWithoutBacksInput
+    disconnect?: CurrencyWhereInput | boolean
+    delete?: CurrencyWhereInput | boolean
+    connect?: CurrencyWhereUniqueInput
+    update?: XOR<XOR<CurrencyUpdateToOneWithWhereWithoutBacksInput, CurrencyUpdateWithoutBacksInput>, CurrencyUncheckedUpdateWithoutBacksInput>
+  }
+
+  export type CurrencyUpdateManyWithoutReserveCurrencyNestedInput = {
+    create?: XOR<CurrencyCreateWithoutReserveCurrencyInput, CurrencyUncheckedCreateWithoutReserveCurrencyInput> | CurrencyCreateWithoutReserveCurrencyInput[] | CurrencyUncheckedCreateWithoutReserveCurrencyInput[]
+    connectOrCreate?: CurrencyCreateOrConnectWithoutReserveCurrencyInput | CurrencyCreateOrConnectWithoutReserveCurrencyInput[]
+    upsert?: CurrencyUpsertWithWhereUniqueWithoutReserveCurrencyInput | CurrencyUpsertWithWhereUniqueWithoutReserveCurrencyInput[]
+    createMany?: CurrencyCreateManyReserveCurrencyInputEnvelope
+    set?: CurrencyWhereUniqueInput | CurrencyWhereUniqueInput[]
+    disconnect?: CurrencyWhereUniqueInput | CurrencyWhereUniqueInput[]
+    delete?: CurrencyWhereUniqueInput | CurrencyWhereUniqueInput[]
+    connect?: CurrencyWhereUniqueInput | CurrencyWhereUniqueInput[]
+    update?: CurrencyUpdateWithWhereUniqueWithoutReserveCurrencyInput | CurrencyUpdateWithWhereUniqueWithoutReserveCurrencyInput[]
+    updateMany?: CurrencyUpdateManyWithWhereWithoutReserveCurrencyInput | CurrencyUpdateManyWithWhereWithoutReserveCurrencyInput[]
+    deleteMany?: CurrencyScalarWhereInput | CurrencyScalarWhereInput[]
+  }
+
+  export type NodeUpdateManyWithoutHomeCurrencyNestedInput = {
+    create?: XOR<NodeCreateWithoutHomeCurrencyInput, NodeUncheckedCreateWithoutHomeCurrencyInput> | NodeCreateWithoutHomeCurrencyInput[] | NodeUncheckedCreateWithoutHomeCurrencyInput[]
+    connectOrCreate?: NodeCreateOrConnectWithoutHomeCurrencyInput | NodeCreateOrConnectWithoutHomeCurrencyInput[]
+    upsert?: NodeUpsertWithWhereUniqueWithoutHomeCurrencyInput | NodeUpsertWithWhereUniqueWithoutHomeCurrencyInput[]
+    createMany?: NodeCreateManyHomeCurrencyInputEnvelope
+    set?: NodeWhereUniqueInput | NodeWhereUniqueInput[]
+    disconnect?: NodeWhereUniqueInput | NodeWhereUniqueInput[]
+    delete?: NodeWhereUniqueInput | NodeWhereUniqueInput[]
+    connect?: NodeWhereUniqueInput | NodeWhereUniqueInput[]
+    update?: NodeUpdateWithWhereUniqueWithoutHomeCurrencyInput | NodeUpdateWithWhereUniqueWithoutHomeCurrencyInput[]
+    updateMany?: NodeUpdateManyWithWhereWithoutHomeCurrencyInput | NodeUpdateManyWithWhereWithoutHomeCurrencyInput[]
+    deleteMany?: NodeScalarWhereInput | NodeScalarWhereInput[]
   }
 
   export type AccountUpdateManyWithoutCurrencyNestedInput = {
@@ -31424,6 +34801,76 @@ export namespace Prisma {
     deleteMany?: InteractionTermsScalarWhereInput | InteractionTermsScalarWhereInput[]
   }
 
+  export type ExchangeRateUpdateManyWithoutFromNestedInput = {
+    create?: XOR<ExchangeRateCreateWithoutFromInput, ExchangeRateUncheckedCreateWithoutFromInput> | ExchangeRateCreateWithoutFromInput[] | ExchangeRateUncheckedCreateWithoutFromInput[]
+    connectOrCreate?: ExchangeRateCreateOrConnectWithoutFromInput | ExchangeRateCreateOrConnectWithoutFromInput[]
+    upsert?: ExchangeRateUpsertWithWhereUniqueWithoutFromInput | ExchangeRateUpsertWithWhereUniqueWithoutFromInput[]
+    createMany?: ExchangeRateCreateManyFromInputEnvelope
+    set?: ExchangeRateWhereUniqueInput | ExchangeRateWhereUniqueInput[]
+    disconnect?: ExchangeRateWhereUniqueInput | ExchangeRateWhereUniqueInput[]
+    delete?: ExchangeRateWhereUniqueInput | ExchangeRateWhereUniqueInput[]
+    connect?: ExchangeRateWhereUniqueInput | ExchangeRateWhereUniqueInput[]
+    update?: ExchangeRateUpdateWithWhereUniqueWithoutFromInput | ExchangeRateUpdateWithWhereUniqueWithoutFromInput[]
+    updateMany?: ExchangeRateUpdateManyWithWhereWithoutFromInput | ExchangeRateUpdateManyWithWhereWithoutFromInput[]
+    deleteMany?: ExchangeRateScalarWhereInput | ExchangeRateScalarWhereInput[]
+  }
+
+  export type ExchangeRateUpdateManyWithoutToNestedInput = {
+    create?: XOR<ExchangeRateCreateWithoutToInput, ExchangeRateUncheckedCreateWithoutToInput> | ExchangeRateCreateWithoutToInput[] | ExchangeRateUncheckedCreateWithoutToInput[]
+    connectOrCreate?: ExchangeRateCreateOrConnectWithoutToInput | ExchangeRateCreateOrConnectWithoutToInput[]
+    upsert?: ExchangeRateUpsertWithWhereUniqueWithoutToInput | ExchangeRateUpsertWithWhereUniqueWithoutToInput[]
+    createMany?: ExchangeRateCreateManyToInputEnvelope
+    set?: ExchangeRateWhereUniqueInput | ExchangeRateWhereUniqueInput[]
+    disconnect?: ExchangeRateWhereUniqueInput | ExchangeRateWhereUniqueInput[]
+    delete?: ExchangeRateWhereUniqueInput | ExchangeRateWhereUniqueInput[]
+    connect?: ExchangeRateWhereUniqueInput | ExchangeRateWhereUniqueInput[]
+    update?: ExchangeRateUpdateWithWhereUniqueWithoutToInput | ExchangeRateUpdateWithWhereUniqueWithoutToInput[]
+    updateMany?: ExchangeRateUpdateManyWithWhereWithoutToInput | ExchangeRateUpdateManyWithWhereWithoutToInput[]
+    deleteMany?: ExchangeRateScalarWhereInput | ExchangeRateScalarWhereInput[]
+  }
+
+  export type CurrencyRuleValueUpdateManyWithoutCurrencyNestedInput = {
+    create?: XOR<CurrencyRuleValueCreateWithoutCurrencyInput, CurrencyRuleValueUncheckedCreateWithoutCurrencyInput> | CurrencyRuleValueCreateWithoutCurrencyInput[] | CurrencyRuleValueUncheckedCreateWithoutCurrencyInput[]
+    connectOrCreate?: CurrencyRuleValueCreateOrConnectWithoutCurrencyInput | CurrencyRuleValueCreateOrConnectWithoutCurrencyInput[]
+    upsert?: CurrencyRuleValueUpsertWithWhereUniqueWithoutCurrencyInput | CurrencyRuleValueUpsertWithWhereUniqueWithoutCurrencyInput[]
+    createMany?: CurrencyRuleValueCreateManyCurrencyInputEnvelope
+    set?: CurrencyRuleValueWhereUniqueInput | CurrencyRuleValueWhereUniqueInput[]
+    disconnect?: CurrencyRuleValueWhereUniqueInput | CurrencyRuleValueWhereUniqueInput[]
+    delete?: CurrencyRuleValueWhereUniqueInput | CurrencyRuleValueWhereUniqueInput[]
+    connect?: CurrencyRuleValueWhereUniqueInput | CurrencyRuleValueWhereUniqueInput[]
+    update?: CurrencyRuleValueUpdateWithWhereUniqueWithoutCurrencyInput | CurrencyRuleValueUpdateWithWhereUniqueWithoutCurrencyInput[]
+    updateMany?: CurrencyRuleValueUpdateManyWithWhereWithoutCurrencyInput | CurrencyRuleValueUpdateManyWithWhereWithoutCurrencyInput[]
+    deleteMany?: CurrencyRuleValueScalarWhereInput | CurrencyRuleValueScalarWhereInput[]
+  }
+
+  export type CurrencyUncheckedUpdateManyWithoutReserveCurrencyNestedInput = {
+    create?: XOR<CurrencyCreateWithoutReserveCurrencyInput, CurrencyUncheckedCreateWithoutReserveCurrencyInput> | CurrencyCreateWithoutReserveCurrencyInput[] | CurrencyUncheckedCreateWithoutReserveCurrencyInput[]
+    connectOrCreate?: CurrencyCreateOrConnectWithoutReserveCurrencyInput | CurrencyCreateOrConnectWithoutReserveCurrencyInput[]
+    upsert?: CurrencyUpsertWithWhereUniqueWithoutReserveCurrencyInput | CurrencyUpsertWithWhereUniqueWithoutReserveCurrencyInput[]
+    createMany?: CurrencyCreateManyReserveCurrencyInputEnvelope
+    set?: CurrencyWhereUniqueInput | CurrencyWhereUniqueInput[]
+    disconnect?: CurrencyWhereUniqueInput | CurrencyWhereUniqueInput[]
+    delete?: CurrencyWhereUniqueInput | CurrencyWhereUniqueInput[]
+    connect?: CurrencyWhereUniqueInput | CurrencyWhereUniqueInput[]
+    update?: CurrencyUpdateWithWhereUniqueWithoutReserveCurrencyInput | CurrencyUpdateWithWhereUniqueWithoutReserveCurrencyInput[]
+    updateMany?: CurrencyUpdateManyWithWhereWithoutReserveCurrencyInput | CurrencyUpdateManyWithWhereWithoutReserveCurrencyInput[]
+    deleteMany?: CurrencyScalarWhereInput | CurrencyScalarWhereInput[]
+  }
+
+  export type NodeUncheckedUpdateManyWithoutHomeCurrencyNestedInput = {
+    create?: XOR<NodeCreateWithoutHomeCurrencyInput, NodeUncheckedCreateWithoutHomeCurrencyInput> | NodeCreateWithoutHomeCurrencyInput[] | NodeUncheckedCreateWithoutHomeCurrencyInput[]
+    connectOrCreate?: NodeCreateOrConnectWithoutHomeCurrencyInput | NodeCreateOrConnectWithoutHomeCurrencyInput[]
+    upsert?: NodeUpsertWithWhereUniqueWithoutHomeCurrencyInput | NodeUpsertWithWhereUniqueWithoutHomeCurrencyInput[]
+    createMany?: NodeCreateManyHomeCurrencyInputEnvelope
+    set?: NodeWhereUniqueInput | NodeWhereUniqueInput[]
+    disconnect?: NodeWhereUniqueInput | NodeWhereUniqueInput[]
+    delete?: NodeWhereUniqueInput | NodeWhereUniqueInput[]
+    connect?: NodeWhereUniqueInput | NodeWhereUniqueInput[]
+    update?: NodeUpdateWithWhereUniqueWithoutHomeCurrencyInput | NodeUpdateWithWhereUniqueWithoutHomeCurrencyInput[]
+    updateMany?: NodeUpdateManyWithWhereWithoutHomeCurrencyInput | NodeUpdateManyWithWhereWithoutHomeCurrencyInput[]
+    deleteMany?: NodeScalarWhereInput | NodeScalarWhereInput[]
+  }
+
   export type AccountUncheckedUpdateManyWithoutCurrencyNestedInput = {
     create?: XOR<AccountCreateWithoutCurrencyInput, AccountUncheckedCreateWithoutCurrencyInput> | AccountCreateWithoutCurrencyInput[] | AccountUncheckedCreateWithoutCurrencyInput[]
     connectOrCreate?: AccountCreateOrConnectWithoutCurrencyInput | AccountCreateOrConnectWithoutCurrencyInput[]
@@ -31450,6 +34897,80 @@ export namespace Prisma {
     update?: InteractionTermsUpdateWithWhereUniqueWithoutCurrencyInput | InteractionTermsUpdateWithWhereUniqueWithoutCurrencyInput[]
     updateMany?: InteractionTermsUpdateManyWithWhereWithoutCurrencyInput | InteractionTermsUpdateManyWithWhereWithoutCurrencyInput[]
     deleteMany?: InteractionTermsScalarWhereInput | InteractionTermsScalarWhereInput[]
+  }
+
+  export type ExchangeRateUncheckedUpdateManyWithoutFromNestedInput = {
+    create?: XOR<ExchangeRateCreateWithoutFromInput, ExchangeRateUncheckedCreateWithoutFromInput> | ExchangeRateCreateWithoutFromInput[] | ExchangeRateUncheckedCreateWithoutFromInput[]
+    connectOrCreate?: ExchangeRateCreateOrConnectWithoutFromInput | ExchangeRateCreateOrConnectWithoutFromInput[]
+    upsert?: ExchangeRateUpsertWithWhereUniqueWithoutFromInput | ExchangeRateUpsertWithWhereUniqueWithoutFromInput[]
+    createMany?: ExchangeRateCreateManyFromInputEnvelope
+    set?: ExchangeRateWhereUniqueInput | ExchangeRateWhereUniqueInput[]
+    disconnect?: ExchangeRateWhereUniqueInput | ExchangeRateWhereUniqueInput[]
+    delete?: ExchangeRateWhereUniqueInput | ExchangeRateWhereUniqueInput[]
+    connect?: ExchangeRateWhereUniqueInput | ExchangeRateWhereUniqueInput[]
+    update?: ExchangeRateUpdateWithWhereUniqueWithoutFromInput | ExchangeRateUpdateWithWhereUniqueWithoutFromInput[]
+    updateMany?: ExchangeRateUpdateManyWithWhereWithoutFromInput | ExchangeRateUpdateManyWithWhereWithoutFromInput[]
+    deleteMany?: ExchangeRateScalarWhereInput | ExchangeRateScalarWhereInput[]
+  }
+
+  export type ExchangeRateUncheckedUpdateManyWithoutToNestedInput = {
+    create?: XOR<ExchangeRateCreateWithoutToInput, ExchangeRateUncheckedCreateWithoutToInput> | ExchangeRateCreateWithoutToInput[] | ExchangeRateUncheckedCreateWithoutToInput[]
+    connectOrCreate?: ExchangeRateCreateOrConnectWithoutToInput | ExchangeRateCreateOrConnectWithoutToInput[]
+    upsert?: ExchangeRateUpsertWithWhereUniqueWithoutToInput | ExchangeRateUpsertWithWhereUniqueWithoutToInput[]
+    createMany?: ExchangeRateCreateManyToInputEnvelope
+    set?: ExchangeRateWhereUniqueInput | ExchangeRateWhereUniqueInput[]
+    disconnect?: ExchangeRateWhereUniqueInput | ExchangeRateWhereUniqueInput[]
+    delete?: ExchangeRateWhereUniqueInput | ExchangeRateWhereUniqueInput[]
+    connect?: ExchangeRateWhereUniqueInput | ExchangeRateWhereUniqueInput[]
+    update?: ExchangeRateUpdateWithWhereUniqueWithoutToInput | ExchangeRateUpdateWithWhereUniqueWithoutToInput[]
+    updateMany?: ExchangeRateUpdateManyWithWhereWithoutToInput | ExchangeRateUpdateManyWithWhereWithoutToInput[]
+    deleteMany?: ExchangeRateScalarWhereInput | ExchangeRateScalarWhereInput[]
+  }
+
+  export type CurrencyRuleValueUncheckedUpdateManyWithoutCurrencyNestedInput = {
+    create?: XOR<CurrencyRuleValueCreateWithoutCurrencyInput, CurrencyRuleValueUncheckedCreateWithoutCurrencyInput> | CurrencyRuleValueCreateWithoutCurrencyInput[] | CurrencyRuleValueUncheckedCreateWithoutCurrencyInput[]
+    connectOrCreate?: CurrencyRuleValueCreateOrConnectWithoutCurrencyInput | CurrencyRuleValueCreateOrConnectWithoutCurrencyInput[]
+    upsert?: CurrencyRuleValueUpsertWithWhereUniqueWithoutCurrencyInput | CurrencyRuleValueUpsertWithWhereUniqueWithoutCurrencyInput[]
+    createMany?: CurrencyRuleValueCreateManyCurrencyInputEnvelope
+    set?: CurrencyRuleValueWhereUniqueInput | CurrencyRuleValueWhereUniqueInput[]
+    disconnect?: CurrencyRuleValueWhereUniqueInput | CurrencyRuleValueWhereUniqueInput[]
+    delete?: CurrencyRuleValueWhereUniqueInput | CurrencyRuleValueWhereUniqueInput[]
+    connect?: CurrencyRuleValueWhereUniqueInput | CurrencyRuleValueWhereUniqueInput[]
+    update?: CurrencyRuleValueUpdateWithWhereUniqueWithoutCurrencyInput | CurrencyRuleValueUpdateWithWhereUniqueWithoutCurrencyInput[]
+    updateMany?: CurrencyRuleValueUpdateManyWithWhereWithoutCurrencyInput | CurrencyRuleValueUpdateManyWithWhereWithoutCurrencyInput[]
+    deleteMany?: CurrencyRuleValueScalarWhereInput | CurrencyRuleValueScalarWhereInput[]
+  }
+
+  export type CurrencyCreateNestedOneWithoutRatesFromInput = {
+    create?: XOR<CurrencyCreateWithoutRatesFromInput, CurrencyUncheckedCreateWithoutRatesFromInput>
+    connectOrCreate?: CurrencyCreateOrConnectWithoutRatesFromInput
+    connect?: CurrencyWhereUniqueInput
+  }
+
+  export type CurrencyCreateNestedOneWithoutRatesToInput = {
+    create?: XOR<CurrencyCreateWithoutRatesToInput, CurrencyUncheckedCreateWithoutRatesToInput>
+    connectOrCreate?: CurrencyCreateOrConnectWithoutRatesToInput
+    connect?: CurrencyWhereUniqueInput
+  }
+
+  export type EnumRateSourceFieldUpdateOperationsInput = {
+    set?: $Enums.RateSource
+  }
+
+  export type CurrencyUpdateOneRequiredWithoutRatesFromNestedInput = {
+    create?: XOR<CurrencyCreateWithoutRatesFromInput, CurrencyUncheckedCreateWithoutRatesFromInput>
+    connectOrCreate?: CurrencyCreateOrConnectWithoutRatesFromInput
+    upsert?: CurrencyUpsertWithoutRatesFromInput
+    connect?: CurrencyWhereUniqueInput
+    update?: XOR<XOR<CurrencyUpdateToOneWithWhereWithoutRatesFromInput, CurrencyUpdateWithoutRatesFromInput>, CurrencyUncheckedUpdateWithoutRatesFromInput>
+  }
+
+  export type CurrencyUpdateOneRequiredWithoutRatesToNestedInput = {
+    create?: XOR<CurrencyCreateWithoutRatesToInput, CurrencyUncheckedCreateWithoutRatesToInput>
+    connectOrCreate?: CurrencyCreateOrConnectWithoutRatesToInput
+    upsert?: CurrencyUpsertWithoutRatesToInput
+    connect?: CurrencyWhereUniqueInput
+    update?: XOR<XOR<CurrencyUpdateToOneWithWhereWithoutRatesToInput, CurrencyUpdateWithoutRatesToInput>, CurrencyUncheckedUpdateWithoutRatesToInput>
   }
 
   export type NodeCreateNestedOneWithoutAccountsInput = {
@@ -32038,6 +35559,13 @@ export namespace Prisma {
     not?: NestedEnumCurrencyKindFilter<$PrismaModel> | $Enums.CurrencyKind
   }
 
+  export type NestedEnumCurrencyStatusFilter<$PrismaModel = never> = {
+    equals?: $Enums.CurrencyStatus | EnumCurrencyStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.CurrencyStatus[]
+    notIn?: $Enums.CurrencyStatus[]
+    not?: NestedEnumCurrencyStatusFilter<$PrismaModel> | $Enums.CurrencyStatus
+  }
+
   export type NestedEnumCurrencyKindWithAggregatesFilter<$PrismaModel = never> = {
     equals?: $Enums.CurrencyKind | EnumCurrencyKindFieldRefInput<$PrismaModel>
     in?: $Enums.CurrencyKind[]
@@ -32046,6 +35574,33 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumCurrencyKindFilter<$PrismaModel>
     _max?: NestedEnumCurrencyKindFilter<$PrismaModel>
+  }
+
+  export type NestedEnumCurrencyStatusWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.CurrencyStatus | EnumCurrencyStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.CurrencyStatus[]
+    notIn?: $Enums.CurrencyStatus[]
+    not?: NestedEnumCurrencyStatusWithAggregatesFilter<$PrismaModel> | $Enums.CurrencyStatus
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumCurrencyStatusFilter<$PrismaModel>
+    _max?: NestedEnumCurrencyStatusFilter<$PrismaModel>
+  }
+
+  export type NestedEnumRateSourceFilter<$PrismaModel = never> = {
+    equals?: $Enums.RateSource | EnumRateSourceFieldRefInput<$PrismaModel>
+    in?: $Enums.RateSource[]
+    notIn?: $Enums.RateSource[]
+    not?: NestedEnumRateSourceFilter<$PrismaModel> | $Enums.RateSource
+  }
+
+  export type NestedEnumRateSourceWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.RateSource | EnumRateSourceFieldRefInput<$PrismaModel>
+    in?: $Enums.RateSource[]
+    notIn?: $Enums.RateSource[]
+    not?: NestedEnumRateSourceWithAggregatesFilter<$PrismaModel> | $Enums.RateSource
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumRateSourceFilter<$PrismaModel>
+    _max?: NestedEnumRateSourceFilter<$PrismaModel>
   }
 
   export type NestedEnumTransactionKindFilter<$PrismaModel = never> = {
@@ -32080,6 +35635,51 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumInvitationStatusFilter<$PrismaModel>
     _max?: NestedEnumInvitationStatusFilter<$PrismaModel>
+  }
+
+  export type CurrencyCreateWithoutHomeOfInput = {
+    id?: string
+    name: string
+    code?: string | null
+    description?: string | null
+    kind: $Enums.CurrencyKind
+    status?: $Enums.CurrencyStatus
+    decimals?: number
+    country?: string | null
+    createdAt?: Date | string
+    issuer?: NodeCreateNestedOneWithoutIssuedCurrenciesInput
+    reserveCurrency?: CurrencyCreateNestedOneWithoutBacksInput
+    backs?: CurrencyCreateNestedManyWithoutReserveCurrencyInput
+    accounts?: AccountCreateNestedManyWithoutCurrencyInput
+    terms?: InteractionTermsCreateNestedManyWithoutCurrencyInput
+    ratesFrom?: ExchangeRateCreateNestedManyWithoutFromInput
+    ratesTo?: ExchangeRateCreateNestedManyWithoutToInput
+    ruleValues?: CurrencyRuleValueCreateNestedManyWithoutCurrencyInput
+  }
+
+  export type CurrencyUncheckedCreateWithoutHomeOfInput = {
+    id?: string
+    name: string
+    code?: string | null
+    description?: string | null
+    kind: $Enums.CurrencyKind
+    status?: $Enums.CurrencyStatus
+    decimals?: number
+    issuerNodeId?: string | null
+    reserveCurrencyId?: string | null
+    country?: string | null
+    createdAt?: Date | string
+    backs?: CurrencyUncheckedCreateNestedManyWithoutReserveCurrencyInput
+    accounts?: AccountUncheckedCreateNestedManyWithoutCurrencyInput
+    terms?: InteractionTermsUncheckedCreateNestedManyWithoutCurrencyInput
+    ratesFrom?: ExchangeRateUncheckedCreateNestedManyWithoutFromInput
+    ratesTo?: ExchangeRateUncheckedCreateNestedManyWithoutToInput
+    ruleValues?: CurrencyRuleValueUncheckedCreateNestedManyWithoutCurrencyInput
+  }
+
+  export type CurrencyCreateOrConnectWithoutHomeOfInput = {
+    where: CurrencyWhereUniqueInput
+    create: XOR<CurrencyCreateWithoutHomeOfInput, CurrencyUncheckedCreateWithoutHomeOfInput>
   }
 
   export type RoleAssignmentCreateWithoutScopeInput = {
@@ -32244,22 +35844,40 @@ export namespace Prisma {
     id?: string
     name: string
     code?: string | null
+    description?: string | null
     kind: $Enums.CurrencyKind
+    status?: $Enums.CurrencyStatus
     decimals?: number
+    country?: string | null
     createdAt?: Date | string
+    reserveCurrency?: CurrencyCreateNestedOneWithoutBacksInput
+    backs?: CurrencyCreateNestedManyWithoutReserveCurrencyInput
+    homeOf?: NodeCreateNestedManyWithoutHomeCurrencyInput
     accounts?: AccountCreateNestedManyWithoutCurrencyInput
     terms?: InteractionTermsCreateNestedManyWithoutCurrencyInput
+    ratesFrom?: ExchangeRateCreateNestedManyWithoutFromInput
+    ratesTo?: ExchangeRateCreateNestedManyWithoutToInput
+    ruleValues?: CurrencyRuleValueCreateNestedManyWithoutCurrencyInput
   }
 
   export type CurrencyUncheckedCreateWithoutIssuerInput = {
     id?: string
     name: string
     code?: string | null
+    description?: string | null
     kind: $Enums.CurrencyKind
+    status?: $Enums.CurrencyStatus
     decimals?: number
+    reserveCurrencyId?: string | null
+    country?: string | null
     createdAt?: Date | string
+    backs?: CurrencyUncheckedCreateNestedManyWithoutReserveCurrencyInput
+    homeOf?: NodeUncheckedCreateNestedManyWithoutHomeCurrencyInput
     accounts?: AccountUncheckedCreateNestedManyWithoutCurrencyInput
     terms?: InteractionTermsUncheckedCreateNestedManyWithoutCurrencyInput
+    ratesFrom?: ExchangeRateUncheckedCreateNestedManyWithoutFromInput
+    ratesTo?: ExchangeRateUncheckedCreateNestedManyWithoutToInput
+    ruleValues?: CurrencyRuleValueUncheckedCreateNestedManyWithoutCurrencyInput
   }
 
   export type CurrencyCreateOrConnectWithoutIssuerInput = {
@@ -32329,6 +35947,57 @@ export namespace Prisma {
 
   export type ActivityCreateManyNodeInputEnvelope = {
     data: ActivityCreateManyNodeInput | ActivityCreateManyNodeInput[]
+  }
+
+  export type CurrencyUpsertWithoutHomeOfInput = {
+    update: XOR<CurrencyUpdateWithoutHomeOfInput, CurrencyUncheckedUpdateWithoutHomeOfInput>
+    create: XOR<CurrencyCreateWithoutHomeOfInput, CurrencyUncheckedCreateWithoutHomeOfInput>
+    where?: CurrencyWhereInput
+  }
+
+  export type CurrencyUpdateToOneWithWhereWithoutHomeOfInput = {
+    where?: CurrencyWhereInput
+    data: XOR<CurrencyUpdateWithoutHomeOfInput, CurrencyUncheckedUpdateWithoutHomeOfInput>
+  }
+
+  export type CurrencyUpdateWithoutHomeOfInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    code?: NullableStringFieldUpdateOperationsInput | string | null
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    kind?: EnumCurrencyKindFieldUpdateOperationsInput | $Enums.CurrencyKind
+    status?: EnumCurrencyStatusFieldUpdateOperationsInput | $Enums.CurrencyStatus
+    decimals?: IntFieldUpdateOperationsInput | number
+    country?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    issuer?: NodeUpdateOneWithoutIssuedCurrenciesNestedInput
+    reserveCurrency?: CurrencyUpdateOneWithoutBacksNestedInput
+    backs?: CurrencyUpdateManyWithoutReserveCurrencyNestedInput
+    accounts?: AccountUpdateManyWithoutCurrencyNestedInput
+    terms?: InteractionTermsUpdateManyWithoutCurrencyNestedInput
+    ratesFrom?: ExchangeRateUpdateManyWithoutFromNestedInput
+    ratesTo?: ExchangeRateUpdateManyWithoutToNestedInput
+    ruleValues?: CurrencyRuleValueUpdateManyWithoutCurrencyNestedInput
+  }
+
+  export type CurrencyUncheckedUpdateWithoutHomeOfInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    code?: NullableStringFieldUpdateOperationsInput | string | null
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    kind?: EnumCurrencyKindFieldUpdateOperationsInput | $Enums.CurrencyKind
+    status?: EnumCurrencyStatusFieldUpdateOperationsInput | $Enums.CurrencyStatus
+    decimals?: IntFieldUpdateOperationsInput | number
+    issuerNodeId?: NullableStringFieldUpdateOperationsInput | string | null
+    reserveCurrencyId?: NullableStringFieldUpdateOperationsInput | string | null
+    country?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    backs?: CurrencyUncheckedUpdateManyWithoutReserveCurrencyNestedInput
+    accounts?: AccountUncheckedUpdateManyWithoutCurrencyNestedInput
+    terms?: InteractionTermsUncheckedUpdateManyWithoutCurrencyNestedInput
+    ratesFrom?: ExchangeRateUncheckedUpdateManyWithoutFromNestedInput
+    ratesTo?: ExchangeRateUncheckedUpdateManyWithoutToNestedInput
+    ruleValues?: CurrencyRuleValueUncheckedUpdateManyWithoutCurrencyNestedInput
   }
 
   export type RoleAssignmentUpsertWithWhereUniqueWithoutScopeInput = {
@@ -32496,9 +36165,13 @@ export namespace Prisma {
     id?: StringFilter<"Currency"> | string
     name?: StringFilter<"Currency"> | string
     code?: StringNullableFilter<"Currency"> | string | null
+    description?: StringNullableFilter<"Currency"> | string | null
     kind?: EnumCurrencyKindFilter<"Currency"> | $Enums.CurrencyKind
+    status?: EnumCurrencyStatusFilter<"Currency"> | $Enums.CurrencyStatus
     decimals?: IntFilter<"Currency"> | number
     issuerNodeId?: StringNullableFilter<"Currency"> | string | null
+    reserveCurrencyId?: StringNullableFilter<"Currency"> | string | null
+    country?: StringNullableFilter<"Currency"> | string | null
     createdAt?: DateTimeFilter<"Currency"> | Date | string
   }
 
@@ -32775,7 +36448,9 @@ export namespace Prisma {
     passwordHash?: string | null
     email?: string | null
     phone?: string | null
+    country?: string | null
     createdAt?: Date | string
+    homeCurrency?: CurrencyCreateNestedOneWithoutHomeOfInput
     rolesHeldByMe?: RoleAssignmentCreateNestedManyWithoutHolderInput
     accounts?: AccountCreateNestedManyWithoutNodeInput
     ruleValues?: NodeRuleValueCreateNestedManyWithoutNodeInput
@@ -32799,6 +36474,8 @@ export namespace Prisma {
     passwordHash?: string | null
     email?: string | null
     phone?: string | null
+    country?: string | null
+    homeCurrencyId?: string | null
     createdAt?: Date | string
     rolesHeldByMe?: RoleAssignmentUncheckedCreateNestedManyWithoutHolderInput
     accounts?: AccountUncheckedCreateNestedManyWithoutNodeInput
@@ -32828,7 +36505,9 @@ export namespace Prisma {
     passwordHash?: string | null
     email?: string | null
     phone?: string | null
+    country?: string | null
     createdAt?: Date | string
+    homeCurrency?: CurrencyCreateNestedOneWithoutHomeOfInput
     rolesHeldHere?: RoleAssignmentCreateNestedManyWithoutScopeInput
     accounts?: AccountCreateNestedManyWithoutNodeInput
     ruleValues?: NodeRuleValueCreateNestedManyWithoutNodeInput
@@ -32852,6 +36531,8 @@ export namespace Prisma {
     passwordHash?: string | null
     email?: string | null
     phone?: string | null
+    country?: string | null
+    homeCurrencyId?: string | null
     createdAt?: Date | string
     rolesHeldHere?: RoleAssignmentUncheckedCreateNestedManyWithoutScopeInput
     accounts?: AccountUncheckedCreateNestedManyWithoutNodeInput
@@ -32911,7 +36592,9 @@ export namespace Prisma {
     passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     phone?: NullableStringFieldUpdateOperationsInput | string | null
+    country?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    homeCurrency?: CurrencyUpdateOneWithoutHomeOfNestedInput
     rolesHeldByMe?: RoleAssignmentUpdateManyWithoutHolderNestedInput
     accounts?: AccountUpdateManyWithoutNodeNestedInput
     ruleValues?: NodeRuleValueUpdateManyWithoutNodeNestedInput
@@ -32935,6 +36618,8 @@ export namespace Prisma {
     passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     phone?: NullableStringFieldUpdateOperationsInput | string | null
+    country?: NullableStringFieldUpdateOperationsInput | string | null
+    homeCurrencyId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     rolesHeldByMe?: RoleAssignmentUncheckedUpdateManyWithoutHolderNestedInput
     accounts?: AccountUncheckedUpdateManyWithoutNodeNestedInput
@@ -32970,7 +36655,9 @@ export namespace Prisma {
     passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     phone?: NullableStringFieldUpdateOperationsInput | string | null
+    country?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    homeCurrency?: CurrencyUpdateOneWithoutHomeOfNestedInput
     rolesHeldHere?: RoleAssignmentUpdateManyWithoutScopeNestedInput
     accounts?: AccountUpdateManyWithoutNodeNestedInput
     ruleValues?: NodeRuleValueUpdateManyWithoutNodeNestedInput
@@ -32994,6 +36681,8 @@ export namespace Prisma {
     passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     phone?: NullableStringFieldUpdateOperationsInput | string | null
+    country?: NullableStringFieldUpdateOperationsInput | string | null
+    homeCurrencyId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     rolesHeldHere?: RoleAssignmentUncheckedUpdateManyWithoutScopeNestedInput
     accounts?: AccountUncheckedUpdateManyWithoutNodeNestedInput
@@ -33043,7 +36732,9 @@ export namespace Prisma {
     passwordHash?: string | null
     email?: string | null
     phone?: string | null
+    country?: string | null
     createdAt?: Date | string
+    homeCurrency?: CurrencyCreateNestedOneWithoutHomeOfInput
     rolesHeldHere?: RoleAssignmentCreateNestedManyWithoutScopeInput
     rolesHeldByMe?: RoleAssignmentCreateNestedManyWithoutHolderInput
     accounts?: AccountCreateNestedManyWithoutNodeInput
@@ -33067,6 +36758,8 @@ export namespace Prisma {
     passwordHash?: string | null
     email?: string | null
     phone?: string | null
+    country?: string | null
+    homeCurrencyId?: string | null
     createdAt?: Date | string
     rolesHeldHere?: RoleAssignmentUncheckedCreateNestedManyWithoutScopeInput
     rolesHeldByMe?: RoleAssignmentUncheckedCreateNestedManyWithoutHolderInput
@@ -33107,7 +36800,9 @@ export namespace Prisma {
     passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     phone?: NullableStringFieldUpdateOperationsInput | string | null
+    country?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    homeCurrency?: CurrencyUpdateOneWithoutHomeOfNestedInput
     rolesHeldHere?: RoleAssignmentUpdateManyWithoutScopeNestedInput
     rolesHeldByMe?: RoleAssignmentUpdateManyWithoutHolderNestedInput
     accounts?: AccountUpdateManyWithoutNodeNestedInput
@@ -33131,6 +36826,8 @@ export namespace Prisma {
     passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     phone?: NullableStringFieldUpdateOperationsInput | string | null
+    country?: NullableStringFieldUpdateOperationsInput | string | null
+    homeCurrencyId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     rolesHeldHere?: RoleAssignmentUncheckedUpdateManyWithoutScopeNestedInput
     rolesHeldByMe?: RoleAssignmentUncheckedUpdateManyWithoutHolderNestedInput
@@ -33140,6 +36837,102 @@ export namespace Prisma {
     issuedCurrencies?: CurrencyUncheckedUpdateManyWithoutIssuerNestedInput
     invitationsSent?: InvitationUncheckedUpdateManyWithoutInviterNestedInput
     activity?: ActivityUncheckedUpdateManyWithoutNodeNestedInput
+  }
+
+  export type CurrencyCreateWithoutRuleValuesInput = {
+    id?: string
+    name: string
+    code?: string | null
+    description?: string | null
+    kind: $Enums.CurrencyKind
+    status?: $Enums.CurrencyStatus
+    decimals?: number
+    country?: string | null
+    createdAt?: Date | string
+    issuer?: NodeCreateNestedOneWithoutIssuedCurrenciesInput
+    reserveCurrency?: CurrencyCreateNestedOneWithoutBacksInput
+    backs?: CurrencyCreateNestedManyWithoutReserveCurrencyInput
+    homeOf?: NodeCreateNestedManyWithoutHomeCurrencyInput
+    accounts?: AccountCreateNestedManyWithoutCurrencyInput
+    terms?: InteractionTermsCreateNestedManyWithoutCurrencyInput
+    ratesFrom?: ExchangeRateCreateNestedManyWithoutFromInput
+    ratesTo?: ExchangeRateCreateNestedManyWithoutToInput
+  }
+
+  export type CurrencyUncheckedCreateWithoutRuleValuesInput = {
+    id?: string
+    name: string
+    code?: string | null
+    description?: string | null
+    kind: $Enums.CurrencyKind
+    status?: $Enums.CurrencyStatus
+    decimals?: number
+    issuerNodeId?: string | null
+    reserveCurrencyId?: string | null
+    country?: string | null
+    createdAt?: Date | string
+    backs?: CurrencyUncheckedCreateNestedManyWithoutReserveCurrencyInput
+    homeOf?: NodeUncheckedCreateNestedManyWithoutHomeCurrencyInput
+    accounts?: AccountUncheckedCreateNestedManyWithoutCurrencyInput
+    terms?: InteractionTermsUncheckedCreateNestedManyWithoutCurrencyInput
+    ratesFrom?: ExchangeRateUncheckedCreateNestedManyWithoutFromInput
+    ratesTo?: ExchangeRateUncheckedCreateNestedManyWithoutToInput
+  }
+
+  export type CurrencyCreateOrConnectWithoutRuleValuesInput = {
+    where: CurrencyWhereUniqueInput
+    create: XOR<CurrencyCreateWithoutRuleValuesInput, CurrencyUncheckedCreateWithoutRuleValuesInput>
+  }
+
+  export type CurrencyUpsertWithoutRuleValuesInput = {
+    update: XOR<CurrencyUpdateWithoutRuleValuesInput, CurrencyUncheckedUpdateWithoutRuleValuesInput>
+    create: XOR<CurrencyCreateWithoutRuleValuesInput, CurrencyUncheckedCreateWithoutRuleValuesInput>
+    where?: CurrencyWhereInput
+  }
+
+  export type CurrencyUpdateToOneWithWhereWithoutRuleValuesInput = {
+    where?: CurrencyWhereInput
+    data: XOR<CurrencyUpdateWithoutRuleValuesInput, CurrencyUncheckedUpdateWithoutRuleValuesInput>
+  }
+
+  export type CurrencyUpdateWithoutRuleValuesInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    code?: NullableStringFieldUpdateOperationsInput | string | null
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    kind?: EnumCurrencyKindFieldUpdateOperationsInput | $Enums.CurrencyKind
+    status?: EnumCurrencyStatusFieldUpdateOperationsInput | $Enums.CurrencyStatus
+    decimals?: IntFieldUpdateOperationsInput | number
+    country?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    issuer?: NodeUpdateOneWithoutIssuedCurrenciesNestedInput
+    reserveCurrency?: CurrencyUpdateOneWithoutBacksNestedInput
+    backs?: CurrencyUpdateManyWithoutReserveCurrencyNestedInput
+    homeOf?: NodeUpdateManyWithoutHomeCurrencyNestedInput
+    accounts?: AccountUpdateManyWithoutCurrencyNestedInput
+    terms?: InteractionTermsUpdateManyWithoutCurrencyNestedInput
+    ratesFrom?: ExchangeRateUpdateManyWithoutFromNestedInput
+    ratesTo?: ExchangeRateUpdateManyWithoutToNestedInput
+  }
+
+  export type CurrencyUncheckedUpdateWithoutRuleValuesInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    code?: NullableStringFieldUpdateOperationsInput | string | null
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    kind?: EnumCurrencyKindFieldUpdateOperationsInput | $Enums.CurrencyKind
+    status?: EnumCurrencyStatusFieldUpdateOperationsInput | $Enums.CurrencyStatus
+    decimals?: IntFieldUpdateOperationsInput | number
+    issuerNodeId?: NullableStringFieldUpdateOperationsInput | string | null
+    reserveCurrencyId?: NullableStringFieldUpdateOperationsInput | string | null
+    country?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    backs?: CurrencyUncheckedUpdateManyWithoutReserveCurrencyNestedInput
+    homeOf?: NodeUncheckedUpdateManyWithoutHomeCurrencyNestedInput
+    accounts?: AccountUncheckedUpdateManyWithoutCurrencyNestedInput
+    terms?: InteractionTermsUncheckedUpdateManyWithoutCurrencyNestedInput
+    ratesFrom?: ExchangeRateUncheckedUpdateManyWithoutFromNestedInput
+    ratesTo?: ExchangeRateUncheckedUpdateManyWithoutToNestedInput
   }
 
   export type NodeCreateWithoutRelationshipsAInput = {
@@ -33155,7 +36948,9 @@ export namespace Prisma {
     passwordHash?: string | null
     email?: string | null
     phone?: string | null
+    country?: string | null
     createdAt?: Date | string
+    homeCurrency?: CurrencyCreateNestedOneWithoutHomeOfInput
     rolesHeldHere?: RoleAssignmentCreateNestedManyWithoutScopeInput
     rolesHeldByMe?: RoleAssignmentCreateNestedManyWithoutHolderInput
     accounts?: AccountCreateNestedManyWithoutNodeInput
@@ -33179,6 +36974,8 @@ export namespace Prisma {
     passwordHash?: string | null
     email?: string | null
     phone?: string | null
+    country?: string | null
+    homeCurrencyId?: string | null
     createdAt?: Date | string
     rolesHeldHere?: RoleAssignmentUncheckedCreateNestedManyWithoutScopeInput
     rolesHeldByMe?: RoleAssignmentUncheckedCreateNestedManyWithoutHolderInput
@@ -33208,7 +37005,9 @@ export namespace Prisma {
     passwordHash?: string | null
     email?: string | null
     phone?: string | null
+    country?: string | null
     createdAt?: Date | string
+    homeCurrency?: CurrencyCreateNestedOneWithoutHomeOfInput
     rolesHeldHere?: RoleAssignmentCreateNestedManyWithoutScopeInput
     rolesHeldByMe?: RoleAssignmentCreateNestedManyWithoutHolderInput
     accounts?: AccountCreateNestedManyWithoutNodeInput
@@ -33232,6 +37031,8 @@ export namespace Prisma {
     passwordHash?: string | null
     email?: string | null
     phone?: string | null
+    country?: string | null
+    homeCurrencyId?: string | null
     createdAt?: Date | string
     rolesHeldHere?: RoleAssignmentUncheckedCreateNestedManyWithoutScopeInput
     rolesHeldByMe?: RoleAssignmentUncheckedCreateNestedManyWithoutHolderInput
@@ -33328,7 +37129,9 @@ export namespace Prisma {
     passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     phone?: NullableStringFieldUpdateOperationsInput | string | null
+    country?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    homeCurrency?: CurrencyUpdateOneWithoutHomeOfNestedInput
     rolesHeldHere?: RoleAssignmentUpdateManyWithoutScopeNestedInput
     rolesHeldByMe?: RoleAssignmentUpdateManyWithoutHolderNestedInput
     accounts?: AccountUpdateManyWithoutNodeNestedInput
@@ -33352,6 +37155,8 @@ export namespace Prisma {
     passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     phone?: NullableStringFieldUpdateOperationsInput | string | null
+    country?: NullableStringFieldUpdateOperationsInput | string | null
+    homeCurrencyId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     rolesHeldHere?: RoleAssignmentUncheckedUpdateManyWithoutScopeNestedInput
     rolesHeldByMe?: RoleAssignmentUncheckedUpdateManyWithoutHolderNestedInput
@@ -33387,7 +37192,9 @@ export namespace Prisma {
     passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     phone?: NullableStringFieldUpdateOperationsInput | string | null
+    country?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    homeCurrency?: CurrencyUpdateOneWithoutHomeOfNestedInput
     rolesHeldHere?: RoleAssignmentUpdateManyWithoutScopeNestedInput
     rolesHeldByMe?: RoleAssignmentUpdateManyWithoutHolderNestedInput
     accounts?: AccountUpdateManyWithoutNodeNestedInput
@@ -33411,6 +37218,8 @@ export namespace Prisma {
     passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     phone?: NullableStringFieldUpdateOperationsInput | string | null
+    country?: NullableStringFieldUpdateOperationsInput | string | null
+    homeCurrencyId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     rolesHeldHere?: RoleAssignmentUncheckedUpdateManyWithoutScopeNestedInput
     rolesHeldByMe?: RoleAssignmentUncheckedUpdateManyWithoutHolderNestedInput
@@ -33942,22 +37751,40 @@ export namespace Prisma {
     id?: string
     name: string
     code?: string | null
+    description?: string | null
     kind: $Enums.CurrencyKind
+    status?: $Enums.CurrencyStatus
     decimals?: number
+    country?: string | null
     createdAt?: Date | string
     issuer?: NodeCreateNestedOneWithoutIssuedCurrenciesInput
+    reserveCurrency?: CurrencyCreateNestedOneWithoutBacksInput
+    backs?: CurrencyCreateNestedManyWithoutReserveCurrencyInput
+    homeOf?: NodeCreateNestedManyWithoutHomeCurrencyInput
     accounts?: AccountCreateNestedManyWithoutCurrencyInput
+    ratesFrom?: ExchangeRateCreateNestedManyWithoutFromInput
+    ratesTo?: ExchangeRateCreateNestedManyWithoutToInput
+    ruleValues?: CurrencyRuleValueCreateNestedManyWithoutCurrencyInput
   }
 
   export type CurrencyUncheckedCreateWithoutTermsInput = {
     id?: string
     name: string
     code?: string | null
+    description?: string | null
     kind: $Enums.CurrencyKind
+    status?: $Enums.CurrencyStatus
     decimals?: number
     issuerNodeId?: string | null
+    reserveCurrencyId?: string | null
+    country?: string | null
     createdAt?: Date | string
+    backs?: CurrencyUncheckedCreateNestedManyWithoutReserveCurrencyInput
+    homeOf?: NodeUncheckedCreateNestedManyWithoutHomeCurrencyInput
     accounts?: AccountUncheckedCreateNestedManyWithoutCurrencyInput
+    ratesFrom?: ExchangeRateUncheckedCreateNestedManyWithoutFromInput
+    ratesTo?: ExchangeRateUncheckedCreateNestedManyWithoutToInput
+    ruleValues?: CurrencyRuleValueUncheckedCreateNestedManyWithoutCurrencyInput
   }
 
   export type CurrencyCreateOrConnectWithoutTermsInput = {
@@ -34023,22 +37850,40 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     code?: NullableStringFieldUpdateOperationsInput | string | null
+    description?: NullableStringFieldUpdateOperationsInput | string | null
     kind?: EnumCurrencyKindFieldUpdateOperationsInput | $Enums.CurrencyKind
+    status?: EnumCurrencyStatusFieldUpdateOperationsInput | $Enums.CurrencyStatus
     decimals?: IntFieldUpdateOperationsInput | number
+    country?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     issuer?: NodeUpdateOneWithoutIssuedCurrenciesNestedInput
+    reserveCurrency?: CurrencyUpdateOneWithoutBacksNestedInput
+    backs?: CurrencyUpdateManyWithoutReserveCurrencyNestedInput
+    homeOf?: NodeUpdateManyWithoutHomeCurrencyNestedInput
     accounts?: AccountUpdateManyWithoutCurrencyNestedInput
+    ratesFrom?: ExchangeRateUpdateManyWithoutFromNestedInput
+    ratesTo?: ExchangeRateUpdateManyWithoutToNestedInput
+    ruleValues?: CurrencyRuleValueUpdateManyWithoutCurrencyNestedInput
   }
 
   export type CurrencyUncheckedUpdateWithoutTermsInput = {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     code?: NullableStringFieldUpdateOperationsInput | string | null
+    description?: NullableStringFieldUpdateOperationsInput | string | null
     kind?: EnumCurrencyKindFieldUpdateOperationsInput | $Enums.CurrencyKind
+    status?: EnumCurrencyStatusFieldUpdateOperationsInput | $Enums.CurrencyStatus
     decimals?: IntFieldUpdateOperationsInput | number
     issuerNodeId?: NullableStringFieldUpdateOperationsInput | string | null
+    reserveCurrencyId?: NullableStringFieldUpdateOperationsInput | string | null
+    country?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    backs?: CurrencyUncheckedUpdateManyWithoutReserveCurrencyNestedInput
+    homeOf?: NodeUncheckedUpdateManyWithoutHomeCurrencyNestedInput
     accounts?: AccountUncheckedUpdateManyWithoutCurrencyNestedInput
+    ratesFrom?: ExchangeRateUncheckedUpdateManyWithoutFromNestedInput
+    ratesTo?: ExchangeRateUncheckedUpdateManyWithoutToNestedInput
+    ruleValues?: CurrencyRuleValueUncheckedUpdateManyWithoutCurrencyNestedInput
   }
 
   export type InteractionCreateWithoutCuratorsInput = {
@@ -34419,7 +38264,9 @@ export namespace Prisma {
     passwordHash?: string | null
     email?: string | null
     phone?: string | null
+    country?: string | null
     createdAt?: Date | string
+    homeCurrency?: CurrencyCreateNestedOneWithoutHomeOfInput
     rolesHeldHere?: RoleAssignmentCreateNestedManyWithoutScopeInput
     rolesHeldByMe?: RoleAssignmentCreateNestedManyWithoutHolderInput
     accounts?: AccountCreateNestedManyWithoutNodeInput
@@ -34443,6 +38290,8 @@ export namespace Prisma {
     passwordHash?: string | null
     email?: string | null
     phone?: string | null
+    country?: string | null
+    homeCurrencyId?: string | null
     createdAt?: Date | string
     rolesHeldHere?: RoleAssignmentUncheckedCreateNestedManyWithoutScopeInput
     rolesHeldByMe?: RoleAssignmentUncheckedCreateNestedManyWithoutHolderInput
@@ -34457,6 +38306,161 @@ export namespace Prisma {
   export type NodeCreateOrConnectWithoutIssuedCurrenciesInput = {
     where: NodeWhereUniqueInput
     create: XOR<NodeCreateWithoutIssuedCurrenciesInput, NodeUncheckedCreateWithoutIssuedCurrenciesInput>
+  }
+
+  export type CurrencyCreateWithoutBacksInput = {
+    id?: string
+    name: string
+    code?: string | null
+    description?: string | null
+    kind: $Enums.CurrencyKind
+    status?: $Enums.CurrencyStatus
+    decimals?: number
+    country?: string | null
+    createdAt?: Date | string
+    issuer?: NodeCreateNestedOneWithoutIssuedCurrenciesInput
+    reserveCurrency?: CurrencyCreateNestedOneWithoutBacksInput
+    homeOf?: NodeCreateNestedManyWithoutHomeCurrencyInput
+    accounts?: AccountCreateNestedManyWithoutCurrencyInput
+    terms?: InteractionTermsCreateNestedManyWithoutCurrencyInput
+    ratesFrom?: ExchangeRateCreateNestedManyWithoutFromInput
+    ratesTo?: ExchangeRateCreateNestedManyWithoutToInput
+    ruleValues?: CurrencyRuleValueCreateNestedManyWithoutCurrencyInput
+  }
+
+  export type CurrencyUncheckedCreateWithoutBacksInput = {
+    id?: string
+    name: string
+    code?: string | null
+    description?: string | null
+    kind: $Enums.CurrencyKind
+    status?: $Enums.CurrencyStatus
+    decimals?: number
+    issuerNodeId?: string | null
+    reserveCurrencyId?: string | null
+    country?: string | null
+    createdAt?: Date | string
+    homeOf?: NodeUncheckedCreateNestedManyWithoutHomeCurrencyInput
+    accounts?: AccountUncheckedCreateNestedManyWithoutCurrencyInput
+    terms?: InteractionTermsUncheckedCreateNestedManyWithoutCurrencyInput
+    ratesFrom?: ExchangeRateUncheckedCreateNestedManyWithoutFromInput
+    ratesTo?: ExchangeRateUncheckedCreateNestedManyWithoutToInput
+    ruleValues?: CurrencyRuleValueUncheckedCreateNestedManyWithoutCurrencyInput
+  }
+
+  export type CurrencyCreateOrConnectWithoutBacksInput = {
+    where: CurrencyWhereUniqueInput
+    create: XOR<CurrencyCreateWithoutBacksInput, CurrencyUncheckedCreateWithoutBacksInput>
+  }
+
+  export type CurrencyCreateWithoutReserveCurrencyInput = {
+    id?: string
+    name: string
+    code?: string | null
+    description?: string | null
+    kind: $Enums.CurrencyKind
+    status?: $Enums.CurrencyStatus
+    decimals?: number
+    country?: string | null
+    createdAt?: Date | string
+    issuer?: NodeCreateNestedOneWithoutIssuedCurrenciesInput
+    backs?: CurrencyCreateNestedManyWithoutReserveCurrencyInput
+    homeOf?: NodeCreateNestedManyWithoutHomeCurrencyInput
+    accounts?: AccountCreateNestedManyWithoutCurrencyInput
+    terms?: InteractionTermsCreateNestedManyWithoutCurrencyInput
+    ratesFrom?: ExchangeRateCreateNestedManyWithoutFromInput
+    ratesTo?: ExchangeRateCreateNestedManyWithoutToInput
+    ruleValues?: CurrencyRuleValueCreateNestedManyWithoutCurrencyInput
+  }
+
+  export type CurrencyUncheckedCreateWithoutReserveCurrencyInput = {
+    id?: string
+    name: string
+    code?: string | null
+    description?: string | null
+    kind: $Enums.CurrencyKind
+    status?: $Enums.CurrencyStatus
+    decimals?: number
+    issuerNodeId?: string | null
+    country?: string | null
+    createdAt?: Date | string
+    backs?: CurrencyUncheckedCreateNestedManyWithoutReserveCurrencyInput
+    homeOf?: NodeUncheckedCreateNestedManyWithoutHomeCurrencyInput
+    accounts?: AccountUncheckedCreateNestedManyWithoutCurrencyInput
+    terms?: InteractionTermsUncheckedCreateNestedManyWithoutCurrencyInput
+    ratesFrom?: ExchangeRateUncheckedCreateNestedManyWithoutFromInput
+    ratesTo?: ExchangeRateUncheckedCreateNestedManyWithoutToInput
+    ruleValues?: CurrencyRuleValueUncheckedCreateNestedManyWithoutCurrencyInput
+  }
+
+  export type CurrencyCreateOrConnectWithoutReserveCurrencyInput = {
+    where: CurrencyWhereUniqueInput
+    create: XOR<CurrencyCreateWithoutReserveCurrencyInput, CurrencyUncheckedCreateWithoutReserveCurrencyInput>
+  }
+
+  export type CurrencyCreateManyReserveCurrencyInputEnvelope = {
+    data: CurrencyCreateManyReserveCurrencyInput | CurrencyCreateManyReserveCurrencyInput[]
+  }
+
+  export type NodeCreateWithoutHomeCurrencyInput = {
+    id?: string
+    kind: $Enums.NodeKind
+    status?: $Enums.NodeStatus
+    name: string
+    firstName?: string | null
+    lastName?: string | null
+    description?: string | null
+    photoUrl?: string | null
+    username?: string | null
+    passwordHash?: string | null
+    email?: string | null
+    phone?: string | null
+    country?: string | null
+    createdAt?: Date | string
+    rolesHeldHere?: RoleAssignmentCreateNestedManyWithoutScopeInput
+    rolesHeldByMe?: RoleAssignmentCreateNestedManyWithoutHolderInput
+    accounts?: AccountCreateNestedManyWithoutNodeInput
+    ruleValues?: NodeRuleValueCreateNestedManyWithoutNodeInput
+    relationshipsA?: RelationshipCreateNestedManyWithoutNodeAInput
+    relationshipsB?: RelationshipCreateNestedManyWithoutNodeBInput
+    issuedCurrencies?: CurrencyCreateNestedManyWithoutIssuerInput
+    invitationsSent?: InvitationCreateNestedManyWithoutInviterInput
+    activity?: ActivityCreateNestedManyWithoutNodeInput
+  }
+
+  export type NodeUncheckedCreateWithoutHomeCurrencyInput = {
+    id?: string
+    kind: $Enums.NodeKind
+    status?: $Enums.NodeStatus
+    name: string
+    firstName?: string | null
+    lastName?: string | null
+    description?: string | null
+    photoUrl?: string | null
+    username?: string | null
+    passwordHash?: string | null
+    email?: string | null
+    phone?: string | null
+    country?: string | null
+    createdAt?: Date | string
+    rolesHeldHere?: RoleAssignmentUncheckedCreateNestedManyWithoutScopeInput
+    rolesHeldByMe?: RoleAssignmentUncheckedCreateNestedManyWithoutHolderInput
+    accounts?: AccountUncheckedCreateNestedManyWithoutNodeInput
+    ruleValues?: NodeRuleValueUncheckedCreateNestedManyWithoutNodeInput
+    relationshipsA?: RelationshipUncheckedCreateNestedManyWithoutNodeAInput
+    relationshipsB?: RelationshipUncheckedCreateNestedManyWithoutNodeBInput
+    issuedCurrencies?: CurrencyUncheckedCreateNestedManyWithoutIssuerInput
+    invitationsSent?: InvitationUncheckedCreateNestedManyWithoutInviterInput
+    activity?: ActivityUncheckedCreateNestedManyWithoutNodeInput
+  }
+
+  export type NodeCreateOrConnectWithoutHomeCurrencyInput = {
+    where: NodeWhereUniqueInput
+    create: XOR<NodeCreateWithoutHomeCurrencyInput, NodeUncheckedCreateWithoutHomeCurrencyInput>
+  }
+
+  export type NodeCreateManyHomeCurrencyInputEnvelope = {
+    data: NodeCreateManyHomeCurrencyInput | NodeCreateManyHomeCurrencyInput[]
   }
 
   export type AccountCreateWithoutCurrencyInput = {
@@ -34531,6 +38535,87 @@ export namespace Prisma {
     data: InteractionTermsCreateManyCurrencyInput | InteractionTermsCreateManyCurrencyInput[]
   }
 
+  export type ExchangeRateCreateWithoutFromInput = {
+    id?: string
+    rate: string
+    validFrom: Date | string
+    validTo?: Date | string | null
+    source: $Enums.RateSource
+    setBy: string
+    createdAt?: Date | string
+    to: CurrencyCreateNestedOneWithoutRatesToInput
+  }
+
+  export type ExchangeRateUncheckedCreateWithoutFromInput = {
+    id?: string
+    toCurrencyId: string
+    rate: string
+    validFrom: Date | string
+    validTo?: Date | string | null
+    source: $Enums.RateSource
+    setBy: string
+    createdAt?: Date | string
+  }
+
+  export type ExchangeRateCreateOrConnectWithoutFromInput = {
+    where: ExchangeRateWhereUniqueInput
+    create: XOR<ExchangeRateCreateWithoutFromInput, ExchangeRateUncheckedCreateWithoutFromInput>
+  }
+
+  export type ExchangeRateCreateManyFromInputEnvelope = {
+    data: ExchangeRateCreateManyFromInput | ExchangeRateCreateManyFromInput[]
+  }
+
+  export type ExchangeRateCreateWithoutToInput = {
+    id?: string
+    rate: string
+    validFrom: Date | string
+    validTo?: Date | string | null
+    source: $Enums.RateSource
+    setBy: string
+    createdAt?: Date | string
+    from: CurrencyCreateNestedOneWithoutRatesFromInput
+  }
+
+  export type ExchangeRateUncheckedCreateWithoutToInput = {
+    id?: string
+    fromCurrencyId: string
+    rate: string
+    validFrom: Date | string
+    validTo?: Date | string | null
+    source: $Enums.RateSource
+    setBy: string
+    createdAt?: Date | string
+  }
+
+  export type ExchangeRateCreateOrConnectWithoutToInput = {
+    where: ExchangeRateWhereUniqueInput
+    create: XOR<ExchangeRateCreateWithoutToInput, ExchangeRateUncheckedCreateWithoutToInput>
+  }
+
+  export type ExchangeRateCreateManyToInputEnvelope = {
+    data: ExchangeRateCreateManyToInput | ExchangeRateCreateManyToInput[]
+  }
+
+  export type CurrencyRuleValueCreateWithoutCurrencyInput = {
+    ruleId: string
+    value: string
+  }
+
+  export type CurrencyRuleValueUncheckedCreateWithoutCurrencyInput = {
+    ruleId: string
+    value: string
+  }
+
+  export type CurrencyRuleValueCreateOrConnectWithoutCurrencyInput = {
+    where: CurrencyRuleValueWhereUniqueInput
+    create: XOR<CurrencyRuleValueCreateWithoutCurrencyInput, CurrencyRuleValueUncheckedCreateWithoutCurrencyInput>
+  }
+
+  export type CurrencyRuleValueCreateManyCurrencyInputEnvelope = {
+    data: CurrencyRuleValueCreateManyCurrencyInput | CurrencyRuleValueCreateManyCurrencyInput[]
+  }
+
   export type NodeUpsertWithoutIssuedCurrenciesInput = {
     update: XOR<NodeUpdateWithoutIssuedCurrenciesInput, NodeUncheckedUpdateWithoutIssuedCurrenciesInput>
     create: XOR<NodeCreateWithoutIssuedCurrenciesInput, NodeUncheckedCreateWithoutIssuedCurrenciesInput>
@@ -34555,7 +38640,9 @@ export namespace Prisma {
     passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     phone?: NullableStringFieldUpdateOperationsInput | string | null
+    country?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    homeCurrency?: CurrencyUpdateOneWithoutHomeOfNestedInput
     rolesHeldHere?: RoleAssignmentUpdateManyWithoutScopeNestedInput
     rolesHeldByMe?: RoleAssignmentUpdateManyWithoutHolderNestedInput
     accounts?: AccountUpdateManyWithoutNodeNestedInput
@@ -34579,6 +38666,8 @@ export namespace Prisma {
     passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     phone?: NullableStringFieldUpdateOperationsInput | string | null
+    country?: NullableStringFieldUpdateOperationsInput | string | null
+    homeCurrencyId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     rolesHeldHere?: RoleAssignmentUncheckedUpdateManyWithoutScopeNestedInput
     rolesHeldByMe?: RoleAssignmentUncheckedUpdateManyWithoutHolderNestedInput
@@ -34588,6 +38677,110 @@ export namespace Prisma {
     relationshipsB?: RelationshipUncheckedUpdateManyWithoutNodeBNestedInput
     invitationsSent?: InvitationUncheckedUpdateManyWithoutInviterNestedInput
     activity?: ActivityUncheckedUpdateManyWithoutNodeNestedInput
+  }
+
+  export type CurrencyUpsertWithoutBacksInput = {
+    update: XOR<CurrencyUpdateWithoutBacksInput, CurrencyUncheckedUpdateWithoutBacksInput>
+    create: XOR<CurrencyCreateWithoutBacksInput, CurrencyUncheckedCreateWithoutBacksInput>
+    where?: CurrencyWhereInput
+  }
+
+  export type CurrencyUpdateToOneWithWhereWithoutBacksInput = {
+    where?: CurrencyWhereInput
+    data: XOR<CurrencyUpdateWithoutBacksInput, CurrencyUncheckedUpdateWithoutBacksInput>
+  }
+
+  export type CurrencyUpdateWithoutBacksInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    code?: NullableStringFieldUpdateOperationsInput | string | null
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    kind?: EnumCurrencyKindFieldUpdateOperationsInput | $Enums.CurrencyKind
+    status?: EnumCurrencyStatusFieldUpdateOperationsInput | $Enums.CurrencyStatus
+    decimals?: IntFieldUpdateOperationsInput | number
+    country?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    issuer?: NodeUpdateOneWithoutIssuedCurrenciesNestedInput
+    reserveCurrency?: CurrencyUpdateOneWithoutBacksNestedInput
+    homeOf?: NodeUpdateManyWithoutHomeCurrencyNestedInput
+    accounts?: AccountUpdateManyWithoutCurrencyNestedInput
+    terms?: InteractionTermsUpdateManyWithoutCurrencyNestedInput
+    ratesFrom?: ExchangeRateUpdateManyWithoutFromNestedInput
+    ratesTo?: ExchangeRateUpdateManyWithoutToNestedInput
+    ruleValues?: CurrencyRuleValueUpdateManyWithoutCurrencyNestedInput
+  }
+
+  export type CurrencyUncheckedUpdateWithoutBacksInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    code?: NullableStringFieldUpdateOperationsInput | string | null
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    kind?: EnumCurrencyKindFieldUpdateOperationsInput | $Enums.CurrencyKind
+    status?: EnumCurrencyStatusFieldUpdateOperationsInput | $Enums.CurrencyStatus
+    decimals?: IntFieldUpdateOperationsInput | number
+    issuerNodeId?: NullableStringFieldUpdateOperationsInput | string | null
+    reserveCurrencyId?: NullableStringFieldUpdateOperationsInput | string | null
+    country?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    homeOf?: NodeUncheckedUpdateManyWithoutHomeCurrencyNestedInput
+    accounts?: AccountUncheckedUpdateManyWithoutCurrencyNestedInput
+    terms?: InteractionTermsUncheckedUpdateManyWithoutCurrencyNestedInput
+    ratesFrom?: ExchangeRateUncheckedUpdateManyWithoutFromNestedInput
+    ratesTo?: ExchangeRateUncheckedUpdateManyWithoutToNestedInput
+    ruleValues?: CurrencyRuleValueUncheckedUpdateManyWithoutCurrencyNestedInput
+  }
+
+  export type CurrencyUpsertWithWhereUniqueWithoutReserveCurrencyInput = {
+    where: CurrencyWhereUniqueInput
+    update: XOR<CurrencyUpdateWithoutReserveCurrencyInput, CurrencyUncheckedUpdateWithoutReserveCurrencyInput>
+    create: XOR<CurrencyCreateWithoutReserveCurrencyInput, CurrencyUncheckedCreateWithoutReserveCurrencyInput>
+  }
+
+  export type CurrencyUpdateWithWhereUniqueWithoutReserveCurrencyInput = {
+    where: CurrencyWhereUniqueInput
+    data: XOR<CurrencyUpdateWithoutReserveCurrencyInput, CurrencyUncheckedUpdateWithoutReserveCurrencyInput>
+  }
+
+  export type CurrencyUpdateManyWithWhereWithoutReserveCurrencyInput = {
+    where: CurrencyScalarWhereInput
+    data: XOR<CurrencyUpdateManyMutationInput, CurrencyUncheckedUpdateManyWithoutReserveCurrencyInput>
+  }
+
+  export type NodeUpsertWithWhereUniqueWithoutHomeCurrencyInput = {
+    where: NodeWhereUniqueInput
+    update: XOR<NodeUpdateWithoutHomeCurrencyInput, NodeUncheckedUpdateWithoutHomeCurrencyInput>
+    create: XOR<NodeCreateWithoutHomeCurrencyInput, NodeUncheckedCreateWithoutHomeCurrencyInput>
+  }
+
+  export type NodeUpdateWithWhereUniqueWithoutHomeCurrencyInput = {
+    where: NodeWhereUniqueInput
+    data: XOR<NodeUpdateWithoutHomeCurrencyInput, NodeUncheckedUpdateWithoutHomeCurrencyInput>
+  }
+
+  export type NodeUpdateManyWithWhereWithoutHomeCurrencyInput = {
+    where: NodeScalarWhereInput
+    data: XOR<NodeUpdateManyMutationInput, NodeUncheckedUpdateManyWithoutHomeCurrencyInput>
+  }
+
+  export type NodeScalarWhereInput = {
+    AND?: NodeScalarWhereInput | NodeScalarWhereInput[]
+    OR?: NodeScalarWhereInput[]
+    NOT?: NodeScalarWhereInput | NodeScalarWhereInput[]
+    id?: StringFilter<"Node"> | string
+    kind?: EnumNodeKindFilter<"Node"> | $Enums.NodeKind
+    status?: EnumNodeStatusFilter<"Node"> | $Enums.NodeStatus
+    name?: StringFilter<"Node"> | string
+    firstName?: StringNullableFilter<"Node"> | string | null
+    lastName?: StringNullableFilter<"Node"> | string | null
+    description?: StringNullableFilter<"Node"> | string | null
+    photoUrl?: StringNullableFilter<"Node"> | string | null
+    username?: StringNullableFilter<"Node"> | string | null
+    passwordHash?: StringNullableFilter<"Node"> | string | null
+    email?: StringNullableFilter<"Node"> | string | null
+    phone?: StringNullableFilter<"Node"> | string | null
+    country?: StringNullableFilter<"Node"> | string | null
+    homeCurrencyId?: StringNullableFilter<"Node"> | string | null
+    createdAt?: DateTimeFilter<"Node"> | Date | string
   }
 
   export type AccountUpsertWithWhereUniqueWithoutCurrencyInput = {
@@ -34622,6 +38815,270 @@ export namespace Prisma {
     data: XOR<InteractionTermsUpdateManyMutationInput, InteractionTermsUncheckedUpdateManyWithoutCurrencyInput>
   }
 
+  export type ExchangeRateUpsertWithWhereUniqueWithoutFromInput = {
+    where: ExchangeRateWhereUniqueInput
+    update: XOR<ExchangeRateUpdateWithoutFromInput, ExchangeRateUncheckedUpdateWithoutFromInput>
+    create: XOR<ExchangeRateCreateWithoutFromInput, ExchangeRateUncheckedCreateWithoutFromInput>
+  }
+
+  export type ExchangeRateUpdateWithWhereUniqueWithoutFromInput = {
+    where: ExchangeRateWhereUniqueInput
+    data: XOR<ExchangeRateUpdateWithoutFromInput, ExchangeRateUncheckedUpdateWithoutFromInput>
+  }
+
+  export type ExchangeRateUpdateManyWithWhereWithoutFromInput = {
+    where: ExchangeRateScalarWhereInput
+    data: XOR<ExchangeRateUpdateManyMutationInput, ExchangeRateUncheckedUpdateManyWithoutFromInput>
+  }
+
+  export type ExchangeRateScalarWhereInput = {
+    AND?: ExchangeRateScalarWhereInput | ExchangeRateScalarWhereInput[]
+    OR?: ExchangeRateScalarWhereInput[]
+    NOT?: ExchangeRateScalarWhereInput | ExchangeRateScalarWhereInput[]
+    id?: StringFilter<"ExchangeRate"> | string
+    fromCurrencyId?: StringFilter<"ExchangeRate"> | string
+    toCurrencyId?: StringFilter<"ExchangeRate"> | string
+    rate?: StringFilter<"ExchangeRate"> | string
+    validFrom?: DateTimeFilter<"ExchangeRate"> | Date | string
+    validTo?: DateTimeNullableFilter<"ExchangeRate"> | Date | string | null
+    source?: EnumRateSourceFilter<"ExchangeRate"> | $Enums.RateSource
+    setBy?: StringFilter<"ExchangeRate"> | string
+    createdAt?: DateTimeFilter<"ExchangeRate"> | Date | string
+  }
+
+  export type ExchangeRateUpsertWithWhereUniqueWithoutToInput = {
+    where: ExchangeRateWhereUniqueInput
+    update: XOR<ExchangeRateUpdateWithoutToInput, ExchangeRateUncheckedUpdateWithoutToInput>
+    create: XOR<ExchangeRateCreateWithoutToInput, ExchangeRateUncheckedCreateWithoutToInput>
+  }
+
+  export type ExchangeRateUpdateWithWhereUniqueWithoutToInput = {
+    where: ExchangeRateWhereUniqueInput
+    data: XOR<ExchangeRateUpdateWithoutToInput, ExchangeRateUncheckedUpdateWithoutToInput>
+  }
+
+  export type ExchangeRateUpdateManyWithWhereWithoutToInput = {
+    where: ExchangeRateScalarWhereInput
+    data: XOR<ExchangeRateUpdateManyMutationInput, ExchangeRateUncheckedUpdateManyWithoutToInput>
+  }
+
+  export type CurrencyRuleValueUpsertWithWhereUniqueWithoutCurrencyInput = {
+    where: CurrencyRuleValueWhereUniqueInput
+    update: XOR<CurrencyRuleValueUpdateWithoutCurrencyInput, CurrencyRuleValueUncheckedUpdateWithoutCurrencyInput>
+    create: XOR<CurrencyRuleValueCreateWithoutCurrencyInput, CurrencyRuleValueUncheckedCreateWithoutCurrencyInput>
+  }
+
+  export type CurrencyRuleValueUpdateWithWhereUniqueWithoutCurrencyInput = {
+    where: CurrencyRuleValueWhereUniqueInput
+    data: XOR<CurrencyRuleValueUpdateWithoutCurrencyInput, CurrencyRuleValueUncheckedUpdateWithoutCurrencyInput>
+  }
+
+  export type CurrencyRuleValueUpdateManyWithWhereWithoutCurrencyInput = {
+    where: CurrencyRuleValueScalarWhereInput
+    data: XOR<CurrencyRuleValueUpdateManyMutationInput, CurrencyRuleValueUncheckedUpdateManyWithoutCurrencyInput>
+  }
+
+  export type CurrencyRuleValueScalarWhereInput = {
+    AND?: CurrencyRuleValueScalarWhereInput | CurrencyRuleValueScalarWhereInput[]
+    OR?: CurrencyRuleValueScalarWhereInput[]
+    NOT?: CurrencyRuleValueScalarWhereInput | CurrencyRuleValueScalarWhereInput[]
+    currencyId?: StringFilter<"CurrencyRuleValue"> | string
+    ruleId?: StringFilter<"CurrencyRuleValue"> | string
+    value?: StringFilter<"CurrencyRuleValue"> | string
+  }
+
+  export type CurrencyCreateWithoutRatesFromInput = {
+    id?: string
+    name: string
+    code?: string | null
+    description?: string | null
+    kind: $Enums.CurrencyKind
+    status?: $Enums.CurrencyStatus
+    decimals?: number
+    country?: string | null
+    createdAt?: Date | string
+    issuer?: NodeCreateNestedOneWithoutIssuedCurrenciesInput
+    reserveCurrency?: CurrencyCreateNestedOneWithoutBacksInput
+    backs?: CurrencyCreateNestedManyWithoutReserveCurrencyInput
+    homeOf?: NodeCreateNestedManyWithoutHomeCurrencyInput
+    accounts?: AccountCreateNestedManyWithoutCurrencyInput
+    terms?: InteractionTermsCreateNestedManyWithoutCurrencyInput
+    ratesTo?: ExchangeRateCreateNestedManyWithoutToInput
+    ruleValues?: CurrencyRuleValueCreateNestedManyWithoutCurrencyInput
+  }
+
+  export type CurrencyUncheckedCreateWithoutRatesFromInput = {
+    id?: string
+    name: string
+    code?: string | null
+    description?: string | null
+    kind: $Enums.CurrencyKind
+    status?: $Enums.CurrencyStatus
+    decimals?: number
+    issuerNodeId?: string | null
+    reserveCurrencyId?: string | null
+    country?: string | null
+    createdAt?: Date | string
+    backs?: CurrencyUncheckedCreateNestedManyWithoutReserveCurrencyInput
+    homeOf?: NodeUncheckedCreateNestedManyWithoutHomeCurrencyInput
+    accounts?: AccountUncheckedCreateNestedManyWithoutCurrencyInput
+    terms?: InteractionTermsUncheckedCreateNestedManyWithoutCurrencyInput
+    ratesTo?: ExchangeRateUncheckedCreateNestedManyWithoutToInput
+    ruleValues?: CurrencyRuleValueUncheckedCreateNestedManyWithoutCurrencyInput
+  }
+
+  export type CurrencyCreateOrConnectWithoutRatesFromInput = {
+    where: CurrencyWhereUniqueInput
+    create: XOR<CurrencyCreateWithoutRatesFromInput, CurrencyUncheckedCreateWithoutRatesFromInput>
+  }
+
+  export type CurrencyCreateWithoutRatesToInput = {
+    id?: string
+    name: string
+    code?: string | null
+    description?: string | null
+    kind: $Enums.CurrencyKind
+    status?: $Enums.CurrencyStatus
+    decimals?: number
+    country?: string | null
+    createdAt?: Date | string
+    issuer?: NodeCreateNestedOneWithoutIssuedCurrenciesInput
+    reserveCurrency?: CurrencyCreateNestedOneWithoutBacksInput
+    backs?: CurrencyCreateNestedManyWithoutReserveCurrencyInput
+    homeOf?: NodeCreateNestedManyWithoutHomeCurrencyInput
+    accounts?: AccountCreateNestedManyWithoutCurrencyInput
+    terms?: InteractionTermsCreateNestedManyWithoutCurrencyInput
+    ratesFrom?: ExchangeRateCreateNestedManyWithoutFromInput
+    ruleValues?: CurrencyRuleValueCreateNestedManyWithoutCurrencyInput
+  }
+
+  export type CurrencyUncheckedCreateWithoutRatesToInput = {
+    id?: string
+    name: string
+    code?: string | null
+    description?: string | null
+    kind: $Enums.CurrencyKind
+    status?: $Enums.CurrencyStatus
+    decimals?: number
+    issuerNodeId?: string | null
+    reserveCurrencyId?: string | null
+    country?: string | null
+    createdAt?: Date | string
+    backs?: CurrencyUncheckedCreateNestedManyWithoutReserveCurrencyInput
+    homeOf?: NodeUncheckedCreateNestedManyWithoutHomeCurrencyInput
+    accounts?: AccountUncheckedCreateNestedManyWithoutCurrencyInput
+    terms?: InteractionTermsUncheckedCreateNestedManyWithoutCurrencyInput
+    ratesFrom?: ExchangeRateUncheckedCreateNestedManyWithoutFromInput
+    ruleValues?: CurrencyRuleValueUncheckedCreateNestedManyWithoutCurrencyInput
+  }
+
+  export type CurrencyCreateOrConnectWithoutRatesToInput = {
+    where: CurrencyWhereUniqueInput
+    create: XOR<CurrencyCreateWithoutRatesToInput, CurrencyUncheckedCreateWithoutRatesToInput>
+  }
+
+  export type CurrencyUpsertWithoutRatesFromInput = {
+    update: XOR<CurrencyUpdateWithoutRatesFromInput, CurrencyUncheckedUpdateWithoutRatesFromInput>
+    create: XOR<CurrencyCreateWithoutRatesFromInput, CurrencyUncheckedCreateWithoutRatesFromInput>
+    where?: CurrencyWhereInput
+  }
+
+  export type CurrencyUpdateToOneWithWhereWithoutRatesFromInput = {
+    where?: CurrencyWhereInput
+    data: XOR<CurrencyUpdateWithoutRatesFromInput, CurrencyUncheckedUpdateWithoutRatesFromInput>
+  }
+
+  export type CurrencyUpdateWithoutRatesFromInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    code?: NullableStringFieldUpdateOperationsInput | string | null
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    kind?: EnumCurrencyKindFieldUpdateOperationsInput | $Enums.CurrencyKind
+    status?: EnumCurrencyStatusFieldUpdateOperationsInput | $Enums.CurrencyStatus
+    decimals?: IntFieldUpdateOperationsInput | number
+    country?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    issuer?: NodeUpdateOneWithoutIssuedCurrenciesNestedInput
+    reserveCurrency?: CurrencyUpdateOneWithoutBacksNestedInput
+    backs?: CurrencyUpdateManyWithoutReserveCurrencyNestedInput
+    homeOf?: NodeUpdateManyWithoutHomeCurrencyNestedInput
+    accounts?: AccountUpdateManyWithoutCurrencyNestedInput
+    terms?: InteractionTermsUpdateManyWithoutCurrencyNestedInput
+    ratesTo?: ExchangeRateUpdateManyWithoutToNestedInput
+    ruleValues?: CurrencyRuleValueUpdateManyWithoutCurrencyNestedInput
+  }
+
+  export type CurrencyUncheckedUpdateWithoutRatesFromInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    code?: NullableStringFieldUpdateOperationsInput | string | null
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    kind?: EnumCurrencyKindFieldUpdateOperationsInput | $Enums.CurrencyKind
+    status?: EnumCurrencyStatusFieldUpdateOperationsInput | $Enums.CurrencyStatus
+    decimals?: IntFieldUpdateOperationsInput | number
+    issuerNodeId?: NullableStringFieldUpdateOperationsInput | string | null
+    reserveCurrencyId?: NullableStringFieldUpdateOperationsInput | string | null
+    country?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    backs?: CurrencyUncheckedUpdateManyWithoutReserveCurrencyNestedInput
+    homeOf?: NodeUncheckedUpdateManyWithoutHomeCurrencyNestedInput
+    accounts?: AccountUncheckedUpdateManyWithoutCurrencyNestedInput
+    terms?: InteractionTermsUncheckedUpdateManyWithoutCurrencyNestedInput
+    ratesTo?: ExchangeRateUncheckedUpdateManyWithoutToNestedInput
+    ruleValues?: CurrencyRuleValueUncheckedUpdateManyWithoutCurrencyNestedInput
+  }
+
+  export type CurrencyUpsertWithoutRatesToInput = {
+    update: XOR<CurrencyUpdateWithoutRatesToInput, CurrencyUncheckedUpdateWithoutRatesToInput>
+    create: XOR<CurrencyCreateWithoutRatesToInput, CurrencyUncheckedCreateWithoutRatesToInput>
+    where?: CurrencyWhereInput
+  }
+
+  export type CurrencyUpdateToOneWithWhereWithoutRatesToInput = {
+    where?: CurrencyWhereInput
+    data: XOR<CurrencyUpdateWithoutRatesToInput, CurrencyUncheckedUpdateWithoutRatesToInput>
+  }
+
+  export type CurrencyUpdateWithoutRatesToInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    code?: NullableStringFieldUpdateOperationsInput | string | null
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    kind?: EnumCurrencyKindFieldUpdateOperationsInput | $Enums.CurrencyKind
+    status?: EnumCurrencyStatusFieldUpdateOperationsInput | $Enums.CurrencyStatus
+    decimals?: IntFieldUpdateOperationsInput | number
+    country?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    issuer?: NodeUpdateOneWithoutIssuedCurrenciesNestedInput
+    reserveCurrency?: CurrencyUpdateOneWithoutBacksNestedInput
+    backs?: CurrencyUpdateManyWithoutReserveCurrencyNestedInput
+    homeOf?: NodeUpdateManyWithoutHomeCurrencyNestedInput
+    accounts?: AccountUpdateManyWithoutCurrencyNestedInput
+    terms?: InteractionTermsUpdateManyWithoutCurrencyNestedInput
+    ratesFrom?: ExchangeRateUpdateManyWithoutFromNestedInput
+    ruleValues?: CurrencyRuleValueUpdateManyWithoutCurrencyNestedInput
+  }
+
+  export type CurrencyUncheckedUpdateWithoutRatesToInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    code?: NullableStringFieldUpdateOperationsInput | string | null
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    kind?: EnumCurrencyKindFieldUpdateOperationsInput | $Enums.CurrencyKind
+    status?: EnumCurrencyStatusFieldUpdateOperationsInput | $Enums.CurrencyStatus
+    decimals?: IntFieldUpdateOperationsInput | number
+    issuerNodeId?: NullableStringFieldUpdateOperationsInput | string | null
+    reserveCurrencyId?: NullableStringFieldUpdateOperationsInput | string | null
+    country?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    backs?: CurrencyUncheckedUpdateManyWithoutReserveCurrencyNestedInput
+    homeOf?: NodeUncheckedUpdateManyWithoutHomeCurrencyNestedInput
+    accounts?: AccountUncheckedUpdateManyWithoutCurrencyNestedInput
+    terms?: InteractionTermsUncheckedUpdateManyWithoutCurrencyNestedInput
+    ratesFrom?: ExchangeRateUncheckedUpdateManyWithoutFromNestedInput
+    ruleValues?: CurrencyRuleValueUncheckedUpdateManyWithoutCurrencyNestedInput
+  }
+
   export type NodeCreateWithoutAccountsInput = {
     id?: string
     kind: $Enums.NodeKind
@@ -34635,7 +39092,9 @@ export namespace Prisma {
     passwordHash?: string | null
     email?: string | null
     phone?: string | null
+    country?: string | null
     createdAt?: Date | string
+    homeCurrency?: CurrencyCreateNestedOneWithoutHomeOfInput
     rolesHeldHere?: RoleAssignmentCreateNestedManyWithoutScopeInput
     rolesHeldByMe?: RoleAssignmentCreateNestedManyWithoutHolderInput
     ruleValues?: NodeRuleValueCreateNestedManyWithoutNodeInput
@@ -34659,6 +39118,8 @@ export namespace Prisma {
     passwordHash?: string | null
     email?: string | null
     phone?: string | null
+    country?: string | null
+    homeCurrencyId?: string | null
     createdAt?: Date | string
     rolesHeldHere?: RoleAssignmentUncheckedCreateNestedManyWithoutScopeInput
     rolesHeldByMe?: RoleAssignmentUncheckedCreateNestedManyWithoutHolderInput
@@ -34679,22 +39140,40 @@ export namespace Prisma {
     id?: string
     name: string
     code?: string | null
+    description?: string | null
     kind: $Enums.CurrencyKind
+    status?: $Enums.CurrencyStatus
     decimals?: number
+    country?: string | null
     createdAt?: Date | string
     issuer?: NodeCreateNestedOneWithoutIssuedCurrenciesInput
+    reserveCurrency?: CurrencyCreateNestedOneWithoutBacksInput
+    backs?: CurrencyCreateNestedManyWithoutReserveCurrencyInput
+    homeOf?: NodeCreateNestedManyWithoutHomeCurrencyInput
     terms?: InteractionTermsCreateNestedManyWithoutCurrencyInput
+    ratesFrom?: ExchangeRateCreateNestedManyWithoutFromInput
+    ratesTo?: ExchangeRateCreateNestedManyWithoutToInput
+    ruleValues?: CurrencyRuleValueCreateNestedManyWithoutCurrencyInput
   }
 
   export type CurrencyUncheckedCreateWithoutAccountsInput = {
     id?: string
     name: string
     code?: string | null
+    description?: string | null
     kind: $Enums.CurrencyKind
+    status?: $Enums.CurrencyStatus
     decimals?: number
     issuerNodeId?: string | null
+    reserveCurrencyId?: string | null
+    country?: string | null
     createdAt?: Date | string
+    backs?: CurrencyUncheckedCreateNestedManyWithoutReserveCurrencyInput
+    homeOf?: NodeUncheckedCreateNestedManyWithoutHomeCurrencyInput
     terms?: InteractionTermsUncheckedCreateNestedManyWithoutCurrencyInput
+    ratesFrom?: ExchangeRateUncheckedCreateNestedManyWithoutFromInput
+    ratesTo?: ExchangeRateUncheckedCreateNestedManyWithoutToInput
+    ruleValues?: CurrencyRuleValueUncheckedCreateNestedManyWithoutCurrencyInput
   }
 
   export type CurrencyCreateOrConnectWithoutAccountsInput = {
@@ -34804,7 +39283,9 @@ export namespace Prisma {
     passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     phone?: NullableStringFieldUpdateOperationsInput | string | null
+    country?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    homeCurrency?: CurrencyUpdateOneWithoutHomeOfNestedInput
     rolesHeldHere?: RoleAssignmentUpdateManyWithoutScopeNestedInput
     rolesHeldByMe?: RoleAssignmentUpdateManyWithoutHolderNestedInput
     ruleValues?: NodeRuleValueUpdateManyWithoutNodeNestedInput
@@ -34828,6 +39309,8 @@ export namespace Prisma {
     passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     phone?: NullableStringFieldUpdateOperationsInput | string | null
+    country?: NullableStringFieldUpdateOperationsInput | string | null
+    homeCurrencyId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     rolesHeldHere?: RoleAssignmentUncheckedUpdateManyWithoutScopeNestedInput
     rolesHeldByMe?: RoleAssignmentUncheckedUpdateManyWithoutHolderNestedInput
@@ -34854,22 +39337,40 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     code?: NullableStringFieldUpdateOperationsInput | string | null
+    description?: NullableStringFieldUpdateOperationsInput | string | null
     kind?: EnumCurrencyKindFieldUpdateOperationsInput | $Enums.CurrencyKind
+    status?: EnumCurrencyStatusFieldUpdateOperationsInput | $Enums.CurrencyStatus
     decimals?: IntFieldUpdateOperationsInput | number
+    country?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     issuer?: NodeUpdateOneWithoutIssuedCurrenciesNestedInput
+    reserveCurrency?: CurrencyUpdateOneWithoutBacksNestedInput
+    backs?: CurrencyUpdateManyWithoutReserveCurrencyNestedInput
+    homeOf?: NodeUpdateManyWithoutHomeCurrencyNestedInput
     terms?: InteractionTermsUpdateManyWithoutCurrencyNestedInput
+    ratesFrom?: ExchangeRateUpdateManyWithoutFromNestedInput
+    ratesTo?: ExchangeRateUpdateManyWithoutToNestedInput
+    ruleValues?: CurrencyRuleValueUpdateManyWithoutCurrencyNestedInput
   }
 
   export type CurrencyUncheckedUpdateWithoutAccountsInput = {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     code?: NullableStringFieldUpdateOperationsInput | string | null
+    description?: NullableStringFieldUpdateOperationsInput | string | null
     kind?: EnumCurrencyKindFieldUpdateOperationsInput | $Enums.CurrencyKind
+    status?: EnumCurrencyStatusFieldUpdateOperationsInput | $Enums.CurrencyStatus
     decimals?: IntFieldUpdateOperationsInput | number
     issuerNodeId?: NullableStringFieldUpdateOperationsInput | string | null
+    reserveCurrencyId?: NullableStringFieldUpdateOperationsInput | string | null
+    country?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    backs?: CurrencyUncheckedUpdateManyWithoutReserveCurrencyNestedInput
+    homeOf?: NodeUncheckedUpdateManyWithoutHomeCurrencyNestedInput
     terms?: InteractionTermsUncheckedUpdateManyWithoutCurrencyNestedInput
+    ratesFrom?: ExchangeRateUncheckedUpdateManyWithoutFromNestedInput
+    ratesTo?: ExchangeRateUncheckedUpdateManyWithoutToNestedInput
+    ruleValues?: CurrencyRuleValueUncheckedUpdateManyWithoutCurrencyNestedInput
   }
 
   export type TransactionUpsertWithWhereUniqueWithoutFromInput = {
@@ -35117,7 +39618,9 @@ export namespace Prisma {
     passwordHash?: string | null
     email?: string | null
     phone?: string | null
+    country?: string | null
     createdAt?: Date | string
+    homeCurrency?: CurrencyCreateNestedOneWithoutHomeOfInput
     rolesHeldHere?: RoleAssignmentCreateNestedManyWithoutScopeInput
     rolesHeldByMe?: RoleAssignmentCreateNestedManyWithoutHolderInput
     accounts?: AccountCreateNestedManyWithoutNodeInput
@@ -35141,6 +39644,8 @@ export namespace Prisma {
     passwordHash?: string | null
     email?: string | null
     phone?: string | null
+    country?: string | null
+    homeCurrencyId?: string | null
     createdAt?: Date | string
     rolesHeldHere?: RoleAssignmentUncheckedCreateNestedManyWithoutScopeInput
     rolesHeldByMe?: RoleAssignmentUncheckedCreateNestedManyWithoutHolderInput
@@ -35181,7 +39686,9 @@ export namespace Prisma {
     passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     phone?: NullableStringFieldUpdateOperationsInput | string | null
+    country?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    homeCurrency?: CurrencyUpdateOneWithoutHomeOfNestedInput
     rolesHeldHere?: RoleAssignmentUpdateManyWithoutScopeNestedInput
     rolesHeldByMe?: RoleAssignmentUpdateManyWithoutHolderNestedInput
     accounts?: AccountUpdateManyWithoutNodeNestedInput
@@ -35205,6 +39712,8 @@ export namespace Prisma {
     passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     phone?: NullableStringFieldUpdateOperationsInput | string | null
+    country?: NullableStringFieldUpdateOperationsInput | string | null
+    homeCurrencyId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     rolesHeldHere?: RoleAssignmentUncheckedUpdateManyWithoutScopeNestedInput
     rolesHeldByMe?: RoleAssignmentUncheckedUpdateManyWithoutHolderNestedInput
@@ -35229,7 +39738,9 @@ export namespace Prisma {
     passwordHash?: string | null
     email?: string | null
     phone?: string | null
+    country?: string | null
     createdAt?: Date | string
+    homeCurrency?: CurrencyCreateNestedOneWithoutHomeOfInput
     rolesHeldHere?: RoleAssignmentCreateNestedManyWithoutScopeInput
     rolesHeldByMe?: RoleAssignmentCreateNestedManyWithoutHolderInput
     accounts?: AccountCreateNestedManyWithoutNodeInput
@@ -35253,6 +39764,8 @@ export namespace Prisma {
     passwordHash?: string | null
     email?: string | null
     phone?: string | null
+    country?: string | null
+    homeCurrencyId?: string | null
     createdAt?: Date | string
     rolesHeldHere?: RoleAssignmentUncheckedCreateNestedManyWithoutScopeInput
     rolesHeldByMe?: RoleAssignmentUncheckedCreateNestedManyWithoutHolderInput
@@ -35293,7 +39806,9 @@ export namespace Prisma {
     passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     phone?: NullableStringFieldUpdateOperationsInput | string | null
+    country?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    homeCurrency?: CurrencyUpdateOneWithoutHomeOfNestedInput
     rolesHeldHere?: RoleAssignmentUpdateManyWithoutScopeNestedInput
     rolesHeldByMe?: RoleAssignmentUpdateManyWithoutHolderNestedInput
     accounts?: AccountUpdateManyWithoutNodeNestedInput
@@ -35317,6 +39832,8 @@ export namespace Prisma {
     passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     phone?: NullableStringFieldUpdateOperationsInput | string | null
+    country?: NullableStringFieldUpdateOperationsInput | string | null
+    homeCurrencyId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     rolesHeldHere?: RoleAssignmentUncheckedUpdateManyWithoutScopeNestedInput
     rolesHeldByMe?: RoleAssignmentUncheckedUpdateManyWithoutHolderNestedInput
@@ -35378,8 +39895,12 @@ export namespace Prisma {
     id?: string
     name: string
     code?: string | null
+    description?: string | null
     kind: $Enums.CurrencyKind
+    status?: $Enums.CurrencyStatus
     decimals?: number
+    reserveCurrencyId?: string | null
+    country?: string | null
     createdAt?: Date | string
   }
 
@@ -35558,30 +40079,52 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     code?: NullableStringFieldUpdateOperationsInput | string | null
+    description?: NullableStringFieldUpdateOperationsInput | string | null
     kind?: EnumCurrencyKindFieldUpdateOperationsInput | $Enums.CurrencyKind
+    status?: EnumCurrencyStatusFieldUpdateOperationsInput | $Enums.CurrencyStatus
     decimals?: IntFieldUpdateOperationsInput | number
+    country?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    reserveCurrency?: CurrencyUpdateOneWithoutBacksNestedInput
+    backs?: CurrencyUpdateManyWithoutReserveCurrencyNestedInput
+    homeOf?: NodeUpdateManyWithoutHomeCurrencyNestedInput
     accounts?: AccountUpdateManyWithoutCurrencyNestedInput
     terms?: InteractionTermsUpdateManyWithoutCurrencyNestedInput
+    ratesFrom?: ExchangeRateUpdateManyWithoutFromNestedInput
+    ratesTo?: ExchangeRateUpdateManyWithoutToNestedInput
+    ruleValues?: CurrencyRuleValueUpdateManyWithoutCurrencyNestedInput
   }
 
   export type CurrencyUncheckedUpdateWithoutIssuerInput = {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     code?: NullableStringFieldUpdateOperationsInput | string | null
+    description?: NullableStringFieldUpdateOperationsInput | string | null
     kind?: EnumCurrencyKindFieldUpdateOperationsInput | $Enums.CurrencyKind
+    status?: EnumCurrencyStatusFieldUpdateOperationsInput | $Enums.CurrencyStatus
     decimals?: IntFieldUpdateOperationsInput | number
+    reserveCurrencyId?: NullableStringFieldUpdateOperationsInput | string | null
+    country?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    backs?: CurrencyUncheckedUpdateManyWithoutReserveCurrencyNestedInput
+    homeOf?: NodeUncheckedUpdateManyWithoutHomeCurrencyNestedInput
     accounts?: AccountUncheckedUpdateManyWithoutCurrencyNestedInput
     terms?: InteractionTermsUncheckedUpdateManyWithoutCurrencyNestedInput
+    ratesFrom?: ExchangeRateUncheckedUpdateManyWithoutFromNestedInput
+    ratesTo?: ExchangeRateUncheckedUpdateManyWithoutToNestedInput
+    ruleValues?: CurrencyRuleValueUncheckedUpdateManyWithoutCurrencyNestedInput
   }
 
   export type CurrencyUncheckedUpdateManyWithoutIssuerInput = {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     code?: NullableStringFieldUpdateOperationsInput | string | null
+    description?: NullableStringFieldUpdateOperationsInput | string | null
     kind?: EnumCurrencyKindFieldUpdateOperationsInput | $Enums.CurrencyKind
+    status?: EnumCurrencyStatusFieldUpdateOperationsInput | $Enums.CurrencyStatus
     decimals?: IntFieldUpdateOperationsInput | number
+    reserveCurrencyId?: NullableStringFieldUpdateOperationsInput | string | null
+    country?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -36024,6 +40567,36 @@ export namespace Prisma {
     comment?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
+  export type CurrencyCreateManyReserveCurrencyInput = {
+    id?: string
+    name: string
+    code?: string | null
+    description?: string | null
+    kind: $Enums.CurrencyKind
+    status?: $Enums.CurrencyStatus
+    decimals?: number
+    issuerNodeId?: string | null
+    country?: string | null
+    createdAt?: Date | string
+  }
+
+  export type NodeCreateManyHomeCurrencyInput = {
+    id?: string
+    kind: $Enums.NodeKind
+    status?: $Enums.NodeStatus
+    name: string
+    firstName?: string | null
+    lastName?: string | null
+    description?: string | null
+    photoUrl?: string | null
+    username?: string | null
+    passwordHash?: string | null
+    email?: string | null
+    phone?: string | null
+    country?: string | null
+    createdAt?: Date | string
+  }
+
   export type AccountCreateManyCurrencyInput = {
     id?: string
     nodeId: string
@@ -36047,6 +40620,155 @@ export namespace Prisma {
     rulesVersion: string
     approved?: boolean
     createdAt?: Date | string
+  }
+
+  export type ExchangeRateCreateManyFromInput = {
+    id?: string
+    toCurrencyId: string
+    rate: string
+    validFrom: Date | string
+    validTo?: Date | string | null
+    source: $Enums.RateSource
+    setBy: string
+    createdAt?: Date | string
+  }
+
+  export type ExchangeRateCreateManyToInput = {
+    id?: string
+    fromCurrencyId: string
+    rate: string
+    validFrom: Date | string
+    validTo?: Date | string | null
+    source: $Enums.RateSource
+    setBy: string
+    createdAt?: Date | string
+  }
+
+  export type CurrencyRuleValueCreateManyCurrencyInput = {
+    ruleId: string
+    value: string
+  }
+
+  export type CurrencyUpdateWithoutReserveCurrencyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    code?: NullableStringFieldUpdateOperationsInput | string | null
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    kind?: EnumCurrencyKindFieldUpdateOperationsInput | $Enums.CurrencyKind
+    status?: EnumCurrencyStatusFieldUpdateOperationsInput | $Enums.CurrencyStatus
+    decimals?: IntFieldUpdateOperationsInput | number
+    country?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    issuer?: NodeUpdateOneWithoutIssuedCurrenciesNestedInput
+    backs?: CurrencyUpdateManyWithoutReserveCurrencyNestedInput
+    homeOf?: NodeUpdateManyWithoutHomeCurrencyNestedInput
+    accounts?: AccountUpdateManyWithoutCurrencyNestedInput
+    terms?: InteractionTermsUpdateManyWithoutCurrencyNestedInput
+    ratesFrom?: ExchangeRateUpdateManyWithoutFromNestedInput
+    ratesTo?: ExchangeRateUpdateManyWithoutToNestedInput
+    ruleValues?: CurrencyRuleValueUpdateManyWithoutCurrencyNestedInput
+  }
+
+  export type CurrencyUncheckedUpdateWithoutReserveCurrencyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    code?: NullableStringFieldUpdateOperationsInput | string | null
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    kind?: EnumCurrencyKindFieldUpdateOperationsInput | $Enums.CurrencyKind
+    status?: EnumCurrencyStatusFieldUpdateOperationsInput | $Enums.CurrencyStatus
+    decimals?: IntFieldUpdateOperationsInput | number
+    issuerNodeId?: NullableStringFieldUpdateOperationsInput | string | null
+    country?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    backs?: CurrencyUncheckedUpdateManyWithoutReserveCurrencyNestedInput
+    homeOf?: NodeUncheckedUpdateManyWithoutHomeCurrencyNestedInput
+    accounts?: AccountUncheckedUpdateManyWithoutCurrencyNestedInput
+    terms?: InteractionTermsUncheckedUpdateManyWithoutCurrencyNestedInput
+    ratesFrom?: ExchangeRateUncheckedUpdateManyWithoutFromNestedInput
+    ratesTo?: ExchangeRateUncheckedUpdateManyWithoutToNestedInput
+    ruleValues?: CurrencyRuleValueUncheckedUpdateManyWithoutCurrencyNestedInput
+  }
+
+  export type CurrencyUncheckedUpdateManyWithoutReserveCurrencyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    code?: NullableStringFieldUpdateOperationsInput | string | null
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    kind?: EnumCurrencyKindFieldUpdateOperationsInput | $Enums.CurrencyKind
+    status?: EnumCurrencyStatusFieldUpdateOperationsInput | $Enums.CurrencyStatus
+    decimals?: IntFieldUpdateOperationsInput | number
+    issuerNodeId?: NullableStringFieldUpdateOperationsInput | string | null
+    country?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type NodeUpdateWithoutHomeCurrencyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    kind?: EnumNodeKindFieldUpdateOperationsInput | $Enums.NodeKind
+    status?: EnumNodeStatusFieldUpdateOperationsInput | $Enums.NodeStatus
+    name?: StringFieldUpdateOperationsInput | string
+    firstName?: NullableStringFieldUpdateOperationsInput | string | null
+    lastName?: NullableStringFieldUpdateOperationsInput | string | null
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    photoUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    username?: NullableStringFieldUpdateOperationsInput | string | null
+    passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    phone?: NullableStringFieldUpdateOperationsInput | string | null
+    country?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    rolesHeldHere?: RoleAssignmentUpdateManyWithoutScopeNestedInput
+    rolesHeldByMe?: RoleAssignmentUpdateManyWithoutHolderNestedInput
+    accounts?: AccountUpdateManyWithoutNodeNestedInput
+    ruleValues?: NodeRuleValueUpdateManyWithoutNodeNestedInput
+    relationshipsA?: RelationshipUpdateManyWithoutNodeANestedInput
+    relationshipsB?: RelationshipUpdateManyWithoutNodeBNestedInput
+    issuedCurrencies?: CurrencyUpdateManyWithoutIssuerNestedInput
+    invitationsSent?: InvitationUpdateManyWithoutInviterNestedInput
+    activity?: ActivityUpdateManyWithoutNodeNestedInput
+  }
+
+  export type NodeUncheckedUpdateWithoutHomeCurrencyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    kind?: EnumNodeKindFieldUpdateOperationsInput | $Enums.NodeKind
+    status?: EnumNodeStatusFieldUpdateOperationsInput | $Enums.NodeStatus
+    name?: StringFieldUpdateOperationsInput | string
+    firstName?: NullableStringFieldUpdateOperationsInput | string | null
+    lastName?: NullableStringFieldUpdateOperationsInput | string | null
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    photoUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    username?: NullableStringFieldUpdateOperationsInput | string | null
+    passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    phone?: NullableStringFieldUpdateOperationsInput | string | null
+    country?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    rolesHeldHere?: RoleAssignmentUncheckedUpdateManyWithoutScopeNestedInput
+    rolesHeldByMe?: RoleAssignmentUncheckedUpdateManyWithoutHolderNestedInput
+    accounts?: AccountUncheckedUpdateManyWithoutNodeNestedInput
+    ruleValues?: NodeRuleValueUncheckedUpdateManyWithoutNodeNestedInput
+    relationshipsA?: RelationshipUncheckedUpdateManyWithoutNodeANestedInput
+    relationshipsB?: RelationshipUncheckedUpdateManyWithoutNodeBNestedInput
+    issuedCurrencies?: CurrencyUncheckedUpdateManyWithoutIssuerNestedInput
+    invitationsSent?: InvitationUncheckedUpdateManyWithoutInviterNestedInput
+    activity?: ActivityUncheckedUpdateManyWithoutNodeNestedInput
+  }
+
+  export type NodeUncheckedUpdateManyWithoutHomeCurrencyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    kind?: EnumNodeKindFieldUpdateOperationsInput | $Enums.NodeKind
+    status?: EnumNodeStatusFieldUpdateOperationsInput | $Enums.NodeStatus
+    name?: StringFieldUpdateOperationsInput | string
+    firstName?: NullableStringFieldUpdateOperationsInput | string | null
+    lastName?: NullableStringFieldUpdateOperationsInput | string | null
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    photoUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    username?: NullableStringFieldUpdateOperationsInput | string | null
+    passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    phone?: NullableStringFieldUpdateOperationsInput | string | null
+    country?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type AccountUpdateWithoutCurrencyInput = {
@@ -36126,6 +40848,87 @@ export namespace Prisma {
     rulesVersion?: StringFieldUpdateOperationsInput | string
     approved?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ExchangeRateUpdateWithoutFromInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    rate?: StringFieldUpdateOperationsInput | string
+    validFrom?: DateTimeFieldUpdateOperationsInput | Date | string
+    validTo?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    source?: EnumRateSourceFieldUpdateOperationsInput | $Enums.RateSource
+    setBy?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    to?: CurrencyUpdateOneRequiredWithoutRatesToNestedInput
+  }
+
+  export type ExchangeRateUncheckedUpdateWithoutFromInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    toCurrencyId?: StringFieldUpdateOperationsInput | string
+    rate?: StringFieldUpdateOperationsInput | string
+    validFrom?: DateTimeFieldUpdateOperationsInput | Date | string
+    validTo?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    source?: EnumRateSourceFieldUpdateOperationsInput | $Enums.RateSource
+    setBy?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ExchangeRateUncheckedUpdateManyWithoutFromInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    toCurrencyId?: StringFieldUpdateOperationsInput | string
+    rate?: StringFieldUpdateOperationsInput | string
+    validFrom?: DateTimeFieldUpdateOperationsInput | Date | string
+    validTo?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    source?: EnumRateSourceFieldUpdateOperationsInput | $Enums.RateSource
+    setBy?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ExchangeRateUpdateWithoutToInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    rate?: StringFieldUpdateOperationsInput | string
+    validFrom?: DateTimeFieldUpdateOperationsInput | Date | string
+    validTo?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    source?: EnumRateSourceFieldUpdateOperationsInput | $Enums.RateSource
+    setBy?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    from?: CurrencyUpdateOneRequiredWithoutRatesFromNestedInput
+  }
+
+  export type ExchangeRateUncheckedUpdateWithoutToInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    fromCurrencyId?: StringFieldUpdateOperationsInput | string
+    rate?: StringFieldUpdateOperationsInput | string
+    validFrom?: DateTimeFieldUpdateOperationsInput | Date | string
+    validTo?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    source?: EnumRateSourceFieldUpdateOperationsInput | $Enums.RateSource
+    setBy?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ExchangeRateUncheckedUpdateManyWithoutToInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    fromCurrencyId?: StringFieldUpdateOperationsInput | string
+    rate?: StringFieldUpdateOperationsInput | string
+    validFrom?: DateTimeFieldUpdateOperationsInput | Date | string
+    validTo?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    source?: EnumRateSourceFieldUpdateOperationsInput | $Enums.RateSource
+    setBy?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CurrencyRuleValueUpdateWithoutCurrencyInput = {
+    ruleId?: StringFieldUpdateOperationsInput | string
+    value?: StringFieldUpdateOperationsInput | string
+  }
+
+  export type CurrencyRuleValueUncheckedUpdateWithoutCurrencyInput = {
+    ruleId?: StringFieldUpdateOperationsInput | string
+    value?: StringFieldUpdateOperationsInput | string
+  }
+
+  export type CurrencyRuleValueUncheckedUpdateManyWithoutCurrencyInput = {
+    ruleId?: StringFieldUpdateOperationsInput | string
+    value?: StringFieldUpdateOperationsInput | string
   }
 
   export type TransactionCreateManyFromInput = {

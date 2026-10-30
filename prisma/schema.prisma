@@ -50,7 +50,15 @@ model Node {
   email        String? @unique
   phone        String? @unique
 
+  // Currencies (PRD 2.8). The primary fiat is the Account marked isPrimaryFiat;
+  // it defaults from the country (R-FIN-13). Home currency: what forms
+  // pre-select and the wallet total is shown in (R-FIN-04); null = primary fiat.
+  country        String? // ISO 3166 code, e.g. "CH"
+  homeCurrencyId String?
+
   createdAt DateTime @default(now())
+
+  homeCurrency Currency? @relation("HomeCurrency", fields: [homeCurrencyId], references: [id])
 
   rolesHeldHere   RoleAssignment[] @relation("ScopeNode") // roles inside this node
   rolesHeldByMe   RoleAssignment[] @relation("HolderNode") // roles this node holds elsewhere
@@ -58,7 +66,7 @@ model Node {
   ruleValues      NodeRuleValue[]
   relationshipsA  Relationship[]   @relation("NodeA")
   relationshipsB  Relationship[]   @relation("NodeB")
-  issuedCurrencies Currency[]
+  issuedCurrencies Currency[]       @relation("Issuer")
   invitationsSent Invitation[]     @relation("Inviter")
   activity        Activity[]
 }
@@ -112,11 +120,22 @@ model RoleAssignment {
 // Rules themselves live in rules.yaml in the repo; only a node's own values live here.
 model NodeRuleValue {
   nodeId String
-  ruleId String // e.g. R-FIN-01 (reserve ratio)
+  ruleId String // e.g. R-PAY-02 (negative-balance limit)
   value  String // parsed by the rules check according to the rule's type
   node   Node   @relation(fields: [nodeId], references: [id])
 
   @@id([nodeId, ruleId])
+}
+
+// The same for rules marked currency_level in rules.yaml: the issuer's value
+// for one of its currencies (R-FIN-01 reserve ratio, R-FIN-10 conversion policy).
+model CurrencyRuleValue {
+  currencyId String
+  ruleId     String // R-FIN-01, R-FIN-10
+  value      String
+  currency   Currency @relation(fields: [currencyId], references: [id])
+
+  @@id([currencyId, ruleId])
 }
 
 // ───────────────────────── Relationships and interactions ─────────────────────────
@@ -253,6 +272,7 @@ enum ProposalKind {
   RULE_VALUE
   MEMBER_REMOVAL
   COLLECTION_CREATE
+  CURRENCY_CHANGE // create, edit, retire or delete one of the node's currencies (R-FIN-11)
 }
 
 enum ProposalStatus {
@@ -301,18 +321,63 @@ enum CurrencyKind {
   COMMUNITY
 }
 
+enum CurrencyStatus {
+  ACTIVE
+  RETIRED // no new units; balances stay usable and convertible (R-FIN-12)
+}
+
+// The fiat list (R-FIN-13) is the FIAT rows: the system admin keeps them.
+// A node currency's reserve ratio and conversion policy are CurrencyRuleValues
+// (R-FIN-01, R-FIN-10); its price is in ExchangeRate.
 model Currency {
   id           String       @id @default(cuid())
   name         String // "Swiss franc", "Rose Currency Contribution"
-  code         String? // display code, e.g. CHF, RCC; not unique by design
+  code              String? // the symbol on screens, e.g. CHF, RCC; not unique by design
+  description       String?
   kind         CurrencyKind
-  decimals     Int          @default(2)
+  status            CurrencyStatus @default(ACTIVE)
+  decimals          Int            @default(2) // fixed once units exist (R-FIN-12)
   issuerNodeId String? // null for fiat
+  reserveCurrencyId String? // the fiat its reserve is held in; null for fiat
+  country           String? // fiat only: the ISO 3166 codes it is the currency of, comma-separated ("CH")
   createdAt    DateTime     @default(now())
 
-  issuer   Node?              @relation(fields: [issuerNodeId], references: [id])
+  issuer          Node?              @relation("Issuer", fields: [issuerNodeId], references: [id])
+  reserveCurrency Currency?          @relation("ReserveFiat", fields: [reserveCurrencyId], references: [id])
+  backs           Currency[]         @relation("ReserveFiat")
+  homeOf          Node[]             @relation("HomeCurrency")
   accounts Account[]
   terms    InteractionTerms[]
+  ratesFrom       ExchangeRate[]     @relation("RateFrom")
+  ratesTo         ExchangeRate[]     @relation("RateTo")
+  ruleValues      CurrencyRuleValue[]
+}
+
+enum RateSource {
+  FEED // fiat to fiat, from the daily feed (rateFeed.ts)
+  RESERVE_RATIO // a node currency's price in its reserve fiat (R-FIN-01)
+  MANUAL // set by hand (scripts/set-rate.ts), e.g. when the feed is down
+}
+
+// Every rate with its history (R-FIN-05, R-FIN-15). One unit of `from` is
+// worth `rate` units of `to`, from validFrom until validTo (null = current).
+// Rows are never deleted, and only ever updated to set validTo when the next
+// rate for the pair arrives. Read and written only through core/rates.ts.
+model ExchangeRate {
+  id             String     @id @default(cuid())
+  fromCurrencyId String
+  toCurrencyId   String
+  rate           String // exact decimal as text, like Transaction.rate
+  validFrom      DateTime
+  validTo        DateTime?
+  source         RateSource
+  setBy          String // the person who set it, or "system:feed", "script:set-rate"
+  createdAt      DateTime   @default(now())
+
+  from Currency @relation("RateFrom", fields: [fromCurrencyId], references: [id])
+  to   Currency @relation("RateTo", fields: [toCurrencyId], references: [id])
+
+  @@index([fromCurrencyId, toCurrencyId, validFrom])
 }
 
 model Account {

@@ -15,6 +15,7 @@ import bcrypt from "bcryptjs";
 import { createHash, randomBytes } from "crypto";
 import { getRule, roles } from "~/server/rules";
 import { recordActivity } from "./activity";
+import { fiatForCountry } from "./currencies";
 import { inTransaction, type Db } from "./db";
 import { RuleError, textOrNull } from "./errors";
 import { assertUnique } from "./identity";
@@ -154,7 +155,9 @@ export interface JoinInput {
 
 /**
  * UC-INV-02: join from an invitation. Creates the individual node with all
- * native roles on itself (R-GOV-02) and a CHF primary fiat account (R-FIN-07).
+ * native roles on itself (R-GOV-02), the inviter's country (CH if it has
+ * none), and a primary fiat account in that country's fiat (R-FIN-07,
+ * R-FIN-13), which is also its home currency (R-FIN-04).
  * If a collection sent the invitation, the new node also becomes its Member.
  * Returns the new node; the screen then signs in with the chosen password.
  */
@@ -170,7 +173,7 @@ export async function acceptInvitation(db: Db, token: string, input: JoinInput) 
   return inTransaction(db, async (tx) => {
     const invitation = await tx.invitation.findUnique({
       where: { tokenHash: hashToken(token) },
-      include: { inviter: { select: { kind: true, name: true } } },
+      include: { inviter: { select: { kind: true, name: true, country: true } } },
     });
     if (!invitation) throw new RuleError("This invitation link is not valid");
     const status = effectiveStatus(invitation);
@@ -188,6 +191,7 @@ export async function acceptInvitation(db: Db, token: string, input: JoinInput) 
         passwordHash: bcrypt.hashSync(input.password, 10),
         email,
         phone,
+        country: invitation.inviter.country ?? "CH",
       },
     });
     await tx.roleAssignment.createMany({
@@ -198,8 +202,11 @@ export async function acceptInvitation(db: Db, token: string, input: JoinInput) 
         data: { scopeNodeId: invitation.inviterNodeId, holderNodeId: node.id, roleKey: "MEMBER" },
       });
     }
-    const chf = await tx.currency.findFirst({ where: { kind: "FIAT", code: "CHF" } });
-    if (chf) await tx.account.create({ data: { nodeId: node.id, currencyId: chf.id, isPrimaryFiat: true } });
+    const fiat = await fiatForCountry(tx, node.country);
+    if (fiat) {
+      await tx.account.create({ data: { nodeId: node.id, currencyId: fiat.id, isPrimaryFiat: true } });
+      await tx.node.update({ where: { id: node.id }, data: { homeCurrencyId: fiat.id } });
+    }
 
     // `status: "PENDING"` in the filter: two people can't use the same link at once.
     const { count } = await tx.invitation.updateMany({

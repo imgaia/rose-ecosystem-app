@@ -131,6 +131,8 @@ exports.Prisma.NodeScalarFieldEnum = {
   passwordHash: 'passwordHash',
   email: 'email',
   phone: 'phone',
+  country: 'country',
+  homeCurrencyId: 'homeCurrencyId',
   createdAt: 'createdAt'
 };
 
@@ -162,6 +164,12 @@ exports.Prisma.RoleAssignmentScalarFieldEnum = {
 
 exports.Prisma.NodeRuleValueScalarFieldEnum = {
   nodeId: 'nodeId',
+  ruleId: 'ruleId',
+  value: 'value'
+};
+
+exports.Prisma.CurrencyRuleValueScalarFieldEnum = {
+  currencyId: 'currencyId',
   ruleId: 'ruleId',
   value: 'value'
 };
@@ -251,9 +259,25 @@ exports.Prisma.CurrencyScalarFieldEnum = {
   id: 'id',
   name: 'name',
   code: 'code',
+  description: 'description',
   kind: 'kind',
+  status: 'status',
   decimals: 'decimals',
   issuerNodeId: 'issuerNodeId',
+  reserveCurrencyId: 'reserveCurrencyId',
+  country: 'country',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.ExchangeRateScalarFieldEnum = {
+  id: 'id',
+  fromCurrencyId: 'fromCurrencyId',
+  toCurrencyId: 'toCurrencyId',
+  rate: 'rate',
+  validFrom: 'validFrom',
+  validTo: 'validTo',
+  source: 'source',
+  setBy: 'setBy',
   createdAt: 'createdAt'
 };
 
@@ -376,7 +400,8 @@ exports.ProposalKind = exports.$Enums.ProposalKind = {
   ROLE_CHANGE: 'ROLE_CHANGE',
   RULE_VALUE: 'RULE_VALUE',
   MEMBER_REMOVAL: 'MEMBER_REMOVAL',
-  COLLECTION_CREATE: 'COLLECTION_CREATE'
+  COLLECTION_CREATE: 'COLLECTION_CREATE',
+  CURRENCY_CHANGE: 'CURRENCY_CHANGE'
 };
 
 exports.ProposalStatus = exports.$Enums.ProposalStatus = {
@@ -389,6 +414,17 @@ exports.ProposalStatus = exports.$Enums.ProposalStatus = {
 exports.CurrencyKind = exports.$Enums.CurrencyKind = {
   FIAT: 'FIAT',
   COMMUNITY: 'COMMUNITY'
+};
+
+exports.CurrencyStatus = exports.$Enums.CurrencyStatus = {
+  ACTIVE: 'ACTIVE',
+  RETIRED: 'RETIRED'
+};
+
+exports.RateSource = exports.$Enums.RateSource = {
+  FEED: 'FEED',
+  RESERVE_RATIO: 'RESERVE_RATIO',
+  MANUAL: 'MANUAL'
 };
 
 exports.TransactionKind = exports.$Enums.TransactionKind = {
@@ -415,6 +451,7 @@ exports.Prisma.ModelName = {
   RoleCapability: 'RoleCapability',
   RoleAssignment: 'RoleAssignment',
   NodeRuleValue: 'NodeRuleValue',
+  CurrencyRuleValue: 'CurrencyRuleValue',
   Relationship: 'Relationship',
   TrustScore: 'TrustScore',
   Interaction: 'Interaction',
@@ -424,6 +461,7 @@ exports.Prisma.ModelName = {
   Proposal: 'Proposal',
   ProposalApprover: 'ProposalApprover',
   Currency: 'Currency',
+  ExchangeRate: 'ExchangeRate',
   Account: 'Account',
   Transaction: 'Transaction',
   Invitation: 'Invitation',

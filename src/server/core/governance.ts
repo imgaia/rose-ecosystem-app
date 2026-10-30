@@ -21,6 +21,7 @@
 import type { Proposal, ProposalKind } from "../../../generated/prisma";
 import { roles } from "~/server/rules";
 import { actorName, recordActivity } from "./activity";
+import { resetHomeCurrencyOnLeaving } from "./currencies";
 import { inTransaction, type Db, type Tx } from "./db";
 import { RuleError, textOrNull } from "./errors";
 import type { Actor } from "./interactions";
@@ -178,6 +179,7 @@ export async function leaveCollection(db: Db, actor: Actor) {
     if (!held.includes("MEMBER")) throw new RuleError(`You are not a member of ${collection.name}`, ["R-COL-05"]);
     await assertNativeRolesKeepHolders(tx, collection.id, actor.personId, held, "leave");
     await endRoles(tx, collection.id, actor.personId, held);
+    await resetHomeCurrencyOnLeaving(tx, actor.personId, collection.id); // R-FIN-04
 
     const person = await tx.node.findUniqueOrThrow({ where: { id: actor.personId }, select: { name: true } });
     await recordActivity(tx, {
@@ -246,6 +248,7 @@ const removalHandler: ProposalHandler = {
     const collectionId = proposal.subjectNodeId!;
     await checkRemoval(tx, collectionId, p.memberNodeId);
     await endRoles(tx, collectionId, p.memberNodeId, await rolesHeld(tx, collectionId, p.memberNodeId));
+    await resetHomeCurrencyOnLeaving(tx, p.memberNodeId, collectionId); // R-FIN-04
     await log(tx, proposal, "applied", personId);
   },
   async onClosed(tx, proposal, status, personId) {

@@ -1,6 +1,7 @@
 // prisma/seed-reference.ts
 // Reference data the app needs before anyone signs up: roles, capabilities,
-// the capability map (which roles carry which capability) and the currencies.
+// the capability map (which roles carry which capability) and the currencies
+// with their rates (prisma/reference-currencies.ts).
 // Safe to run again: it only adds what is missing and keeps the capability
 // map in line with rules.yaml.
 //
@@ -9,6 +10,7 @@
 
 import { getDbTarget, createPrismaFor } from "../scripts/db-target";
 import { capabilityMap, roles, rulesVersion } from "../src/server/rules/index";
+import { seedCurrencies } from "./reference-currencies";
 
 const target = getDbTarget("SEED_TARGET");
 console.log(`Seeding reference data into the ${target.toUpperCase()} database (rules ${rulesVersion}).`);
@@ -36,20 +38,13 @@ const CAPABILITIES: Record<string, { label: string; description: string }> = {
   MINT: { label: "Mint", description: "Mint community currency against the reserve" },
   EXCHANGE: { label: "Exchange", description: "Exchange between currencies" },
   WITHDRAW: { label: "Withdraw", description: "Withdraw to primary fiat" },
-  SET_UP_CURRENCY: { label: "Set up currency", description: "Create the node's own currency" },
+  SET_UP_CURRENCY: { label: "Set up currency", description: "Create and change the node's currencies, set its home currency and primary fiat" },
   VIEW_BALANCES: { label: "View balances", description: "See the node's balances" },
   EDIT_IDENTITY: { label: "Edit identity", description: "Change the node's name, description and photo" },
   EDIT_GOVERNANCE: { label: "Edit governance", description: "Change optional roles, role holders and rule values" },
   ADD_MEMBERS: { label: "Add members", description: "Add members to a collection" },
   VERIFY_WORK: { label: "Verify work", description: "Confirm that work was done" },
 };
-
-// Currency.code is not unique by design, so we find these by code + kind.
-const CURRENCIES = [
-  { code: "CHF", name: "Swiss franc", kind: "FIAT", decimals: 2 },
-  // Issuer (ROSE Org) is set by the migration in step 3.
-  { code: "RCC", name: "Rose Currency Contribution", kind: "COMMUNITY", decimals: 2 },
-] as const;
 
 async function main() {
   // Roles
@@ -91,13 +86,8 @@ async function main() {
   }
   console.log(`Capability map: ${toAdd.length} added, ${toRemove.length} removed, ${wanted.length} total.`);
 
-  // Currencies
-  for (const c of CURRENCIES) {
-    const found = await prisma.currency.findFirst({ where: { code: c.code, kind: c.kind } });
-    if (found) continue;
-    await prisma.currency.create({ data: { ...c } });
-    console.log(`Created currency ${c.code}.`);
-  }
+  // Currencies and rates
+  await seedCurrencies(prisma);
 }
 
 main()

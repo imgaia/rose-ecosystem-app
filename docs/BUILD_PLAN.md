@@ -224,3 +224,65 @@ Never use DB_TARGET=production in this step.
 ## Step 9. Release to production (later, your decision)
 
 Same as step 8 with `DB_TARGET=production`, at a quiet moment, after a fresh production backup and merging `dev` into `main`. Do this together, not from a single prompt.
+
+## Step 10. Node currencies
+
+Source of truth: PRD tab 2, section 2.8 "Node currencies" (including "Exchange rates"); use cases UC-FIN-01, 03, 07, 08, 09 and UC-GOV-08 (tab 3); screens S10, S11, S15, S27 (tab 4); the Exchange rate entity (tab 5); rules R-FIN-01, 04, 05 and R-FIN-10 to R-FIN-15 (tab 6). Wireframes: the four "Node currencies" boards in the Wallet row of the ROSE App Wireframes canvas (Currencies, Create a currency, Currency detail: RCC, Convert), plus the updated "Wallet, acting as Nimesh".
+
+What it adds, in one paragraph: every node has a country, a primary fiat that defaults from it, and one home currency (its primary fiat, a collection's currency it inherits, or one of its own). A node can create, edit, retire or delete its own currencies (each with a reserve in its reserve fiat). Any currency converts into any other through the two issuers' reserves at their prices; each issuer sets a conversion policy per currency: `reserve` (default; only as far as the reserves cover) or `open` (straight swaps at the price are also allowed beyond the reserve, if both currencies are open).
+
+Three slices, one chat each. Stop at the end of each.
+
+### 10a. Data, rules and core logic (no screens, local database only)
+
+**Status: done** · checked with the tests (160), type check, lint and build; applied to the local database only.
+
+- One change from the plan below, agreed when it came up: per-currency rule values live in a new table `CurrencyRuleValue` (currencyId, ruleId, value) instead of a currency column on NodeRuleValue. SQLite can't change NodeRuleValue's primary key without rebuilding the table, so this way `v10-currencies.sql` only creates tables and adds columns. Nothing is dropped or copied.
+- R-FIN-11's approvers are `one_of: TREASURER` and `one_of: OWNER`, a new kind of entry read by `proposals.ts`: each holder of the role is asked as themselves, and one approval among them is enough. Proposing counts for every entry the proposer meets, as in 6b, so a person who is both Treasurer and Owner of a collection applies a change at once.
+- Local database: backed up (`backup-local-2026-10-30T11-51-35-205Z.json`), SQL applied, then `scripts/backfill-v10.ts`: 11 nodes set to CH, RCC home currency for the 10 migrated members and ROSE Org, RCC price 1 CHF from the v0.8 migration, CHF/EUR 1.0844 from Frankfurter; all 20 balances equal their ledger.
+- `src/server/rates.json` is gone; every rate goes through `src/server/core/rates.ts`. The Exchange screen and `wallet.exchange` now run on `convert`; the screen gets its proper Convert form in 10b.
+
+Schema (`prisma/schema.prisma`, plus `scripts/migrations/v10-currencies.sql` generated for an existing v0.8 database, ALTERs only, no drops):
+- Node: `country` (ISO 3166 code, e.g. "CH"), `homeCurrencyId` (nullable, to Currency).
+- Currency: `description`, `status` (ACTIVE | RETIRED), `reserveCurrencyId` (the reserve fiat, nullable for fiat), `country` (fiat only). Keep the existing `code` column; the screens call it "symbol".
+- NodeRuleValue: allow a value per currency (for R-FIN-01 reserve ratio and R-FIN-10 conversion policy). Watch out: SQLite treats NULLs in a unique key as distinct, so use a non-null sentinel or a separate id plus a unique index that works.
+- ProposalKind: add CURRENCY_CHANGE (create, edit, retire, delete).
+- New ExchangeRate model: `fromCurrencyId`, `toCurrencyId`, `rate` (exact decimal as text, like Transaction.rate), `validFrom`, `validTo` (null = current), `source` (FEED | RESERVE_RATIO | MANUAL), `setBy`, `createdAt`. Index on (fromCurrencyId, toCurrencyId, validFrom). Rows are never updated except to set `validTo` when the next rate arrives, and never deleted.
+
+Rules (`rules.yaml`, bump the version):
+- R-FIN-01 becomes per currency (`currency_level: true`); it also sets the price: one unit costs the reserve ratio in the reserve fiat.
+- Update R-FIN-04 and R-FIN-05 wording as in PRD tab 6.
+- New: R-FIN-10 conversion policy (values `reserve` | `open`, default `reserve`, per currency); R-FIN-11 currency changes need a Treasurer and an Owner (approvers in the file, same mechanism as R-GOV-07 and 6b); R-FIN-12 retire, not delete, once held; decimals fixed once units exist; R-FIN-13 primary fiat defaults from the country; R-FIN-14 no fiat-to-fiat conversion, and conversion through reserves needs the same reserve fiat; R-FIN-15 rates are never changed or deleted, a new rate closes the previous one, every transaction records the rate it used. R-FIN-05 now points at the rates table.
+- The loader learns `currency_level`.
+
+Reference data and backfill (in the seed and in a backfill script for existing databases):
+- Fiat list: CHF (CH) and EUR (EU countries).
+- Exchange rates: move what `src/server/rates.json` holds into the ExchangeRate table, then delete the file. Fetch today's CHF/EUR rate from the feed once when seeding (fall back to a clearly labelled MANUAL placeholder if offline). Write a price row (source RESERVE_RATIO) for RCC: 1.0 CHF, valid from the v0.8 migration date.
+- Every existing node: country CH. RCC: reserve fiat CHF. Home currency: RCC for the migrated members and ROSE Org; primary fiat for anyone else.
+
+Core (`src/server/core/currencies.ts`, reusing ledger.ts and proposals.ts):
+- `src/server/core/rates.ts` becomes the single way to read rates: `getRate(from, to, at = now)` looks up the row valid at that moment (either direction, inverting when needed) and works out other pairs through the reserve fiats. Nothing else reads the ExchangeRate table, so a different source can replace the feed later.
+- `setRate(from, to, rate, validFrom, source, setBy)`: closes the current row and adds the new one in one database transaction.
+- Creating a currency, or changing its reserve ratio, writes its price row automatically.
+- Daily rate feed (`src/server/core/rateFeed.ts`): fetch the latest rates for every fiat on the fiat list from Frankfurter (`https://api.frankfurter.dev`, free, no key, central-bank data based on the ECB), and write a FEED row only when a rate has changed. Run it from the existing daily cron route from step 7 (one cron, two jobs; still protected by CRON_SECRET), plus a manual script `scripts/fetch-rates.ts` (local by default, accepts DB_TARGET=dev, refuses production for now). If the feed fails, keep the last rate and log it; never invent one. The fetch goes through a small adapter so the source can be swapped.
+- `scripts/set-rate.ts`: manual override for a fiat-to-fiat rate (source MANUAL), for when the feed is down. Same DB_TARGET rules.
+- create / edit / retire / delete a currency through a CURRENCY_CHANGE proposal; for an individual it applies at once. Delete only if no account has ever held it. Retired: no minting or buying into it; balances stay usable and convertible.
+- `setHomeCurrency`, `setPrimaryFiat` (Treasurer capability SET_UP_CURRENCY). Leaving a collection whose currency is the home currency resets it to the primary fiat.
+- `convert(fromAccount, toCurrency, amount)`: replaces today's exchange. Through reserves: units out of the person's account, fiat from issuer A's reserve to issuer B's reserve, units of B minted to the person, all in one database transaction with one groupId (kind EXCHANGE). Buying with fiat skips the first leg; converting into fiat skips the last. If a reserve can't cover it all, do a straight swap only when both currencies are open; otherwise refuse with the rule names. Money stays in whole minor units; round down what the person receives and record the rate used.
+- Mint reads the per-currency reserve ratio.
+
+Tests: the feed adapter is mocked (no network in tests): a changed rate writes a new FEED row, an unchanged one writes nothing, a failed fetch keeps the last rate; a new rate closes the previous one and history lookups return the rate valid at a past date; changing a reserve ratio writes a new price row; rate between two node currencies; convert through reserves (balances and reserves move, ledger sums hold); refused when a reserve is short and a currency is `reserve`; straight swap when both are `open`; fiat-to-fiat refused; different reserve fiats refused through reserves; retired currency can't be bought or minted; delete refused once held; collection currency creation needs Treasurer and Owner, individual applies at once; leaving a collection resets home currency.
+
+**Done when:** tests, type check, lint and build pass; the local database has the new columns and backfill; every balance still equals the sum of its ledger.
+
+### 10b. Screens
+
+From the wireframes: Wallet (total in the home currency; buttons Convert, Add funds, Mint, Currencies), S15 Currencies (home currency, primary fiat, issued by you, you hold, Create a currency), Create / Edit currency form (price preview from the reserve ratio, policy switch, "Needs a Treasurer and an Owner" for collections), S27 Currency detail (anyone: name, symbol, issuer, price and its history, policy, status; Treasurers of the issuer: reserve, units in circulation, share backed), S11 Convert (rate, what you receive, the refusal message naming the rule), and country on Edit identity. Actions a person's roles don't allow stay visible but disabled, labelled with the role they need.
+
+**Done when:** each screen works locally as an individual and as ROSE Org; nothing errors in the browser console.
+
+### 10c. Move dev
+
+Back up dev; show the SQL, then apply `v10-currencies.sql` and the backfill to dev (DB_TARGET=dev), asking before each; check every balance is unchanged and equals its ledger; push dev and click through. Never DB_TARGET=production.
+
+**Done when:** the dev site shows currencies, the home currency and conversion, with everyone's balances unchanged.
