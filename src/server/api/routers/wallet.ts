@@ -123,6 +123,30 @@ export const walletRouter = createTRPCRouter({
       }
     }),
 
+  /**
+   * S11's table: each currency the node holds (and the "Into" one), with its
+   * price and what one unit converts into, or the rules that refuse it.
+   */
+  convertTable: actingProcedure.input(z.object({ intoCurrencyId: z.string().optional() })).query(async ({ ctx, input }) => {
+    await requireCan(ctx, "VIEW_BALANCES");
+    const rows = await core.convertTable(ctx.db, ctx.actor.actingNodeId, input.intoCurrencyId ?? null);
+    const pick = (c: { id: string; code: string | null; name: string; decimals: number; kind: string }) => ({
+      id: c.id,
+      code: c.code,
+      name: c.name,
+      decimals: c.decimals,
+      kind: c.kind,
+    });
+    return rows.map((r) => ({
+      currency: pick(r.currency),
+      balance: r.balance,
+      price: r.price && { rate: r.price.rate, fiat: pick(r.price.fiat) },
+      fiatRate: r.fiatRate && { rate: r.fiatRate.rate, primary: pick(r.fiatRate.primary) },
+      into:
+        r.into && ("rate" in r.into ? { rate: r.into.rate, refused: null } : { rate: null, refused: { message: r.into.refused.message, ruleIds: r.into.refused.ruleIds } }),
+    }));
+  }),
+
   /** UC-FIN-03: convert a balance into another currency, through the issuers' reserves (core.convert). */
   convert: actingProcedure
     .input(

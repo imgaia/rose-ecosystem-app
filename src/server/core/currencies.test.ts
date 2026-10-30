@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   canBeHomeCurrency,
   convert,
+  convertTable,
   currencyBacking,
   homeCurrencyOf,
   proposeCurrencyChange,
@@ -304,6 +305,42 @@ describe("converting (UC-FIN-03, R-FIN-10, R-FIN-14)", () => {
     await setRate(t.db, { fromCurrencyId: t.chf.id, toCurrencyId: eur.id, rate: "1.05", validFrom: new Date("2026-01-01"), source: "MANUAL", setBy: "t" });
     const blocked = await refusal(quoteConvert(t.db, as(ana), { fromAccountId: chf.id, toCurrencyId: euroCoin.id, amount: 100 }));
     expect(blocked?.ruleIds).toEqual(["R-FIN-14", "R-FIN-10"]);
+  });
+
+  it("the Convert table lists what is held plus the target, with prices and what one unit converts into", async () => {
+    const [ana, ben] = await Promise.all([t.person("Ana"), t.person("Ben")]);
+    const eur = await t.db.currency.create({ data: { name: "Euro", code: "EU3", kind: "FIAT", country: "AT" } });
+    await setRate(t.db, { fromCurrencyId: eur.id, toCurrencyId: t.chf.id, rate: "0.92", validFrom: new Date("2026-01-01"), source: "MANUAL", setBy: "t" });
+    const backedCoin = await ownCurrency(ben, "BKD", { reserveRatio: "2" });
+    await backed(ben, backedCoin.id, 10_000);
+    const empty = await ownCurrency(ben, "EMP"); // nothing in its reserve
+    await fundChf(ana.id, 1_000);
+    await t.account(ana.id, eur.id, 500);
+    await t.account(ana.id, empty.id, 0);
+    await postTransaction(t.db, { kind: "OPENING_BALANCE", toAccountId: (await accountOf(ana.id, empty.id))!.id, amount: 300, comment: "Unbacked", actedByPersonId: ana.id });
+
+    const rows = await convertTable(t.db, ana.id, backedCoin.id);
+    const row = (code: string) => rows.find((r) => r.currency.code === code)!;
+    expect(rows.map((r) => [r.currency.code, r.balance])).toEqual([
+      ["CHF", 1_000],
+      ["EU3", 500],
+      ["EMP", 300],
+      ["BKD", null], // the target, not held
+    ]);
+    // Prices: a node currency in its reserve fiat; fiat at face value, another fiat with its rate into the primary fiat.
+    expect(row("BKD").price?.rate).toBe("2");
+    expect(row("CHF")).toMatchObject({ price: null, fiatRate: null });
+    expect(row("EU3").fiatRate?.rate).toBe("0.92");
+    // Into BKD: 1 CHF buys 0.5 BKD; fiat into a node currency of another fiat is refused (R-FIN-14);
+    // EMP's reserve is empty and it is not open (R-FIN-10); the target's own row has nothing.
+    expect(row("CHF").into).toEqual({ rate: "0.5" });
+    const refusedBy = (code: string) => {
+      const into = row(code).into;
+      return into && "refused" in into ? into.refused.ruleIds : null;
+    };
+    expect(refusedBy("EU3")).toContain("R-FIN-14");
+    expect(refusedBy("EMP")).toEqual(["R-FIN-10"]);
+    expect(row("BKD").into).toBeNull();
   });
 });
 

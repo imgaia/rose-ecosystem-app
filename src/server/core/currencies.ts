@@ -480,18 +480,26 @@ export interface ConvertInput {
  */
 export async function quoteConvert(db: Db, actor: Actor, input: ConvertInput) {
   const from = await ownAccount(db, actor.actingNodeId, input.fromAccountId);
-  const a = from.currency;
   const b = await db.currency.findUniqueOrThrow({ where: { id: input.toCurrencyId } });
+  return { ...(await quoteBetween(db, actor.actingNodeId, from.currency, b, input.amount, from.balance)), from };
+}
+
+/**
+ * The rules and arithmetic behind quoteConvert, for `amount` of A into B.
+ * `available` is the balance to check against; null skips that check (the
+ * Convert screen's table asks about one unit, whatever is held).
+ */
+async function quoteBetween(db: Db, nodeId: string, a: Currency, b: Currency, amount: number, available: number | null) {
   if (a.id === b.id) throw new RuleError("Pick a different currency to convert into");
   if (a.kind === "FIAT" && b.kind === "FIAT") throw new RuleError("Fiat is never converted into another fiat", ["R-FIN-14"]);
   if (b.status === "RETIRED") throw new RuleError(`${label(b)} is retired: no new units`, ["R-FIN-12"]);
-  if (from.balance < input.amount) throw new RuleError(`Not enough ${label(a)} to convert`);
+  if (available !== null && available < amount) throw new RuleError(`Not enough ${label(a)} to convert`);
   for (const c of [a, b]) {
     if (c.kind === "COMMUNITY" && (!c.issuerNodeId || !c.reserveCurrencyId)) {
       throw new RuleError(`${label(c)} has no issuer or reserve to convert through`, ["R-FIN-02"]);
     }
   }
-  if (a.kind === "FIAT" && b.issuerNodeId === actor.actingNodeId) {
+  if (a.kind === "FIAT" && b.issuerNodeId === nodeId) {
     throw new RuleError("This node issues that currency: use Mint instead", ["R-FIN-02"]);
   }
   if (b.issuerNodeId) {
@@ -502,7 +510,7 @@ export async function quoteConvert(db: Db, actor: Actor, input: ConvertInput) {
   const rate = await getRate(db, a.id, b.id);
   const fiatA = a.kind === "FIAT" ? a.id : a.reserveCurrencyId!;
   const fiatB = b.kind === "FIAT" ? b.id : b.reserveCurrencyId!;
-  const base = { from, currency: b, amount: input.amount, rate: rate.text };
+  const base = { currency: b, amount, rate: rate.text };
 
   // Through the reserves: needs one fiat behind both (R-FIN-14), and enough in A's own reserve (R-FIN-10).
   let blocked: RuleError;
@@ -513,7 +521,7 @@ export async function quoteConvert(db: Db, actor: Actor, input: ConvertInput) {
   } else {
     const fiat = await db.currency.findUniqueOrThrow({ where: { id: fiatA } });
     const priceA = a.kind === "FIAT" ? null : await getRate(db, a.id, fiat.id);
-    const value = priceA ? applyRate(input.amount, a.decimals, fiat.decimals, priceA) : input.amount;
+    const value = priceA ? applyRate(amount, a.decimals, fiat.decimals, priceA) : amount;
     const intoB = b.kind === "FIAT" ? null : await getRate(db, fiat.id, b.id);
     const receive = intoB ? applyRate(value, fiat.decimals, b.decimals, intoB) : value;
     if (value <= 0 || receive <= 0) throw new RuleError("That amount is too small to convert");
@@ -528,7 +536,7 @@ export async function quoteConvert(db: Db, actor: Actor, input: ConvertInput) {
         value, // the fiat that moves between the reserves
         priceA: priceA?.text ?? null,
         intoB: intoB?.text ?? null,
-        summary: `${money(input.amount, a)} → ${money(receive, b)}`,
+        summary: `${money(amount, a)} → ${money(receive, b)}`,
       };
     }
     blocked = new RuleError(`${label(a)}'s reserve holds ${money(reserveA, fiat)}, not enough to cover ${money(value, fiat)}`, ["R-FIN-10"]);
@@ -545,9 +553,50 @@ export async function quoteConvert(db: Db, actor: Actor, input: ConvertInput) {
       ...new Set([...blocked.ruleIds, "R-FIN-10"]),
     ]);
   }
-  const receive = applyRate(input.amount, a.decimals, b.decimals, rate);
+  const receive = applyRate(amount, a.decimals, b.decimals, rate);
   if (receive <= 0) throw new RuleError("That amount is too small to convert");
-  return { ...base, mode: "SWAP" as const, receive, summary: `${money(input.amount, a)} → ${money(receive, b)} (straight swap)` };
+  return { ...base, mode: "SWAP" as const, receive, summary: `${money(amount, a)} → ${money(receive, b)} (straight swap)` };
+}
+
+/** One row of the Convert screen's table. `into` is null for the target currency itself. */
+export interface ConvertTableRow {
+  currency: Currency;
+  balance: number | null; // null: not held (the target currency, listed anyway)
+  price: { rate: string; fiat: Currency } | null; // R-FIN-01, in its reserve fiat; null for fiat
+  fiatRate: { rate: string; primary: Currency } | null; // a fiat other than the primary fiat: 1 of it in the primary fiat
+  into: { rate: string } | { refused: RuleError } | null;
+}
+
+/**
+ * S11: every currency the node holds (spending accounts, as in the From
+ * list), plus the target if it isn't held: its price, and what one unit of it
+ * converts into right now, or the rule that refuses it. Rates from rates.ts.
+ */
+export async function convertTable(db: Db, nodeId: string, intoCurrencyId: string | null): Promise<ConvertTableRow[]> {
+  const accounts = await db.account.findMany({ where: { nodeId, isReserve: false }, include: { currency: true }, orderBy: { createdAt: "asc" } });
+  const into = intoCurrencyId ? await db.currency.findUniqueOrThrow({ where: { id: intoCurrencyId } }) : null;
+  const held: { currency: Currency; balance: number | null }[] = accounts.map((a) => ({ currency: a.currency, balance: a.balance }));
+  if (into && !accounts.some((a) => a.currencyId === into.id)) held.push({ currency: into, balance: null });
+  const primary = await primaryFiatOf(db, nodeId).catch(() => null);
+
+  return Promise.all(
+    held.map(async ({ currency, balance }) => {
+      const fiatRate =
+        currency.kind === "FIAT" && primary && primary.id !== currency.id
+          ? await getRate(db, currency.id, primary.id).then((r) => ({ rate: r.text, primary }), () => null)
+          : null;
+      let row: ConvertTableRow["into"] = null;
+      if (into && into.id !== currency.id) {
+        try {
+          row = { rate: (await quoteBetween(db, nodeId, currency, into, 10 ** currency.decimals, null)).rate };
+        } catch (err) {
+          if (!(err instanceof RuleError)) throw err;
+          row = { refused: err };
+        }
+      }
+      return { currency, balance, price: await priceOf(db, currency.id), fiatRate, into: row };
+    }),
+  );
 }
 
 /**

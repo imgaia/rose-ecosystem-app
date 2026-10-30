@@ -11,13 +11,14 @@
 
 import { useState } from "react";
 
+import { formatAmount } from "~/lib/money";
 import { api } from "~/trpc/react";
 import { DateField } from "../date-field";
 import { money } from "../describe";
 import { dateInput, readAmount } from "../interact/fields";
 import { useActingNode } from "../shell/acting-node";
 import { useNav } from "../shell/navigation";
-import { Card, ErrorText, Field, GatedButton, Input, Refusal, Row, SectionLabel, Select, SubScreen } from "../ui";
+import { Card, ErrorText, Field, GatedButton, Input, Loading, Refusal, Row, SectionLabel, Select, SubScreen } from "../ui";
 import { formatRate, priceLine } from "./currencies";
 
 /** Refresh everything, show a note, and go back to the Wallet. */
@@ -119,11 +120,6 @@ export function Convert({ fromAccountId: initialFrom, toCurrencyId: initialTo }:
   const typed = from ? readAmount(amount, from.currency) : null;
   const units = typed && "amount" in typed ? typed.amount : 0;
 
-  const prices = api.currencies.prices.useQuery(
-    { actingNodeId, currencyIds: [from?.currencyId, to?.id].filter((id): id is string => !!id) },
-    { enabled: !!from && !!to },
-  );
-  const priceOf = (id: string | undefined) => prices.data?.find((c) => c.id === id);
   const quote = api.wallet.quoteConvert.useQuery(
     { actingNodeId, fromAccountId: from?.id ?? "", toCurrencyId: to?.id ?? "", amount: units },
     { enabled: !!from && !!to && units > 0, retry: false },
@@ -155,20 +151,16 @@ export function Convert({ fromAccountId: initialFrom, toCurrencyId: initialTo }:
         </Select>
       </Field>
 
-      {from && to && (
+      {own.length > 0 && <CurrenciesTable fromCurrencyId={from?.currencyId} into={to} />}
+
+      {from && to && q && (
         <Card className="gap-0 py-1">
-          <Row label={`Price of ${from.currency.code ?? from.currency.name}`}>{priceText(priceOf(from.currencyId))}</Row>
-          <Row label={`Price of ${to.code ?? to.name}`}>{priceText(priceOf(to.id))}</Row>
-          {q && (
-            <>
-              <Row label="Rate">
-                1 {from.currency.code} = {formatRate(q.rate, to.decimals)} {to.code}
-              </Row>
-              <Row label="You receive" strong>
-                {money(q.receive, q.currency)}
-              </Row>
-            </>
-          )}
+          <Row label="Rate">
+            1 {from.currency.code} = {formatRate(q.rate, to.decimals)} {to.code}
+          </Row>
+          <Row label="You receive" strong>
+            {money(q.receive, q.currency)}
+          </Row>
         </Card>
       )}
       {q && (
@@ -194,11 +186,91 @@ export function Convert({ fromAccountId: initialFrom, toCurrencyId: initialTo }:
   );
 }
 
-/** "1 RCC = 1.00 CHF", or "Fiat face value" for real money (it has no price). */
-function priceText(c: Parameters<typeof priceLine>[0] & { kind: string } | undefined) {
-  if (!c) return "…";
-  if (c.kind === "FIAT") return "Fiat face value";
-  return priceLine(c) ?? "No price yet";
+type Named = { id: string; code: string | null; name: string; decimals: number };
+const sym = (c: { code: string | null; name: string }) => c.code ?? c.name;
+
+/**
+ * "Your currencies" on Convert (S11): each currency held, plus the Into one,
+ * with its price and what one unit converts into. The From row is
+ * highlighted. Under 400px wide each row stacks its three cells.
+ */
+function CurrenciesTable({ fromCurrencyId, into }: { fromCurrencyId: string | undefined; into: Named | undefined }) {
+  const { acting } = useActingNode();
+  const table = api.wallet.convertTable.useQuery(
+    { actingNodeId: acting.node.id, intoCurrencyId: into?.id },
+    { placeholderData: (previous) => previous }, // keep the rows while the Into column reloads
+  );
+  const intoLabel = into ? `Into ${sym(into)}` : "Into";
+  const grid = "min-[400px]:grid min-[400px]:grid-cols-[1fr_1.15fr_1.15fr] min-[400px]:gap-3";
+  const cellLabel = "text-xs text-rose-muted min-[400px]:hidden";
+
+  return (
+    <>
+      <SectionLabel className="mt-1">Your currencies</SectionLabel>
+      <ErrorText error={table.error} />
+      {table.isLoading && <Loading />}
+      {table.data && (
+        <Card className="gap-0 py-1">
+          <div role="table" aria-label="Your currencies" className="flex flex-col">
+          <div role="row" className={`hidden py-2 text-xs font-semibold tracking-wide text-rose-muted uppercase ${grid}`}>
+            <span role="columnheader">Currency</span>
+            <span role="columnheader">Price</span>
+            <span role="columnheader">{intoLabel}</span>
+          </div>
+          {table.data.map((r, i) => {
+            const selected = r.currency.id === fromCurrencyId;
+            return (
+              <div
+                key={r.currency.id}
+                role="row"
+                aria-selected={selected}
+                className={`-mx-2 flex flex-col gap-1 rounded-lg border-t border-rose-border px-2 py-2 text-sm ${i === 0 ? "max-[399px]:border-t-0" : ""} ${grid} ${selected ? "bg-rose-accent/10 ring-1 ring-rose-accent/50" : ""}`}
+              >
+                <span role="cell" className="flex flex-col">
+                  <span>
+                    <span className="font-semibold">{sym(r.currency)}</span>
+                    {r.currency.code && <span className="text-rose-muted"> · {r.currency.name}</span>}
+                  </span>
+                  <span className="text-xs text-rose-muted">
+                    {r.balance === null ? "Not held" : `${formatAmount(r.balance, r.currency.decimals)} held`}
+                    {selected && " · From"}
+                  </span>
+                </span>
+                <span role="cell" className="flex flex-col">
+                  <span className={cellLabel}>Price</span>
+                  <span>
+                    {r.currency.kind === "FIAT"
+                      ? `Fiat face value${r.fiatRate ? ` · 1 ${sym(r.currency)} = ${formatRate(r.fiatRate.rate, r.fiatRate.primary.decimals)} ${sym(r.fiatRate.primary)}` : ""}`
+                      : (priceLine({ ...r.currency, price: r.price }) ?? "No price yet")}
+                  </span>
+                </span>
+                <span role="cell" className="flex flex-col">
+                  <span className={cellLabel}>{intoLabel}</span>
+                  {table.isPlaceholderData ? (
+                    <span className="text-rose-muted">…</span>
+                  ) : !into || !r.into ? (
+                    <span className="text-rose-muted">{into ? "Same currency" : "—"}</span>
+                  ) : r.into.rate !== null ? (
+                    <span>
+                      1 {sym(r.currency)} = {formatRate(r.into.rate, into.decimals)} {sym(into)}
+                    </span>
+                  ) : (
+                    <span title={r.into.refused.message}>
+                      —{" "}
+                      <span className="text-xs text-rose-muted">
+                        {r.into.refused.ruleIds.length > 0 ? r.into.refused.ruleIds.join(", ") : r.into.refused.message}
+                      </span>
+                    </span>
+                  )}
+                </span>
+              </div>
+            );
+          })}
+          </div>
+        </Card>
+      )}
+    </>
+  );
 }
 
 export function Mint() {
