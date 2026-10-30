@@ -71,7 +71,13 @@ export function NodePicker({
             <button
               key={node.id}
               type="button"
-              onClick={() => onChange(node.id)}
+              onClick={(e) => {
+                // The picker sits in a <label> (Field). Picking swaps this list for the
+                // "Change" button, and the browser would then pass the tap on to the
+                // label's control, now that button, and clear the choice again.
+                e.preventDefault();
+                onChange(node.id);
+              }}
               className="flex min-h-11 items-center gap-3 border-t border-rose-border px-3 text-left first:border-t-0 hover:bg-white/5"
             >
               <Avatar node={node} size="sm" />
