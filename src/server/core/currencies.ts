@@ -99,7 +99,7 @@ export async function primaryFiatAccount(tx: Tx, nodeId: string) {
   if (existing) return existing;
   const fiat = await primaryFiatOf(tx, nodeId);
   return tx.account.upsert({
-    where: { nodeId_currencyId_isReserve: { nodeId, currencyId: fiat.id, isReserve: false } },
+    where: { nodeId_currencyId_isReserve_backsCurrencyId: { nodeId, currencyId: fiat.id, isReserve: false, backsCurrencyId: "" } },
     create: { nodeId, currencyId: fiat.id, isPrimaryFiat: true },
     update: { isPrimaryFiat: true },
   });
@@ -160,7 +160,7 @@ export async function setPrimaryFiat(db: Db, actor: Actor, input: { currencyId: 
 
     await tx.account.updateMany({ where: { nodeId: node.id, isPrimaryFiat: true }, data: { isPrimaryFiat: false } });
     const account = await tx.account.upsert({
-      where: { nodeId_currencyId_isReserve: { nodeId: node.id, currencyId: fiat.id, isReserve: false } },
+      where: { nodeId_currencyId_isReserve_backsCurrencyId: { nodeId: node.id, currencyId: fiat.id, isReserve: false, backsCurrencyId: "" } },
       create: { nodeId: node.id, currencyId: fiat.id, isPrimaryFiat: true },
       update: { isPrimaryFiat: true },
     });
@@ -378,7 +378,7 @@ const currencyChangeHandler: ProposalHandler = {
         const fiat = await primaryFiatOf(tx, node.id).catch(() => null);
         await tx.node.update({ where: { id: node.id }, data: { homeCurrencyId: fiat?.id ?? null } });
       }
-      await tx.account.deleteMany({ where: { currencyId: currency.id } }); // all empty: it was never held
+      await tx.account.deleteMany({ where: { OR: [{ currencyId: currency.id }, { backsCurrencyId: currency.id }] } }); // all empty: it was never held
       await tx.currencyRuleValue.deleteMany({ where: { currencyId: currency.id } });
       await deleteRatesOfUnheldCurrency(tx, currency.id);
       await tx.currency.delete({ where: { id: currency.id } });
@@ -483,7 +483,7 @@ export async function quoteConvert(db: Db, actor: Actor, input: ConvertInput) {
   const fiatB = b.kind === "FIAT" ? b.id : b.reserveCurrencyId!;
   const base = { from, currency: b, amount: input.amount, rate: rate.text };
 
-  // Through the reserves: needs one fiat behind both (R-FIN-14), and enough in A's reserve (R-FIN-10).
+  // Through the reserves: needs one fiat behind both (R-FIN-14), and enough in A's own reserve (R-FIN-10).
   let blocked: RuleError;
   if (fiatA !== fiatB) {
     blocked = new RuleError(`${label(a)} and ${label(b)} are backed by different fiats, so they can't convert through their reserves`, [
@@ -497,7 +497,7 @@ export async function quoteConvert(db: Db, actor: Actor, input: ConvertInput) {
     const receive = intoB ? applyRate(value, fiat.decimals, b.decimals, intoB) : value;
     if (value <= 0 || receive <= 0) throw new RuleError("That amount is too small to convert");
 
-    const reserveA = a.kind === "FIAT" ? null : await reserveBalance(db, a.issuerNodeId!, fiat.id);
+    const reserveA = a.kind === "FIAT" ? null : await reserveBalance(db, a);
     if (reserveA === null || reserveA >= value) {
       return {
         ...base,
@@ -587,14 +587,14 @@ export async function convert(db: Db, actor: Actor, input: ConvertInput & { comm
           summary: `${who} cashed ${money(quote.amount, a)} out of ${label(a)}'s reserve`,
         }),
       );
-      fiatFrom = (await reserveAccount(tx, a.issuerNodeId!, fiat.id)).id;
+      fiatFrom = (await reserveAccount(tx, a)).id;
     }
     const intoFiat = b.kind === "FIAT";
     rows.push(
       await postTransaction(tx, {
         ...base,
         fromAccountId: fiatFrom,
-        toAccountId: intoFiat ? await unitsOfB() : (await reserveAccount(tx, b.issuerNodeId!, fiat.id)).id,
+        toAccountId: intoFiat ? await unitsOfB() : (await reserveAccount(tx, b)).id,
         amount: quote.value,
         summary: intoFiat
           ? `${money(quote.value, fiat)} paid out of ${label(a)}'s reserve to ${who}`
@@ -618,25 +618,46 @@ export async function convert(db: Db, actor: Actor, input: ConvertInput & { comm
 
 // ───────────────────────── Helpers ─────────────────────────
 
-/** How much the issuer's locked reserve in this fiat holds (0 if it has none yet). */
-async function reserveBalance(db: Db, nodeId: string, fiatId: string) {
-  const reserve = await db.account.findUnique({ where: { nodeId_currencyId_isReserve: { nodeId, currencyId: fiatId, isReserve: true } } });
+type Backed = Pick<Currency, "id" | "issuerNodeId" | "reserveCurrencyId">;
+
+/** Where a currency's own reserve is: held by its issuer, in its reserve fiat, marked with the currency it backs. */
+function reserveKey(currency: Backed) {
+  if (!currency.issuerNodeId || !currency.reserveCurrencyId) throw new RuleError("This currency has no issuer or reserve fiat", ["R-FIN-02"]);
+  return { nodeId: currency.issuerNodeId, currencyId: currency.reserveCurrencyId, isReserve: true, backsCurrencyId: currency.id };
+}
+
+/** How much the currency's reserve holds (0 if nothing has gone in yet). */
+async function reserveBalance(db: Db, currency: Backed) {
+  const reserve = await db.account.findUnique({ where: { nodeId_currencyId_isReserve_backsCurrencyId: reserveKey(currency) } });
   return reserve?.balance ?? 0;
 }
 
-/** The issuer's locked reserve in this fiat, opened when fiat first goes in (R-FIN-02). */
-export function reserveAccount(tx: Tx, nodeId: string, fiatId: string) {
-  return tx.account.upsert({
-    where: { nodeId_currencyId_isReserve: { nodeId, currencyId: fiatId, isReserve: true } },
-    create: { nodeId, currencyId: fiatId, isReserve: true },
-    update: {},
-  });
+/** The currency's own locked reserve, opened when fiat first goes in (R-FIN-02). */
+export function reserveAccount(tx: Tx, currency: Backed) {
+  const key = reserveKey(currency);
+  return tx.account.upsert({ where: { nodeId_currencyId_isReserve_backsCurrencyId: key }, create: key, update: {} });
+}
+
+/**
+ * What backs a node currency: its reserve, the units in circulation (every
+ * balance in it, the issuer's own included), their value at the price, and
+ * the share of that value the reserve covers (null when no units exist).
+ * The share is for showing, not for moving money.
+ */
+export async function currencyBacking(db: Db, currencyId: string) {
+  const currency = await db.currency.findUniqueOrThrow({ where: { id: currencyId }, include: { reserveCurrency: true } });
+  if (currency.kind !== "COMMUNITY" || !currency.reserveCurrency) throw new RuleError(`${label(currency)} has no reserve`, ["R-FIN-02"]);
+  const fiat = currency.reserveCurrency;
+  const reserve = await reserveBalance(db, currency);
+  const units = (await db.account.aggregate({ where: { currencyId, isReserve: false }, _sum: { balance: true } }))._sum.balance ?? 0;
+  const value = units > 0 ? applyRate(units, currency.decimals, fiat.decimals, await getRate(db, currency.id, fiat.id)) : 0;
+  return { currency, fiat, reserve, units, value, shareBacked: value > 0 ? reserve / value : null };
 }
 
 /** The node's spending account in this currency, opened the first time it receives some. */
 export function unitsAccount(tx: Tx, nodeId: string, currencyId: string) {
   return tx.account.upsert({
-    where: { nodeId_currencyId_isReserve: { nodeId, currencyId, isReserve: false } },
+    where: { nodeId_currencyId_isReserve_backsCurrencyId: { nodeId, currencyId, isReserve: false, backsCurrencyId: "" } },
     create: { nodeId, currencyId },
     update: {},
   });

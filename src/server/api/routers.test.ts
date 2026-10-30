@@ -227,7 +227,7 @@ describe("wallet", () => {
     expect(locked.groupId).toBe(minted.groupId);
     expect(await t.balanceOf(rose.id, t.chf.id)).toBe(6_000);
     expect(await t.balanceOf(rose.id, t.rcc.id)).toBe(9_000);
-    const reserve = await t.db.account.findFirstOrThrow({ where: { nodeId: rose.id, isReserve: true } });
+    const reserve = await t.db.account.findFirstOrThrow({ where: { nodeId: rose.id, isReserve: true, backsCurrencyId: t.rcc.id } });
     expect(reserve.balance).toBe(4_000);
 
     // Only fiat can be minted from, and reserves are locked.
@@ -252,7 +252,7 @@ describe("wallet", () => {
     expect(minted).toMatchObject({ kind: "EXCHANGE", amount: 1_250, fromAccountId: null, groupId: paid!.groupId });
     expect(await t.balanceOf(ana.id, t.chf.id)).toBe(1_750);
     expect(await t.balanceOf(ana.id, t.rcc.id)).toBe(11_250);
-    const issuerReserve = await t.db.account.findFirstOrThrow({ where: { nodeId: rose.id, isReserve: true } });
+    const issuerReserve = await t.db.account.findFirstOrThrow({ where: { nodeId: rose.id, isReserve: true, backsCurrencyId: t.rcc.id } });
     expect(issuerReserve).toMatchObject({ currencyId: t.chf.id, balance: 1_250 });
     expect(await t.balanceOf(rose.id, t.rcc.id)).toBe(5_000); // the issuer's own balance is untouched
 

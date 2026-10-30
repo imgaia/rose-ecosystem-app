@@ -648,7 +648,7 @@ async function pay(
   // The payee gets an account in this currency the first time it is paid in it.
   const to = await tx.account.upsert({
     where: {
-      nodeId_currencyId_isReserve: { nodeId: interaction.payeeNodeId, currencyId: payment.currencyId, isReserve: false },
+      nodeId_currencyId_isReserve_backsCurrencyId: { nodeId: interaction.payeeNodeId, currencyId: payment.currencyId, isReserve: false, backsCurrencyId: "" },
     },
     create: { nodeId: interaction.payeeNodeId, currencyId: payment.currencyId },
     update: {},
@@ -779,7 +779,7 @@ function currentTerms(tx: Tx, interactionId: string) {
 
 function accountOf(tx: Tx, nodeId: string, currencyId: string) {
   return tx.account.findUnique({
-    where: { nodeId_currencyId_isReserve: { nodeId, currencyId, isReserve: false } },
+    where: { nodeId_currencyId_isReserve_backsCurrencyId: { nodeId, currencyId, isReserve: false, backsCurrencyId: "" } },
   });
 }
 

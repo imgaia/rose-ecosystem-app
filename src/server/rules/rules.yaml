@@ -2,7 +2,7 @@
 # One entry per rule. The app validates this file at startup and refuses to start if it is invalid.
 # Changing it bumps `version`; every interaction records the version it was approved under.
 
-version: "2026-10-30.1"
+version: "2026-10-30.2"
 
 capabilityMap:
   # capability: [roles that carry it]. System-wide; node-level overrides are a parked question.
@@ -148,6 +148,9 @@ rules:
     approvers:
       - one_of: TREASURER
       - one_of: OWNER
+    # In a collection, the Treasurer and the Owner must be two different people,
+    # so one person holding both roles can't approve a change alone.
+    distinct_people: true
   - id: R-FIN-12
     name: A currency someone has held can't be deleted, only retired; its decimals can't change once units exist
     type: precondition

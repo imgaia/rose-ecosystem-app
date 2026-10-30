@@ -1,13 +1,15 @@
 // scripts/backfill-v10.ts
 // Fills in step 10's new columns and tables on a database already on the v0.8
-// model, after scripts/migrations/v10-currencies.sql has been applied:
+// model, after scripts/migrations/v10-currencies.sql and v10-reserves.sql:
 //   - the fiat list (CHF, EUR), RCC backed by CHF, RCC's price row and
 //     today's CHF/EUR rate (prisma/reference-currencies.ts, as the seed does);
 //   - every node without a country gets CH;
 //   - home currency: RCC for the members migrated from Phase 1 (those with an
 //     opening balance) and for ROSE Org; the primary fiat for everyone else;
 //   - a node-level reserve ratio (R-FIN-01, now per currency) is copied onto
-//     each currency that node issues.
+//     each currency that node issues;
+//   - each existing reserve is marked with the currency it backs
+//     (after scripts/migrations/v10-reserves.sql).
 // Then it checks that every balance still equals the sum of its ledger rows.
 // Moves no money. Safe to run again: it only fills what is still empty.
 //
@@ -75,6 +77,19 @@ async function main() {
     }
   }
   if (ratios.length === 0) console.log("No node-level reserve ratios to copy.");
+
+  // One reserve per currency (v10-reserves.sql): an existing reserve backs the
+  // one currency its node issues in that fiat. If there are several, say so.
+  for (const reserve of await prisma.account.findMany({ where: { isReserve: true, backsCurrencyId: "" }, include: { node: true, currency: true } })) {
+    const backs = await prisma.currency.findMany({ where: { issuerNodeId: reserve.nodeId, reserveCurrencyId: reserve.currencyId } });
+    if (backs.length !== 1) {
+      console.log(`  UNMATCHED reserve of ${reserve.node.name} in ${reserve.currency.code}: it backs ${backs.length} currencies; left as it is`);
+      process.exitCode = 1;
+      continue;
+    }
+    await prisma.account.update({ where: { id: reserve.id }, data: { backsCurrencyId: backs[0]!.id } });
+    console.log(`Reserve of ${reserve.node.name} (${reserve.balance} ${reserve.currency.code} minor units) now backs ${backs[0]!.code}.`);
+  }
 
   // The check: every stored balance equals the sum of its ledger rows.
   const accounts = await prisma.account.findMany({ include: { node: { select: { name: true } }, currency: { select: { code: true } } } });

@@ -235,12 +235,15 @@ Three slices, one chat each. Stop at the end of each.
 
 ### 10a. Data, rules and core logic (no screens, local database only)
 
-**Status: done** · checked with the tests (160), type check, lint and build; applied to the local database only.
+**Status: done** · checked with the tests (163), type check, lint and build; applied to the local database only.
 
 - One change from the plan below, agreed when it came up: per-currency rule values live in a new table `CurrencyRuleValue` (currencyId, ruleId, value) instead of a currency column on NodeRuleValue. SQLite can't change NodeRuleValue's primary key without rebuilding the table, so this way `v10-currencies.sql` only creates tables and adds columns. Nothing is dropped or copied.
 - R-FIN-11's approvers are `one_of: TREASURER` and `one_of: OWNER`, a new kind of entry read by `proposals.ts`: each holder of the role is asked as themselves, and one approval among them is enough. Proposing counts for every entry the proposer meets, as in 6b, so a person who is both Treasurer and Owner of a collection applies a change at once.
 - Local database: backed up (`backup-local-2026-10-30T11-51-35-205Z.json`), SQL applied, then `scripts/backfill-v10.ts`: 11 nodes set to CH, RCC home currency for the 10 migrated members and ROSE Org, RCC price 1 CHF from the v0.8 migration, CHF/EUR 1.0844 from Frankfurter; all 20 balances equal their ledger.
 - `src/server/rates.json` is gone; every rate goes through `src/server/core/rates.ts`. The Exchange screen and `wallet.exchange` now run on `convert`; the screen gets its proper Convert form in 10b.
+- Follow-ups (`scripts/migrations/v10-reserves.sql`, after `v10-currencies.sql`):
+  - One reserve per currency. `Account.backsCurrencyId` says which currency a reserve backs ("" for other accounts), and the Account unique index now includes it. The index is dropped and recreated; no table is rebuilt. Convert, mint and `currencyBacking` (reserve, units in circulation, share backed) use the currency's own reserve. The backfill marks which currency each existing reserve backs.
+  - R-FIN-11 has `distinct_people: true`: in a collection the Treasurer and the Owner approving must be two different people, so a change is refused when only one person holds both roles. For an individual it still applies at once.
 
 Schema (`prisma/schema.prisma`, plus `scripts/migrations/v10-currencies.sql` generated for an existing v0.8 database, ALTERs only, no drops):
 - Node: `country` (ISO 3166 code, e.g. "CH"), `homeCurrencyId` (nullable, to Currency).
@@ -283,6 +286,6 @@ From the wireframes: Wallet (total in the home currency; buttons Convert, Add fu
 
 ### 10c. Move dev
 
-Back up dev; show the SQL, then apply `v10-currencies.sql` and the backfill to dev (DB_TARGET=dev), asking before each; check every balance is unchanged and equals its ledger; push dev and click through. Never DB_TARGET=production.
+Back up dev; show the SQL, then apply `v10-currencies.sql`, `v10-reserves.sql` and the backfill to dev (DB_TARGET=dev), asking before each; check every balance is unchanged and equals its ledger; push dev and click through. Never DB_TARGET=production.
 
 **Done when:** the dev site shows currencies, the home currency and conversion, with everyone's balances unchanged.

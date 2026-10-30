@@ -381,20 +381,24 @@ model ExchangeRate {
 }
 
 model Account {
-  id            String   @id @default(cuid())
-  nodeId        String
-  currencyId    String
-  balance       Int      @default(0) // minor units; always equals the sum of its transactions
-  isPrimaryFiat Boolean  @default(false)
-  isReserve     Boolean  @default(false) // locked reserve behind a community currency
-  createdAt     DateTime @default(now())
+  id              String   @id @default(cuid())
+  nodeId          String
+  currencyId      String
+  balance         Int      @default(0) // minor units; always equals the sum of its transactions
+  isPrimaryFiat   Boolean  @default(false)
+  isReserve       Boolean  @default(false) // locked reserve behind a community currency
+  // For a reserve: the currency it backs, so each currency has its own reserve
+  // (in its reserve fiat, held by its issuer). "" for every other account; not
+  // null, since SQLite would let two rows with a null here share the key.
+  backsCurrencyId String   @default("")
+  createdAt       DateTime @default(now())
 
   node     Node          @relation(fields: [nodeId], references: [id])
   currency Currency      @relation(fields: [currencyId], references: [id])
   outgoing Transaction[] @relation("From")
   incoming Transaction[] @relation("To")
 
-  @@unique([nodeId, currencyId, isReserve])
+  @@unique([nodeId, currencyId, isReserve, backsCurrencyId])
 }
 
 enum TransactionKind {

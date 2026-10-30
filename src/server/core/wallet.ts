@@ -98,7 +98,7 @@ export async function quoteMint(
 }
 
 /**
- * UC-FIN-05: lock the source amount in the node's reserve account (R-FIN-02)
+ * UC-FIN-05: lock the source amount in the currency's own reserve (R-FIN-02)
  * and credit the newly minted units. Two ledger rows sharing one groupId.
  */
 export async function mint(
@@ -109,7 +109,7 @@ export async function mint(
   return inTransaction(db, async (tx) => {
     await assertCan(tx, actor.personId, actor.actingNodeId, "MINT");
     const quote = await quoteMint(tx, actor, input);
-    const reserve = await reserveAccount(tx, actor.actingNodeId, quote.source.currencyId);
+    const reserve = await reserveAccount(tx, quote.currency);
     const units = await unitsAccount(tx, actor.actingNodeId, quote.currency.id);
 
     const groupId = randomUUID();

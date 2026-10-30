@@ -22699,6 +22699,7 @@ export namespace Prisma {
     balance: number | null
     isPrimaryFiat: boolean | null
     isReserve: boolean | null
+    backsCurrencyId: string | null
     createdAt: Date | null
   }
 
@@ -22709,6 +22710,7 @@ export namespace Prisma {
     balance: number | null
     isPrimaryFiat: boolean | null
     isReserve: boolean | null
+    backsCurrencyId: string | null
     createdAt: Date | null
   }
 
@@ -22719,6 +22721,7 @@ export namespace Prisma {
     balance: number
     isPrimaryFiat: number
     isReserve: number
+    backsCurrencyId: number
     createdAt: number
     _all: number
   }
@@ -22739,6 +22742,7 @@ export namespace Prisma {
     balance?: true
     isPrimaryFiat?: true
     isReserve?: true
+    backsCurrencyId?: true
     createdAt?: true
   }
 
@@ -22749,6 +22753,7 @@ export namespace Prisma {
     balance?: true
     isPrimaryFiat?: true
     isReserve?: true
+    backsCurrencyId?: true
     createdAt?: true
   }
 
@@ -22759,6 +22764,7 @@ export namespace Prisma {
     balance?: true
     isPrimaryFiat?: true
     isReserve?: true
+    backsCurrencyId?: true
     createdAt?: true
     _all?: true
   }
@@ -22856,6 +22862,7 @@ export namespace Prisma {
     balance: number
     isPrimaryFiat: boolean
     isReserve: boolean
+    backsCurrencyId: string
     createdAt: Date
     _count: AccountCountAggregateOutputType | null
     _avg: AccountAvgAggregateOutputType | null
@@ -22885,6 +22892,7 @@ export namespace Prisma {
     balance?: boolean
     isPrimaryFiat?: boolean
     isReserve?: boolean
+    backsCurrencyId?: boolean
     createdAt?: boolean
     node?: boolean | NodeDefaultArgs<ExtArgs>
     currency?: boolean | CurrencyDefaultArgs<ExtArgs>
@@ -22900,6 +22908,7 @@ export namespace Prisma {
     balance?: boolean
     isPrimaryFiat?: boolean
     isReserve?: boolean
+    backsCurrencyId?: boolean
     createdAt?: boolean
     node?: boolean | NodeDefaultArgs<ExtArgs>
     currency?: boolean | CurrencyDefaultArgs<ExtArgs>
@@ -22912,6 +22921,7 @@ export namespace Prisma {
     balance?: boolean
     isPrimaryFiat?: boolean
     isReserve?: boolean
+    backsCurrencyId?: boolean
     createdAt?: boolean
     node?: boolean | NodeDefaultArgs<ExtArgs>
     currency?: boolean | CurrencyDefaultArgs<ExtArgs>
@@ -22924,10 +22934,11 @@ export namespace Prisma {
     balance?: boolean
     isPrimaryFiat?: boolean
     isReserve?: boolean
+    backsCurrencyId?: boolean
     createdAt?: boolean
   }
 
-  export type AccountOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "nodeId" | "currencyId" | "balance" | "isPrimaryFiat" | "isReserve" | "createdAt", ExtArgs["result"]["account"]>
+  export type AccountOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "nodeId" | "currencyId" | "balance" | "isPrimaryFiat" | "isReserve" | "backsCurrencyId" | "createdAt", ExtArgs["result"]["account"]>
   export type AccountInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     node?: boolean | NodeDefaultArgs<ExtArgs>
     currency?: boolean | CurrencyDefaultArgs<ExtArgs>
@@ -22959,6 +22970,7 @@ export namespace Prisma {
       balance: number
       isPrimaryFiat: boolean
       isReserve: boolean
+      backsCurrencyId: string
       createdAt: Date
     }, ExtArgs["result"]["account"]>
     composites: {}
@@ -23393,6 +23405,7 @@ export namespace Prisma {
     readonly balance: FieldRef<"Account", 'Int'>
     readonly isPrimaryFiat: FieldRef<"Account", 'Boolean'>
     readonly isReserve: FieldRef<"Account", 'Boolean'>
+    readonly backsCurrencyId: FieldRef<"Account", 'String'>
     readonly createdAt: FieldRef<"Account", 'DateTime'>
   }
     
@@ -28566,6 +28579,7 @@ export namespace Prisma {
     balance: 'balance',
     isPrimaryFiat: 'isPrimaryFiat',
     isReserve: 'isReserve',
+    backsCurrencyId: 'backsCurrencyId',
     createdAt: 'createdAt'
   };
 
@@ -29978,6 +29992,7 @@ export namespace Prisma {
     balance?: IntFilter<"Account"> | number
     isPrimaryFiat?: BoolFilter<"Account"> | boolean
     isReserve?: BoolFilter<"Account"> | boolean
+    backsCurrencyId?: StringFilter<"Account"> | string
     createdAt?: DateTimeFilter<"Account"> | Date | string
     node?: XOR<NodeScalarRelationFilter, NodeWhereInput>
     currency?: XOR<CurrencyScalarRelationFilter, CurrencyWhereInput>
@@ -29992,6 +30007,7 @@ export namespace Prisma {
     balance?: SortOrder
     isPrimaryFiat?: SortOrder
     isReserve?: SortOrder
+    backsCurrencyId?: SortOrder
     createdAt?: SortOrder
     node?: NodeOrderByWithRelationInput
     currency?: CurrencyOrderByWithRelationInput
@@ -30001,7 +30017,7 @@ export namespace Prisma {
 
   export type AccountWhereUniqueInput = Prisma.AtLeast<{
     id?: string
-    nodeId_currencyId_isReserve?: AccountNodeIdCurrencyIdIsReserveCompoundUniqueInput
+    nodeId_currencyId_isReserve_backsCurrencyId?: AccountNodeIdCurrencyIdIsReserveBacksCurrencyIdCompoundUniqueInput
     AND?: AccountWhereInput | AccountWhereInput[]
     OR?: AccountWhereInput[]
     NOT?: AccountWhereInput | AccountWhereInput[]
@@ -30010,12 +30026,13 @@ export namespace Prisma {
     balance?: IntFilter<"Account"> | number
     isPrimaryFiat?: BoolFilter<"Account"> | boolean
     isReserve?: BoolFilter<"Account"> | boolean
+    backsCurrencyId?: StringFilter<"Account"> | string
     createdAt?: DateTimeFilter<"Account"> | Date | string
     node?: XOR<NodeScalarRelationFilter, NodeWhereInput>
     currency?: XOR<CurrencyScalarRelationFilter, CurrencyWhereInput>
     outgoing?: TransactionListRelationFilter
     incoming?: TransactionListRelationFilter
-  }, "id" | "nodeId_currencyId_isReserve">
+  }, "id" | "nodeId_currencyId_isReserve_backsCurrencyId">
 
   export type AccountOrderByWithAggregationInput = {
     id?: SortOrder
@@ -30024,6 +30041,7 @@ export namespace Prisma {
     balance?: SortOrder
     isPrimaryFiat?: SortOrder
     isReserve?: SortOrder
+    backsCurrencyId?: SortOrder
     createdAt?: SortOrder
     _count?: AccountCountOrderByAggregateInput
     _avg?: AccountAvgOrderByAggregateInput
@@ -30042,6 +30060,7 @@ export namespace Prisma {
     balance?: IntWithAggregatesFilter<"Account"> | number
     isPrimaryFiat?: BoolWithAggregatesFilter<"Account"> | boolean
     isReserve?: BoolWithAggregatesFilter<"Account"> | boolean
+    backsCurrencyId?: StringWithAggregatesFilter<"Account"> | string
     createdAt?: DateTimeWithAggregatesFilter<"Account"> | Date | string
   }
 
@@ -31583,6 +31602,7 @@ export namespace Prisma {
     balance?: number
     isPrimaryFiat?: boolean
     isReserve?: boolean
+    backsCurrencyId?: string
     createdAt?: Date | string
     node: NodeCreateNestedOneWithoutAccountsInput
     currency: CurrencyCreateNestedOneWithoutAccountsInput
@@ -31597,6 +31617,7 @@ export namespace Prisma {
     balance?: number
     isPrimaryFiat?: boolean
     isReserve?: boolean
+    backsCurrencyId?: string
     createdAt?: Date | string
     outgoing?: TransactionUncheckedCreateNestedManyWithoutFromInput
     incoming?: TransactionUncheckedCreateNestedManyWithoutToInput
@@ -31607,6 +31628,7 @@ export namespace Prisma {
     balance?: IntFieldUpdateOperationsInput | number
     isPrimaryFiat?: BoolFieldUpdateOperationsInput | boolean
     isReserve?: BoolFieldUpdateOperationsInput | boolean
+    backsCurrencyId?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     node?: NodeUpdateOneRequiredWithoutAccountsNestedInput
     currency?: CurrencyUpdateOneRequiredWithoutAccountsNestedInput
@@ -31621,6 +31643,7 @@ export namespace Prisma {
     balance?: IntFieldUpdateOperationsInput | number
     isPrimaryFiat?: BoolFieldUpdateOperationsInput | boolean
     isReserve?: BoolFieldUpdateOperationsInput | boolean
+    backsCurrencyId?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     outgoing?: TransactionUncheckedUpdateManyWithoutFromNestedInput
     incoming?: TransactionUncheckedUpdateManyWithoutToNestedInput
@@ -31633,6 +31656,7 @@ export namespace Prisma {
     balance?: number
     isPrimaryFiat?: boolean
     isReserve?: boolean
+    backsCurrencyId?: string
     createdAt?: Date | string
   }
 
@@ -31641,6 +31665,7 @@ export namespace Prisma {
     balance?: IntFieldUpdateOperationsInput | number
     isPrimaryFiat?: BoolFieldUpdateOperationsInput | boolean
     isReserve?: BoolFieldUpdateOperationsInput | boolean
+    backsCurrencyId?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -31651,6 +31676,7 @@ export namespace Prisma {
     balance?: IntFieldUpdateOperationsInput | number
     isPrimaryFiat?: BoolFieldUpdateOperationsInput | boolean
     isReserve?: BoolFieldUpdateOperationsInput | boolean
+    backsCurrencyId?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -33200,10 +33226,11 @@ export namespace Prisma {
     _max?: NestedEnumRateSourceFilter<$PrismaModel>
   }
 
-  export type AccountNodeIdCurrencyIdIsReserveCompoundUniqueInput = {
+  export type AccountNodeIdCurrencyIdIsReserveBacksCurrencyIdCompoundUniqueInput = {
     nodeId: string
     currencyId: string
     isReserve: boolean
+    backsCurrencyId: string
   }
 
   export type AccountCountOrderByAggregateInput = {
@@ -33213,6 +33240,7 @@ export namespace Prisma {
     balance?: SortOrder
     isPrimaryFiat?: SortOrder
     isReserve?: SortOrder
+    backsCurrencyId?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -33227,6 +33255,7 @@ export namespace Prisma {
     balance?: SortOrder
     isPrimaryFiat?: SortOrder
     isReserve?: SortOrder
+    backsCurrencyId?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -33237,6 +33266,7 @@ export namespace Prisma {
     balance?: SortOrder
     isPrimaryFiat?: SortOrder
     isReserve?: SortOrder
+    backsCurrencyId?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -35737,6 +35767,7 @@ export namespace Prisma {
     balance?: number
     isPrimaryFiat?: boolean
     isReserve?: boolean
+    backsCurrencyId?: string
     createdAt?: Date | string
     currency: CurrencyCreateNestedOneWithoutAccountsInput
     outgoing?: TransactionCreateNestedManyWithoutFromInput
@@ -35749,6 +35780,7 @@ export namespace Prisma {
     balance?: number
     isPrimaryFiat?: boolean
     isReserve?: boolean
+    backsCurrencyId?: string
     createdAt?: Date | string
     outgoing?: TransactionUncheckedCreateNestedManyWithoutFromInput
     incoming?: TransactionUncheckedCreateNestedManyWithoutToInput
@@ -36070,6 +36102,7 @@ export namespace Prisma {
     balance?: IntFilter<"Account"> | number
     isPrimaryFiat?: BoolFilter<"Account"> | boolean
     isReserve?: BoolFilter<"Account"> | boolean
+    backsCurrencyId?: StringFilter<"Account"> | string
     createdAt?: DateTimeFilter<"Account"> | Date | string
   }
 
@@ -38468,6 +38501,7 @@ export namespace Prisma {
     balance?: number
     isPrimaryFiat?: boolean
     isReserve?: boolean
+    backsCurrencyId?: string
     createdAt?: Date | string
     node: NodeCreateNestedOneWithoutAccountsInput
     outgoing?: TransactionCreateNestedManyWithoutFromInput
@@ -38480,6 +38514,7 @@ export namespace Prisma {
     balance?: number
     isPrimaryFiat?: boolean
     isReserve?: boolean
+    backsCurrencyId?: string
     createdAt?: Date | string
     outgoing?: TransactionUncheckedCreateNestedManyWithoutFromInput
     incoming?: TransactionUncheckedCreateNestedManyWithoutToInput
@@ -39410,6 +39445,7 @@ export namespace Prisma {
     balance?: number
     isPrimaryFiat?: boolean
     isReserve?: boolean
+    backsCurrencyId?: string
     createdAt?: Date | string
     node: NodeCreateNestedOneWithoutAccountsInput
     currency: CurrencyCreateNestedOneWithoutAccountsInput
@@ -39423,6 +39459,7 @@ export namespace Prisma {
     balance?: number
     isPrimaryFiat?: boolean
     isReserve?: boolean
+    backsCurrencyId?: string
     createdAt?: Date | string
     incoming?: TransactionUncheckedCreateNestedManyWithoutToInput
   }
@@ -39437,6 +39474,7 @@ export namespace Prisma {
     balance?: number
     isPrimaryFiat?: boolean
     isReserve?: boolean
+    backsCurrencyId?: string
     createdAt?: Date | string
     node: NodeCreateNestedOneWithoutAccountsInput
     currency: CurrencyCreateNestedOneWithoutAccountsInput
@@ -39450,6 +39488,7 @@ export namespace Prisma {
     balance?: number
     isPrimaryFiat?: boolean
     isReserve?: boolean
+    backsCurrencyId?: string
     createdAt?: Date | string
     outgoing?: TransactionUncheckedCreateNestedManyWithoutFromInput
   }
@@ -39512,6 +39551,7 @@ export namespace Prisma {
     balance?: IntFieldUpdateOperationsInput | number
     isPrimaryFiat?: BoolFieldUpdateOperationsInput | boolean
     isReserve?: BoolFieldUpdateOperationsInput | boolean
+    backsCurrencyId?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     node?: NodeUpdateOneRequiredWithoutAccountsNestedInput
     currency?: CurrencyUpdateOneRequiredWithoutAccountsNestedInput
@@ -39525,6 +39565,7 @@ export namespace Prisma {
     balance?: IntFieldUpdateOperationsInput | number
     isPrimaryFiat?: BoolFieldUpdateOperationsInput | boolean
     isReserve?: BoolFieldUpdateOperationsInput | boolean
+    backsCurrencyId?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     incoming?: TransactionUncheckedUpdateManyWithoutToNestedInput
   }
@@ -39545,6 +39586,7 @@ export namespace Prisma {
     balance?: IntFieldUpdateOperationsInput | number
     isPrimaryFiat?: BoolFieldUpdateOperationsInput | boolean
     isReserve?: BoolFieldUpdateOperationsInput | boolean
+    backsCurrencyId?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     node?: NodeUpdateOneRequiredWithoutAccountsNestedInput
     currency?: CurrencyUpdateOneRequiredWithoutAccountsNestedInput
@@ -39558,6 +39600,7 @@ export namespace Prisma {
     balance?: IntFieldUpdateOperationsInput | number
     isPrimaryFiat?: BoolFieldUpdateOperationsInput | boolean
     isReserve?: BoolFieldUpdateOperationsInput | boolean
+    backsCurrencyId?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     outgoing?: TransactionUncheckedUpdateManyWithoutFromNestedInput
   }
@@ -39867,6 +39910,7 @@ export namespace Prisma {
     balance?: number
     isPrimaryFiat?: boolean
     isReserve?: boolean
+    backsCurrencyId?: string
     createdAt?: Date | string
   }
 
@@ -39978,6 +40022,7 @@ export namespace Prisma {
     balance?: IntFieldUpdateOperationsInput | number
     isPrimaryFiat?: BoolFieldUpdateOperationsInput | boolean
     isReserve?: BoolFieldUpdateOperationsInput | boolean
+    backsCurrencyId?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     currency?: CurrencyUpdateOneRequiredWithoutAccountsNestedInput
     outgoing?: TransactionUpdateManyWithoutFromNestedInput
@@ -39990,6 +40035,7 @@ export namespace Prisma {
     balance?: IntFieldUpdateOperationsInput | number
     isPrimaryFiat?: BoolFieldUpdateOperationsInput | boolean
     isReserve?: BoolFieldUpdateOperationsInput | boolean
+    backsCurrencyId?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     outgoing?: TransactionUncheckedUpdateManyWithoutFromNestedInput
     incoming?: TransactionUncheckedUpdateManyWithoutToNestedInput
@@ -40001,6 +40047,7 @@ export namespace Prisma {
     balance?: IntFieldUpdateOperationsInput | number
     isPrimaryFiat?: BoolFieldUpdateOperationsInput | boolean
     isReserve?: BoolFieldUpdateOperationsInput | boolean
+    backsCurrencyId?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -40603,6 +40650,7 @@ export namespace Prisma {
     balance?: number
     isPrimaryFiat?: boolean
     isReserve?: boolean
+    backsCurrencyId?: string
     createdAt?: Date | string
   }
 
@@ -40776,6 +40824,7 @@ export namespace Prisma {
     balance?: IntFieldUpdateOperationsInput | number
     isPrimaryFiat?: BoolFieldUpdateOperationsInput | boolean
     isReserve?: BoolFieldUpdateOperationsInput | boolean
+    backsCurrencyId?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     node?: NodeUpdateOneRequiredWithoutAccountsNestedInput
     outgoing?: TransactionUpdateManyWithoutFromNestedInput
@@ -40788,6 +40837,7 @@ export namespace Prisma {
     balance?: IntFieldUpdateOperationsInput | number
     isPrimaryFiat?: BoolFieldUpdateOperationsInput | boolean
     isReserve?: BoolFieldUpdateOperationsInput | boolean
+    backsCurrencyId?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     outgoing?: TransactionUncheckedUpdateManyWithoutFromNestedInput
     incoming?: TransactionUncheckedUpdateManyWithoutToNestedInput
@@ -40799,6 +40849,7 @@ export namespace Prisma {
     balance?: IntFieldUpdateOperationsInput | number
     isPrimaryFiat?: BoolFieldUpdateOperationsInput | boolean
     isReserve?: BoolFieldUpdateOperationsInput | boolean
+    backsCurrencyId?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 

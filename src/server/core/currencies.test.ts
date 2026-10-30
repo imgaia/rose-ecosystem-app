@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   convert,
+  currencyBacking,
   homeCurrencyOf,
   proposeCurrencyChange,
   quoteConvert,
@@ -30,8 +31,10 @@ const as = (person: { id: string }, node: { id: string } = person): Actor => ({ 
 const approve = (person: { id: string }, proposalId: string, yes = true) =>
   decideProposal(t.db, { proposalId, approverNodeId: person.id, personId: person.id, approve: yes });
 const refusal = (call: Promise<unknown>) => call.then(() => null, (e: unknown) => e as RuleError);
-const accountOf = (nodeId: string, currencyId: string, isReserve = false) =>
-  t.db.account.findUnique({ where: { nodeId_currencyId_isReserve: { nodeId, currencyId, isReserve } } });
+const accountOf = (nodeId: string, currencyId: string) =>
+  t.db.account.findUnique({ where: { nodeId_currencyId_isReserve_backsCurrencyId: { nodeId, currencyId, isReserve: false, backsCurrencyId: "" } } });
+/** The reserve behind a currency: what its balance is, or null if nothing has gone in yet. */
+const reserveOf = async (currencyId: string) => (await t.db.account.findFirst({ where: { isReserve: true, backsCurrencyId: currencyId } }))?.balance ?? null;
 
 /** An individual creates a currency: it applies at once (R-FIN-11, both roles are the person). */
 async function ownCurrency(issuer: { id: string }, code: string, extra: { reserveRatio?: string; policy?: "reserve" | "open" } = {}) {
@@ -102,6 +105,35 @@ describe("creating and changing a currency (R-FIN-11, R-FIN-12)", () => {
     expect(await t.db.currency.findFirst({ where: { issuerNodeId: col.id } })).toBeNull();
     await approve(olga!, p.id);
     expect(await t.db.currency.findFirst({ where: { issuerNodeId: col.id } })).toMatchObject({ code: "ORG" });
+  });
+
+  it("in a collection needs two different people: one person holding both roles can't do it alone (distinct_people)", async () => {
+    const [olga, tim] = [await t.person("Olga"), await t.person("Tim")];
+    const create = { action: "CREATE" as const, fields: { name: "Solo coin", code: "SOLO" } };
+
+    // Olga is the only Treasurer and the only Owner: no second person could ever approve.
+    const alone = await t.collection("Alone", [{ node: olga, roles: ["MEMBER", "OWNER", "TREASURER"] }]);
+    const refused = await refusal(proposeCurrencyChange(t.db, as(olga, alone), create));
+    expect(refused?.ruleIds).toEqual(["R-FIN-11"]);
+    expect(refused?.message).toMatch(/different person/);
+
+    // With Tim as a second Treasurer, Olga's proposal is her approval as Owner, and waits for Tim.
+    const col = await t.collection("Pair", [
+      { node: olga, roles: ["MEMBER", "OWNER", "TREASURER"] },
+      { node: tim, roles: ["MEMBER", "TREASURER"] },
+    ]);
+    const p = await proposeCurrencyChange(t.db, as(olga, col), create);
+    expect(p.status).toBe("OPEN");
+    expect(await t.db.currency.findFirst({ where: { issuerNodeId: col.id } })).toBeNull();
+    expect((await approve(tim, p.id)).status).toBe("APPROVED");
+    expect(await t.db.currency.findFirst({ where: { issuerNodeId: col.id } })).toMatchObject({ code: "SOLO" });
+  });
+
+  it("for an individual still applies at once, though one person is both Treasurer and Owner", async () => {
+    const ana = await t.person("Ana");
+    const p = await proposeCurrencyChange(t.db, as(ana), { action: "CREATE", fields: { name: "Mine", code: "MINE" } });
+    expect(p.status).toBe("APPROVED");
+    expect(p.approvers.map((a) => [a.approverNodeId, a.decision])).toEqual([[ana.id, true]]);
   });
 
   it("an Owner's decline closes it", async () => {
@@ -177,8 +209,8 @@ describe("converting (UC-FIN-03, R-FIN-10, R-FIN-14)", () => {
 
     expect(await t.balanceOf(cat.id, aaa.id)).toBe(0);
     expect(await t.balanceOf(cat.id, bbb.id)).toBe(2_000);
-    expect((await accountOf(ana.id, t.chf.id, true))!.balance).toBe(1_000); // 10.00 CHF left Ana's reserve
-    expect((await accountOf(ben.id, t.chf.id, true))!.balance).toBe(1_000); // and went into Ben's
+    expect(await reserveOf(aaa.id)).toBe(1_000); // 10.00 CHF left AAA's reserve
+    expect(await reserveOf(bbb.id)).toBe(1_000); // and went into BBB's
     expect(await t.balancesNotMatchingLedger()).toEqual([]);
   });
 
@@ -194,7 +226,7 @@ describe("converting (UC-FIN-03, R-FIN-10, R-FIN-14)", () => {
     const sold = await convert(t.db, as(ben), { fromAccountId: units.id, toCurrencyId: t.chf.id, amount: 200 });
     expect(sold.rows).toHaveLength(2);
     expect(await t.balanceOf(ben.id, t.chf.id)).toBe(400);
-    expect((await accountOf(ana.id, t.chf.id, true))!.balance).toBe(600);
+    expect(await reserveOf(coin.id)).toBe(600);
     expect(await t.balancesNotMatchingLedger()).toEqual([]);
   });
 
@@ -223,8 +255,37 @@ describe("converting (UC-FIN-03, R-FIN-10, R-FIN-14)", () => {
     expect(rows).toHaveLength(2);
     expect(await t.balanceOf(ana.id, aaa.id)).toBe(200);
     expect(await t.balanceOf(ana.id, bbb.id)).toBe(800);
-    expect((await accountOf(ana.id, t.chf.id, true))!.balance).toBe(500); // the reserve didn't move
-    expect(await accountOf(ben.id, t.chf.id, true)).toBeNull();
+    expect(await reserveOf(aaa.id)).toBe(500); // the reserve didn't move
+    expect(await reserveOf(bbb.id)).toBeNull();
+    expect(await t.balancesNotMatchingLedger()).toEqual([]);
+  });
+
+  it("gives each currency its own reserve: converting out of one leaves the other's backing untouched", async () => {
+    const [ana, ben] = await Promise.all([t.person("Ana"), t.person("Ben")]);
+    const one = await ownCurrency(ana, "ONE");
+    const two = await ownCurrency(ana, "TWO"); // same issuer, same reserve fiat (CHF)
+    await backed(ana, one.id, 1_000);
+    await backed(ana, two.id, 3_000);
+    expect([await reserveOf(one.id), await reserveOf(two.id)]).toEqual([1_000, 3_000]);
+    expect(await currencyBacking(t.db, one.id)).toMatchObject({ reserve: 1_000, units: 1_000, value: 1_000, shareBacked: 1 });
+
+    // Ben buys 4.00 ONE; then Ana and Ben cash all 14.00 ONE out, which empties ONE's reserve only.
+    const benChf = await fundChf(ben.id, 400);
+    await convert(t.db, as(ben), { fromAccountId: benChf.id, toCurrencyId: one.id, amount: 400 });
+    expect(await reserveOf(one.id)).toBe(1_400);
+    const anaOne = (await accountOf(ana.id, one.id))!;
+    await convert(t.db, as(ana), { fromAccountId: anaOne.id, toCurrencyId: t.chf.id, amount: 1_000 });
+    const benOne = (await accountOf(ben.id, one.id))!;
+    await convert(t.db, as(ben), { fromAccountId: benOne.id, toCurrencyId: t.chf.id, amount: 400 });
+
+    expect(await reserveOf(one.id)).toBe(0);
+    expect(await reserveOf(two.id)).toBe(3_000); // TWO's backing is untouched
+    expect(await currencyBacking(t.db, two.id)).toMatchObject({ reserve: 3_000, units: 3_000, shareBacked: 1 });
+    // ONE's reserve is empty: unbacked ONE can't be cashed out against TWO's reserve, though it holds CHF.
+    await postTransaction(t.db, { kind: "OPENING_BALANCE", toAccountId: anaOne.id, amount: 500, comment: "Unbacked", actedByPersonId: ana.id });
+    const drain = await refusal(convert(t.db, as(ana), { fromAccountId: anaOne.id, toCurrencyId: t.chf.id, amount: 500 }));
+    expect(drain?.ruleIds).toEqual(["R-FIN-10"]);
+    expect(await reserveOf(two.id)).toBe(3_000);
     expect(await t.balancesNotMatchingLedger()).toEqual([]);
   });
 
@@ -250,12 +311,12 @@ describe("home currency and primary fiat (R-FIN-04, R-FIN-13)", () => {
     const [olga, tim] = [await t.person("Olga"), await t.person("Tim")];
     const col = await t.collection("Org", [
       { node: olga, roles: ["MEMBER", "OWNER", "TREASURER"] },
-      { node: tim, roles: ["MEMBER"] },
+      { node: tim, roles: ["MEMBER", "TREASURER"] },
     ]);
     expect((await homeCurrencyOf(t.db, tim.id)).id).toBe(t.chf.id); // country CH, nothing set
 
     const p = await proposeCurrencyChange(t.db, as(olga, col), { action: "CREATE", fields: { name: "Org coin", code: "OC" } });
-    expect(p.status).toBe("APPROVED"); // Olga is both Treasurer and Owner: proposing is both approvals
+    await approve(tim, p.id);
     const oc = await t.db.currency.findFirstOrThrow({ where: { issuerNodeId: col.id } });
 
     // Someone outside the collection can't make its currency their home currency.

@@ -1,6 +1,6 @@
 // src/server/core/test-helpers.ts
 // For tests only. Builds a throwaway SQLite database in the system temp
-// folder from scripts/migrations/v08-schema.sql plus v10-currencies.sql (so
+// folder from scripts/migrations/v08-schema.sql plus the v10 files (so
 // the step 10 migration is exercised too), so tests never touch the
 // local, dev or production databases. Plus small helpers to make people,
 // collections and funded accounts.
@@ -19,7 +19,7 @@ export async function createTestDb() {
   const url = `file:${path.join(dir, "test.db")}`;
 
   const client = createClient({ url });
-  for (const file of ["v08-schema.sql", "v10-currencies.sql"]) {
+  for (const file of ["v08-schema.sql", "v10-currencies.sql", "v10-reserves.sql"]) {
     await client.executeMultiple(readFileSync(path.join(process.cwd(), "scripts/migrations", file), "utf-8"));
   }
   client.close();
@@ -86,7 +86,7 @@ export async function createTestDb() {
 
   async function balanceOf(nodeId: string, currencyId: string) {
     const acc = await db.account.findUnique({
-      where: { nodeId_currencyId_isReserve: { nodeId, currencyId, isReserve: false } },
+      where: { nodeId_currencyId_isReserve_backsCurrencyId: { nodeId, currencyId, isReserve: false, backsCurrencyId: "" } },
     });
     return acc?.balance ?? 0;
   }

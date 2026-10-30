@@ -288,6 +288,7 @@ exports.Prisma.AccountScalarFieldEnum = {
   balance: 'balance',
   isPrimaryFiat: 'isPrimaryFiat',
   isReserve: 'isReserve',
+  backsCurrencyId: 'backsCurrencyId',
   createdAt: 'createdAt'
 };
 

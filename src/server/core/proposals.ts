@@ -16,6 +16,8 @@
 // with declines counted as R-GOV-06 says, so a node can set its own values.
 // A `one_of` entry (R-FIN-11's "a Treasurer and an Owner") asks every holder
 // of a role as themselves, and any one of them approving is enough for it.
+// With the rule's `distinct_people`, each one_of entry needs a different
+// person (in a collection; an individual is every role at once).
 
 import type { Proposal, ProposalKind } from "../../../generated/prisma";
 import { getRule, type ApproverSpec } from "~/server/rules";
@@ -55,6 +57,22 @@ export interface Approval {
   main?: string[];
   /** One list per one_of entry: any one of its nodes approving is enough for that entry. */
   oneOf?: string[][];
+  /** The one_of entries must each be met by a different node (the rule's distinct_people, in a collection). */
+  distinctPeople?: boolean;
+}
+
+/**
+ * Can every one_of entry be met by a node for which `ok` holds, using a
+ * different node for each entry when `distinct`? Tries each way of
+ * assigning nodes; there are only ever a few entries.
+ */
+function coverable(oneOf: string[][], ok: (id: string) => boolean, distinct: boolean, used = new Set<string>()): boolean {
+  const [first, ...rest] = oneOf;
+  if (!first) return true;
+  return first.some((id) => {
+    if (!ok(id) || (distinct && used.has(id))) return false;
+    return coverable(rest, ok, distinct, new Set([...used, id]));
+  });
 }
 
 export interface CreateProposalInput {
@@ -102,13 +120,14 @@ function outcome(proposal: Proposal, rows: { approverNodeId: string; decision: b
   const main = approval?.main ?? rows.map((r) => r.approverNodeId);
   const needed = approval?.needed ?? main.length;
   const oneOf = approval?.oneOf ?? [];
+  const distinct = approval?.distinctPeople ?? false;
 
   const approved = main.filter((id) => decision(id) === true).length;
-  if (approved >= needed && oneOf.every((ids) => ids.some((id) => decision(id) === true))) return "APPROVED";
+  if (approved >= needed && coverable(oneOf, (id) => decision(id) === true, distinct)) return "APPROVED";
 
   if (!rows.some((r) => r.decision === false)) return "OPEN";
   const declined = main.filter((id) => decision(id) === false).length;
-  const unreachable = main.length - declined < needed || oneOf.some((ids) => ids.every((id) => decision(id) === false));
+  const unreachable = main.length - declined < needed || !coverable(oneOf, (id) => decision(id) !== false, distinct);
   return (approval?.declines ?? "unreachable") === "any_closes" || unreachable ? "DECLINED" : "OPEN";
 }
 
@@ -165,6 +184,15 @@ async function readApproval(tx: Tx, input: ApprovalRule): Promise<Approval> {
   }
   if (Object.keys(deciders).length === 0) throw new RuleError("No one is left to approve this", [input.approversRuleId]);
 
+  // distinct_people (R-FIN-11): each one_of entry by a different person. Only
+  // in a collection: an individual holds every role itself.
+  const scope = await tx.node.findUniqueOrThrow({ where: { id: input.scopeNodeId }, select: { kind: true } });
+  const distinctPeople = !!approversRule?.distinct_people && scope.kind === "COLLECTION" && oneOf.length > 1;
+  if (distinctPeople && !coverable(oneOf, () => true, true)) {
+    const roleNames = specs.flatMap((s) => (typeof s === "object" && "one_of" in s ? [s.one_of] : [])).join(" and ");
+    throw new RuleError(`This needs a different person for each of: ${roleNames}`, [input.approversRuleId]);
+  }
+
   return {
     ruleIds: [...new Set([input.approversRuleId, input.shareRuleId, "R-GOV-06"].filter((id): id is string => !!id))],
     needed: main.size === 0 ? 0 : Math.max(1, Math.ceil(share * main.size)),
@@ -172,6 +200,7 @@ async function readApproval(tx: Tx, input: ApprovalRule): Promise<Approval> {
     deciders,
     main: [...main],
     ...(oneOf.length > 0 ? { oneOf } : {}),
+    ...(distinctPeople ? { distinctPeople } : {}),
   };
 }
 
