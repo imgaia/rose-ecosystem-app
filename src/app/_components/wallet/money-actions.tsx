@@ -165,7 +165,9 @@ export function Convert({ fromAccountId: initialFrom, toCurrencyId: initialTo }:
       )}
       {q && (
         <p className="text-xs text-rose-muted">
-          {q.mode === "RESERVES"
+          {q.mode === "MINT"
+            ? `A mint: ${money(q.value, q.fiat)} is locked in ${to?.code}'s reserve and new ${to?.code} is created at its reserve ratio, as on Mint (R-FIN-01, R-FIN-02).`
+            : q.mode === "RESERVES"
             ? `Through the reserves: ${money(q.value, q.fiat)} moves ${from?.currency.kind === "FIAT" ? "from your account" : `out of ${from?.currency.code}'s reserve`} ${to?.kind === "FIAT" ? "to your account" : `into ${to?.code}'s reserve`}. What you receive is rounded down.`
             : "A straight swap at the price, beyond the reserve: both currencies are open, so no fiat moves (R-FIN-10)."}
         </p>
@@ -227,13 +229,10 @@ function CurrenciesTable({ fromCurrencyId, into }: { fromCurrencyId: string | un
                 className={`-mx-2 flex flex-col gap-1 rounded-lg border-t border-rose-border px-2 py-2 text-sm ${i === 0 ? "max-[399px]:border-t-0" : ""} ${grid} ${selected ? "bg-rose-accent/10 ring-1 ring-rose-accent/50" : ""}`}
               >
                 <span role="cell" className="flex flex-col">
-                  <span>
-                    <span className="font-semibold">{sym(r.currency)}</span>
-                    {r.currency.code && <span className="text-rose-muted"> · {r.currency.name}</span>}
-                  </span>
+                  <span className="font-semibold">{sym(r.currency)}</span>
+                  {r.currency.code && <span className="text-xs text-rose-muted">{r.currency.name}</span>}
                   <span className="text-xs text-rose-muted">
-                    {r.balance === null ? "Not held" : `${formatAmount(r.balance, r.currency.decimals)} held`}
-                    {selected && " · From"}
+                    {r.balance ? `Balance: ${formatAmount(r.balance, r.currency.decimals)}` : "Not held"}
                   </span>
                 </span>
                 <span role="cell" className="flex flex-col">
@@ -253,11 +252,9 @@ function CurrenciesTable({ fromCurrencyId, into }: { fromCurrencyId: string | un
                   ) : r.into.rate !== null ? (
                     <span>{rateLine(sym(r.currency), r.into.rate, into)}</span>
                   ) : (
-                    <span title={r.into.refused.message}>
-                      —{" "}
-                      <span className="text-xs text-rose-muted">
-                        {r.into.refused.ruleIds.length > 0 ? r.into.refused.ruleIds.join(", ") : r.into.refused.message}
-                      </span>
+                    <span title={r.into.refused.message} className="text-rose-muted">
+                      Not available: {r.into.refused.reason}
+                      {r.into.refused.ruleIds.length > 0 && <span className="text-xs whitespace-nowrap"> · {r.into.refused.ruleIds.join(", ")}</span>}
                     </span>
                   )}
                 </span>

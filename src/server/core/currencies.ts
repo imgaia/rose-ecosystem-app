@@ -490,21 +490,37 @@ export async function quoteConvert(db: Db, actor: Actor, input: ConvertInput) {
  * Convert screen's table asks about one unit, whatever is held).
  */
 async function quoteBetween(db: Db, nodeId: string, a: Currency, b: Currency, amount: number, available: number | null) {
-  if (a.id === b.id) throw new RuleError("Pick a different currency to convert into");
-  if (a.kind === "FIAT" && b.kind === "FIAT") throw new RuleError("Fiat is never converted into another fiat", ["R-FIN-14"]);
-  if (b.status === "RETIRED") throw new RuleError(`${label(b)} is retired: no new units`, ["R-FIN-12"]);
-  if (available !== null && available < amount) throw new RuleError(`Not enough ${label(a)} to convert`);
+  if (a.id === b.id) throw refuse("same currency", "Pick a different currency to convert into");
+  if (a.kind === "FIAT" && b.kind === "FIAT") throw refuse("fiat into fiat", "Fiat is never converted into another fiat", ["R-FIN-14"]);
+  if (b.status === "RETIRED") throw refuse(`${label(b)} is retired`, `${label(b)} is retired: no new units`, ["R-FIN-12"]);
+  if (available !== null && available < amount) throw refuse("balance too low", `Not enough ${label(a)} to convert`);
   for (const c of [a, b]) {
     if (c.kind === "COMMUNITY" && (!c.issuerNodeId || !c.reserveCurrencyId)) {
-      throw new RuleError(`${label(c)} has no issuer or reserve to convert through`, ["R-FIN-02"]);
+      throw refuse("no reserve", `${label(c)} has no issuer or reserve to convert through`, ["R-FIN-02"]);
     }
-  }
-  if (a.kind === "FIAT" && b.issuerNodeId === nodeId) {
-    throw new RuleError("This node issues that currency: use Mint instead", ["R-FIN-02"]);
   }
   if (b.issuerNodeId) {
     const issuer = await db.node.findUniqueOrThrow({ where: { id: b.issuerNodeId }, select: { name: true, status: true } });
-    if (issuer.status !== "ACTIVE") throw new RuleError(`${issuer.name} is not active`);
+    if (issuer.status !== "ACTIVE") throw refuse("issuer not active", `${issuer.name} is not active`);
+  }
+
+  // Fiat into the node's own currency is a mint (UC-FIN-05): the fiat goes into the
+  // currency's own reserve (R-FIN-02) and new units are created at its ratio (R-FIN-01).
+  if (a.kind === "FIAT" && b.issuerNodeId === nodeId) {
+    if (a.id !== b.reserveCurrencyId) throw refuse("different fiat", `Mint ${label(b)} from its reserve fiat`, ["R-FIN-14"]);
+    const rate = mintRate(await reserveRatio(db, b.id));
+    const receive = applyRate(amount, a.decimals, b.decimals, rate);
+    if (receive <= 0) throw refuse("amount too small", "That amount is too small to mint anything");
+    return {
+      currency: b,
+      amount,
+      rate: rate.text,
+      mode: "MINT" as const,
+      receive,
+      fiat: a,
+      value: amount, // the fiat locked in the reserve
+      summary: `${money(amount, a)} locked in reserve → ${money(receive, b)} minted`,
+    };
   }
 
   const rate = await getRate(db, a.id, b.id);
@@ -513,9 +529,9 @@ async function quoteBetween(db: Db, nodeId: string, a: Currency, b: Currency, am
   const base = { currency: b, amount, rate: rate.text };
 
   // Through the reserves: needs one fiat behind both (R-FIN-14), and enough in A's own reserve (R-FIN-10).
-  let blocked: RuleError;
+  let blocked: Refusal;
   if (fiatA !== fiatB) {
-    blocked = new RuleError(`${label(a)} and ${label(b)} are backed by different fiats, so they can't convert through their reserves`, [
+    blocked = refuse("backed by different fiats", `${label(a)} and ${label(b)} are backed by different fiats, so they can't convert through their reserves`, [
       "R-FIN-14",
     ]);
   } else {
@@ -524,7 +540,7 @@ async function quoteBetween(db: Db, nodeId: string, a: Currency, b: Currency, am
     const value = priceA ? applyRate(amount, a.decimals, fiat.decimals, priceA) : amount;
     const intoB = b.kind === "FIAT" ? null : await getRate(db, fiat.id, b.id);
     const receive = intoB ? applyRate(value, fiat.decimals, b.decimals, intoB) : value;
-    if (value <= 0 || receive <= 0) throw new RuleError("That amount is too small to convert");
+    if (value <= 0 || receive <= 0) throw refuse("amount too small", "That amount is too small to convert");
 
     const reserveA = a.kind === "FIAT" ? null : await reserveBalance(db, a);
     if (reserveA === null || reserveA >= value) {
@@ -539,7 +555,11 @@ async function quoteBetween(db: Db, nodeId: string, a: Currency, b: Currency, am
         summary: `${money(amount, a)} → ${money(receive, b)}`,
       };
     }
-    blocked = new RuleError(`${label(a)}'s reserve holds ${money(reserveA, fiat)}, not enough to cover ${money(value, fiat)}`, ["R-FIN-10"]);
+    blocked = refuse(
+      reserveA === 0 ? "reserve empty" : "reserve too low",
+      `${label(a)}'s reserve holds ${money(reserveA, fiat)}, not enough to cover ${money(value, fiat)}`,
+      ["R-FIN-10"],
+    );
   }
 
   // Beyond the reserve: a straight swap at the price, only if both currencies are open (R-FIN-10).
@@ -549,13 +569,19 @@ async function quoteBetween(db: Db, nodeId: string, a: Currency, b: Currency, am
     (await conversionPolicy(db, a.id)) === "open" &&
     (await conversionPolicy(db, b.id)) === "open";
   if (!bothOpen) {
-    throw new RuleError(`${blocked.message}; a straight swap beyond the reserve needs both currencies open`, [
+    throw refuse(blocked.short, `${blocked.message}; a straight swap beyond the reserve needs both currencies open`, [
       ...new Set([...blocked.ruleIds, "R-FIN-10"]),
     ]);
   }
   const receive = applyRate(amount, a.decimals, b.decimals, rate);
-  if (receive <= 0) throw new RuleError("That amount is too small to convert");
+  if (receive <= 0) throw refuse("amount too small", "That amount is too small to convert");
   return { ...base, mode: "SWAP" as const, receive, summary: `${money(amount, a)} → ${money(receive, b)} (straight swap)` };
+}
+
+/** A conversion refusal with a few plain words for the Convert table ("reserve empty"), beside the full message. */
+type Refusal = RuleError & { short: string };
+function refuse(short: string, message: string, ruleIds: string[] = []): Refusal {
+  return Object.assign(new RuleError(message, ruleIds), { short });
 }
 
 /** One row of the Convert screen's table. `into` is null for the target currency itself. */
@@ -564,7 +590,7 @@ export interface ConvertTableRow {
   balance: number | null; // null: not held (the target currency, listed anyway)
   price: { rate: string; fiat: Currency } | null; // R-FIN-01, in its reserve fiat; null for fiat
   fiatRate: { rate: string; primary: Currency } | null; // a fiat other than the primary fiat: 1 of it in the primary fiat
-  into: { rate: string } | { refused: RuleError } | null;
+  into: { rate: string } | { refused: RuleError; reason: string } | null;
 }
 
 /**
@@ -591,7 +617,7 @@ export async function convertTable(db: Db, nodeId: string, intoCurrencyId: strin
           row = { rate: (await quoteBetween(db, nodeId, currency, into, 10 ** currency.decimals, null)).rate };
         } catch (err) {
           if (!(err instanceof RuleError)) throw err;
-          row = { refused: err };
+          row = { refused: err, reason: "short" in err && typeof err.short === "string" ? err.short : err.message };
         }
       }
       return { currency, balance, price: await priceOf(db, currency.id), fiatRate, into: row };
@@ -615,6 +641,19 @@ export async function convert(db: Db, actor: Actor, input: ConvertInput & { comm
     const quote = await quoteConvert(tx, actor, input);
     const a = quote.from.currency;
     const b = quote.currency;
+    if (quote.mode === "MINT") {
+      // Exactly what Mint writes (UC-FIN-05), so it also needs the MINT capability.
+      await assertCan(tx, actor.personId, actor.actingNodeId, "MINT");
+      const { groupId, locked, minted } = await postMint(tx, actor, {
+        sourceAccountId: quote.from.id,
+        currency: b,
+        amount: quote.amount,
+        units: quote.receive,
+        rate: quote.rate,
+        comment: textOrNull(input.comment) ?? `Mint: ${quote.summary}`,
+      });
+      return { groupId, mode: quote.mode, receive: quote.receive, rows: [locked, minted] };
+    }
     const who = (await tx.node.findUniqueOrThrow({ where: { id: actor.actingNodeId }, select: { name: true } })).name;
     const base = {
       kind: "EXCHANGE" as const,
@@ -684,6 +723,25 @@ export async function convert(db: Db, actor: Actor, input: ConvertInput & { comm
     }
     return { groupId: base.groupId, mode: quote.mode, receive: quote.receive, rows };
   });
+}
+
+/**
+ * UC-FIN-05's two ledger rows, sharing one groupId: the fiat locked in the
+ * currency's own reserve (R-FIN-02), and the new units credited to the node.
+ * Used by Mint and by Convert from fiat into the node's own currency.
+ */
+export async function postMint(
+  tx: Tx,
+  actor: Actor,
+  m: { sourceAccountId: string; currency: Currency; amount: number; units: number; rate: string; comment: string },
+) {
+  const reserve = await reserveAccount(tx, m.currency);
+  const units = await unitsAccount(tx, actor.actingNodeId, m.currency.id);
+  const groupId = randomUUID();
+  const base = { kind: "MINT", comment: m.comment, groupId, rate: m.rate, actedByPersonId: actor.personId } as const;
+  const locked = await postTransaction(tx, { ...base, fromAccountId: m.sourceAccountId, toAccountId: reserve.id, amount: m.amount });
+  const minted = await postTransaction(tx, { ...base, toAccountId: units.id, amount: m.units });
+  return { groupId, locked, minted };
 }
 
 // ───────────────────────── Helpers ─────────────────────────

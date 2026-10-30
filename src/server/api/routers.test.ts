@@ -233,9 +233,11 @@ describe("wallet", () => {
     // Only fiat can be minted from, and reserves are locked.
     expect((await refused(as(tess).wallet.mint({ ...input, sourceAccountId: rcc.id }))).ruleIds).toEqual(["R-FIN-02"]);
     expect((await refused(as(tess).wallet.mint({ ...input, sourceAccountId: reserve.id }))).ruleIds).toEqual(["R-FIN-02"]);
-    // Buying your own currency is minting, not exchange.
-    const own = await refused(as(tess).wallet.convert({ actingNodeId: rose.id, fromAccountId: chf.id, toCurrencyId: t.rcc.id, amount: 100 }));
-    expect(own.message).toMatch(/use Mint/);
+    // Converting fiat into your own currency is a mint: the same two MINT rows into the same reserve.
+    const own = await as(tess).wallet.convert({ actingNodeId: rose.id, fromAccountId: chf.id, toCurrencyId: t.rcc.id, amount: 100 });
+    expect(own.mode).toBe("MINT");
+    expect(own.rows.map((r) => r.kind)).toEqual(["MINT", "MINT"]);
+    expect((await t.db.account.findUniqueOrThrow({ where: { id: reserve.id } })).balance).toBe(4_100);
     await t.db.currency.update({ where: { id: t.rcc.id }, data: { issuerNodeId: null } });
   });
 

@@ -307,6 +307,37 @@ describe("converting (UC-FIN-03, R-FIN-10, R-FIN-14)", () => {
     expect(blocked?.ruleIds).toEqual(["R-FIN-14", "R-FIN-10"]);
   });
 
+  it("converting fiat into the node's own currency is a mint: same rows, same reserve, its ratio", async () => {
+    const ana = await t.person("Ana");
+    const coin = await ownCurrency(ana, "MNT", { reserveRatio: "0.5" }); // 1 MNT = 0.50 CHF
+    const chf = await fundChf(ana.id, 2_000);
+
+    // The table shows the rate (1 CHF = 2 MNT) where it used to refuse.
+    const rows = await convertTable(t.db, ana.id, coin.id);
+    expect(rows.find((r) => r.currency.id === t.chf.id)?.into).toEqual({ rate: "2" });
+
+    const input = { fromAccountId: chf.id, toCurrencyId: coin.id, amount: 1_000 };
+    expect(await quoteConvert(t.db, as(ana), input)).toMatchObject({ mode: "MINT", receive: 2_000, rate: "2" });
+    const converted = await convert(t.db, as(ana), input);
+    const minted = await mint(t.db, as(ana), { sourceAccountId: chf.id, amount: 1_000, currencyId: coin.id });
+
+    // Both write the same two rows: fiat into the currency's own reserve, new units to the node.
+    const shape = (r: { kind: string; fromAccountId: string | null; toAccountId: string | null; amount: number; rate: string | null }) =>
+      [r.kind, r.fromAccountId, r.toAccountId, r.amount, r.rate];
+    expect(converted.rows.map(shape)).toEqual([minted.locked, minted.minted].map(shape));
+    expect(converted.rows[0]!.groupId).toBe(converted.rows[1]!.groupId);
+    expect(await reserveOf(coin.id)).toBe(2_000);
+    expect(await t.balanceOf(ana.id, coin.id)).toBe(4_000);
+    expect(await t.balancesNotMatchingLedger()).toEqual([]);
+
+    // R-FIN-14 still applies: a fiat other than the reserve fiat is refused, with a short reason.
+    const eur = await t.db.currency.create({ data: { name: "Euro", code: "EU4", kind: "FIAT", country: "AT" } });
+    const eurAccount = await t.account(ana.id, eur.id, 500);
+    expect((await refusal(quoteConvert(t.db, as(ana), { ...input, fromAccountId: eurAccount.id, amount: 100 })))?.ruleIds).toEqual(["R-FIN-14"]);
+    const eurRow = (await convertTable(t.db, ana.id, coin.id)).find((r) => r.currency.id === eur.id)?.into;
+    expect(eurRow && "reason" in eurRow ? eurRow.reason : null).toBe("different fiat");
+  });
+
   it("the Convert table lists what is held plus the target, with prices and what one unit converts into", async () => {
     const [ana, ben] = await Promise.all([t.person("Ana"), t.person("Ben")]);
     const eur = await t.db.currency.create({ data: { name: "Euro", code: "EU3", kind: "FIAT", country: "AT" } });

@@ -11,10 +11,9 @@
 // The quote functions do the same arithmetic without moving anything, so a
 // screen can show "you will receive ..." before the person confirms.
 
-import { randomUUID } from "crypto";
 import { formatAmount } from "~/lib/money";
 import type { Account } from "../../../generated/prisma";
-import { label, mintRate, ownAccount, primaryFiatAccount, reserveAccount, reserveRatio, unitsAccount } from "./currencies";
+import { label, mintRate, ownAccount, postMint, primaryFiatAccount, reserveRatio } from "./currencies";
 import { inTransaction, type Db } from "./db";
 import { RuleError, textOrNull } from "./errors";
 import type { Actor } from "./interactions";
@@ -109,20 +108,14 @@ export async function mint(
   return inTransaction(db, async (tx) => {
     await assertCan(tx, actor.personId, actor.actingNodeId, "MINT");
     const quote = await quoteMint(tx, actor, input);
-    const reserve = await reserveAccount(tx, quote.currency);
-    const units = await unitsAccount(tx, actor.actingNodeId, quote.currency.id);
-
-    const groupId = randomUUID();
-    const comment = textOrNull(input.comment) ?? `Mint: ${quote.summary}`;
-    const base = { kind: "MINT", comment, groupId, rate: quote.rate, actedByPersonId: actor.personId } as const;
-    const locked = await postTransaction(tx, {
-      ...base,
-      fromAccountId: quote.source.id,
-      toAccountId: reserve.id,
+    return postMint(tx, actor, {
+      sourceAccountId: quote.source.id,
+      currency: quote.currency,
       amount: quote.amount,
+      units: quote.units,
+      rate: quote.rate,
+      comment: textOrNull(input.comment) ?? `Mint: ${quote.summary}`,
     });
-    const minted = await postTransaction(tx, { ...base, toAccountId: units.id, amount: quote.units });
-    return { groupId, locked, minted };
   });
 }
 

@@ -143,7 +143,7 @@ export const walletRouter = createTRPCRouter({
       price: r.price && { rate: r.price.rate, fiat: pick(r.price.fiat) },
       fiatRate: r.fiatRate && { rate: r.fiatRate.rate, primary: pick(r.fiatRate.primary) },
       into:
-        r.into && ("rate" in r.into ? { rate: r.into.rate, refused: null } : { rate: null, refused: { message: r.into.refused.message, ruleIds: r.into.refused.ruleIds } }),
+        r.into && ("rate" in r.into ? { rate: r.into.rate, refused: null } : { rate: null, refused: { reason: r.into.reason, message: r.into.refused.message, ruleIds: r.into.refused.ruleIds } }),
     }));
   }),
 
