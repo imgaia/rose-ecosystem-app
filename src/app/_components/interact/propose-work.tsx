@@ -12,7 +12,7 @@ import { useState } from "react";
 import { api } from "~/trpc/react";
 import { useActingNode, type Permission } from "../shell/acting-node";
 import { useNav } from "../shell/navigation";
-import { ErrorText, Field, GatedButton, Input, Loading, SubScreen, Toggle } from "../ui";
+import { ErrorText, Field, GatedButton, Input, Loading, MainAction, SubScreen, Toggle } from "../ui";
 import { NodePicker, TermsFields, draftFromTerms, emptyTerms, termsFromDraft, useCurrencies, type TermsDraft, type TermsInput } from "./fields";
 
 export function ProposeWork({ otherNodeId }: { otherNodeId?: string }) {
@@ -48,7 +48,7 @@ export function ProposeWork({ otherNodeId }: { otherNodeId?: string }) {
   const you = acting.node.kind === "INDIVIDUAL" ? "You" : acting.node.name;
 
   return (
-    <SubScreen title="Propose work">
+    <SubScreen form title="Propose work">
       <NodePicker label="With" nodeId={other} onChange={setOther} />
       <Field label="Your side">
         <Toggle
@@ -71,15 +71,17 @@ export function ProposeWork({ otherNodeId }: { otherNodeId?: string }) {
       )}
       <p className="text-xs text-rose-muted">The other side must approve before the work starts.</p>
       <ErrorText error={formError ? { message: formError } : propose.error} />
-      <GatedButton
-        variant="primary"
-        // Proposing work where the acting node pays needs PAY; being paid needs INTERACT.
-        permission={permissionFor(actingNodePays ? "PAY" : "INTERACT")}
-        disabled={propose.isPending}
-        onClick={submit}
-      >
-        Send proposal
-      </GatedButton>
+      <MainAction>
+        <GatedButton
+          variant="primary"
+          // Proposing work where the acting node pays needs PAY; being paid needs INTERACT.
+          permission={permissionFor(actingNodePays ? "PAY" : "INTERACT")}
+          disabled={propose.isPending}
+          onClick={submit}
+        >
+          Send proposal
+        </GatedButton>
+      </MainAction>
     </SubScreen>
   );
 }
@@ -93,7 +95,7 @@ export function CounterPropose({ proposalId }: { proposalId: string }) {
   const base = review.data?.proposedTerms;
 
   return (
-    <SubScreen title="Counter-propose">
+    <SubScreen form title="Counter-propose">
       <ErrorText error={review.error} />
       {review.isLoading && <Loading />}
       {base && review.data && (
@@ -119,7 +121,7 @@ export function AmendTerms({ interactionId }: { interactionId: string }) {
   const current = detail.data?.currentTerms;
 
   return (
-    <SubScreen title="Amend terms">
+    <SubScreen form title="Amend terms">
       <ErrorText error={detail.error} />
       {detail.isLoading && <Loading />}
       {current && detail.data && (
@@ -139,12 +141,12 @@ export function AmendTerms({ interactionId }: { interactionId: string }) {
 
 /** After sending new terms: refresh everything, say so, and go back `screens` screens. */
 function useSentAndBack(screens: number) {
-  const { notify } = useNav();
+  const { notify, back } = useNav();
   const utils = api.useUtils();
   return async () => {
     await utils.invalidate();
     notify("Sent. It waits for the other side's approval.");
-    window.history.go(-screens);
+    back(screens);
   };
 }
 
@@ -186,9 +188,11 @@ function TermsEditor({
         <Input placeholder="Why the change" value={comment} onChange={(e) => setComment(e.target.value)} />
       </Field>
       <ErrorText error={formError ? { message: formError } : error} />
-      <GatedButton variant="primary" className="mt-2" permission={permission} disabled={pending} onClick={submit}>
-        {submitLabel}
-      </GatedButton>
+      <MainAction>
+        <GatedButton variant="primary" permission={permission} disabled={pending} onClick={submit}>
+          {submitLabel}
+        </GatedButton>
+      </MainAction>
     </>
   );
 }

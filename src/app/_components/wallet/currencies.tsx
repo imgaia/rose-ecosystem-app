@@ -18,7 +18,7 @@ import { api, type RouterOutputs } from "~/trpc/react";
 import { formatDate, money } from "../describe";
 import { needsText, useActingNode } from "../shell/acting-node";
 import { useNav } from "../shell/navigation";
-import { Button, Card, Chip, Empty, ErrorText, Field, GatedButton, Input, Loading, Refusal, Row, SectionLabel, Select, SubScreen, TextArea, Toggle } from "../ui";
+import { Button, Card, Chip, Empty, ErrorText, Field, GatedButton, Input, Loading, MainAction, Refusal, Row, SectionLabel, Select, SubScreen, TextArea, Toggle } from "../ui";
 
 type Listed = RouterOutputs["currencies"]["overview"]["issued"][number];
 type Policy = "reserve" | "open";
@@ -432,7 +432,7 @@ export function CurrencyForm({ currencyId }: { currencyId?: string }) {
   const detail = api.currencies.detail.useQuery({ actingNodeId: acting.node.id, currencyId: currencyId ?? "" }, { enabled: !!currencyId });
   const ready = overview.data && (!currencyId || detail.data);
   return (
-    <SubScreen title={currencyId ? "Edit currency" : "Create a currency"}>
+    <SubScreen form title={currencyId ? "Edit currency" : "Create a currency"}>
       <ErrorText error={overview.error ?? detail.error} />
       {!ready && <Loading />}
       {ready && <FormBody overview={overview.data} current={currencyId ? detail.data : undefined} />}
@@ -582,9 +582,11 @@ function FormBody({
 
       <ErrorText error={formError ? { message: formError } : null} />
       <Refusal error={propose.error ?? setHome.error} />
-      <GatedButton variant="primary" className="mt-2" permission={permissionFor("SET_UP_CURRENCY")} disabled={pending} onClick={() => void submit()}>
-        {isCollection ? (current ? "Propose changes" : "Propose currency") : current ? "Save changes" : "Create currency"}
-      </GatedButton>
+      <MainAction>
+        <GatedButton variant="primary" permission={permissionFor("SET_UP_CURRENCY")} disabled={pending} onClick={() => void submit()}>
+          {isCollection ? (current ? "Propose changes" : "Propose currency") : current ? "Save changes" : "Create currency"}
+        </GatedButton>
+      </MainAction>
     </>
   );
 }

@@ -18,7 +18,7 @@ import { money } from "../describe";
 import { dateInput, readAmount } from "../interact/fields";
 import { useActingNode } from "../shell/acting-node";
 import { useNav } from "../shell/navigation";
-import { Card, ErrorText, Field, GatedButton, Input, Loading, Refusal, Row, SectionLabel, Select, SubScreen } from "../ui";
+import { Card, ErrorText, Field, GatedButton, Input, Loading, MainAction, Refusal, Row, SectionLabel, Select, SubScreen } from "../ui";
 import { priceLine, rateLine } from "./currencies";
 
 /** Refresh everything, show a note, and go back to the Wallet. */
@@ -68,7 +68,7 @@ export function AddFunds() {
   }
 
   return (
-    <SubScreen title="Add funds">
+    <SubScreen form title="Add funds">
       <Card>
         <SectionLabel>Deposit first, then record it</SectionLabel>
         <p className="text-rose-muted">Pay the money into the bank account outside the app, then record the deposit here.</p>
@@ -96,9 +96,11 @@ export function AddFunds() {
       )}
       <p className="text-xs text-rose-muted">Later, a payment provider will credit the account directly.</p>
       <ErrorText error={formError ? { message: formError } : (addFunds.error ?? fiat.error)} />
-      <GatedButton variant="primary" className="mt-2" permission={permissionFor("ADD_FUNDS")} disabled={addFunds.isPending} onClick={submit}>
-        Record deposit
-      </GatedButton>
+      <MainAction>
+        <GatedButton variant="primary" permission={permissionFor("ADD_FUNDS")} disabled={addFunds.isPending} onClick={submit}>
+          Record deposit
+        </GatedButton>
+      </MainAction>
     </SubScreen>
   );
 }
@@ -128,7 +130,7 @@ export function Convert({ fromAccountId: initialFrom, toCurrencyId: initialTo }:
   const q = quote.data?.quote;
 
   return (
-    <SubScreen title="Convert">
+    <SubScreen form title="Convert">
       <Field label="From">
         <Select value={from?.id ?? ""} onChange={(e) => setFromAccountId(e.target.value)}>
           {own.map((a) => (
@@ -175,15 +177,17 @@ export function Convert({ fromAccountId: initialFrom, toCurrencyId: initialTo }:
       {own.length === 0 && <p className="text-rose-muted">This node has no account to convert from.</p>}
       <Refusal error={convert.error ?? quote.data?.refused ?? quote.error} />
       <ErrorText error={accounts.error ?? currencies.error} />
-      <GatedButton
-        variant="primary"
-        className="mt-2"
-        permission={permissionFor("EXCHANGE")}
-        disabled={!q || convert.isPending}
-        onClick={() => from && to && convert.mutate({ actingNodeId, fromAccountId: from.id, toCurrencyId: to.id, amount: units })}
-      >
-        {q ? `Convert for ${money(q.receive, q.currency)}` : "Convert"}
-      </GatedButton>
+      <MainAction>
+        <GatedButton
+          variant="primary"
+         
+          permission={permissionFor("EXCHANGE")}
+          disabled={!q || convert.isPending}
+          onClick={() => from && to && convert.mutate({ actingNodeId, fromAccountId: from.id, toCurrencyId: to.id, amount: units })}
+        >
+          {q ? `Convert for ${money(q.receive, q.currency)}` : "Convert"}
+        </GatedButton>
+      </MainAction>
     </SubScreen>
   );
 }
@@ -292,7 +296,7 @@ export function Mint() {
   const code = quote.data?.currency.code;
 
   return (
-    <SubScreen title={code ? `Mint ${code}` : "Mint"}>
+    <SubScreen form title={code ? `Mint ${code}` : "Mint"}>
       {mintable.length > 1 && (
         <Field label="Currency">
           <Select value={currency?.id ?? ""} onChange={(e) => setCurrencyId(e.target.value)}>
@@ -334,15 +338,17 @@ export function Mint() {
       )}
       <Refusal error={mint.error ?? quote.error} />
       <ErrorText error={fiat.error ?? overview.error} />
-      <GatedButton
-        variant="primary"
-        className="mt-2"
-        permission={permissionFor("MINT")}
-        disabled={!quote.data || mint.isPending}
-        onClick={() => source && currency && mint.mutate({ actingNodeId, sourceAccountId: source.id, amount: units, currencyId: currency.id })}
-      >
-        {quote.data ? `Mint ${money(quote.data.units, quote.data.currency)}` : "Mint"}
-      </GatedButton>
+      <MainAction>
+        <GatedButton
+          variant="primary"
+         
+          permission={permissionFor("MINT")}
+          disabled={!quote.data || mint.isPending}
+          onClick={() => source && currency && mint.mutate({ actingNodeId, sourceAccountId: source.id, amount: units, currencyId: currency.id })}
+        >
+          {quote.data ? `Mint ${money(quote.data.units, quote.data.currency)}` : "Mint"}
+        </GatedButton>
+      </MainAction>
     </SubScreen>
   );
 }

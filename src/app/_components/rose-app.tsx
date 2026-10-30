@@ -3,8 +3,9 @@
 // src/app/_components/rose-app.tsx
 // The node shell every signed-in screen sits in (PRD 4.1): the header with
 // the acting node and its menu, the three tabs, and the + button. A screen
-// opened from a tab (a proposal, a relationship, a form) replaces the tabs
-// until you go back.
+// opened from a tab (a proposal, a relationship, a form) replaces the tab's
+// content until you go back; the bottom bar stays, and a tab goes straight
+// back to that tab's top screen.
 
 import { useEffect, useState } from "react";
 
@@ -14,8 +15,8 @@ import { RelationshipsTab } from "./relationships/relationships-tab";
 import { ScreenView } from "./screens";
 import { ActingNodeProvider } from "./shell/acting-node";
 import { Header } from "./shell/header";
-import { NavProvider, useNav } from "./shell/navigation";
-import { TabBar, type Tab } from "./shell/tab-bar";
+import { NavProvider, tabFor, useNav } from "./shell/navigation";
+import { TabBar, useKeyboardOpen, type Tab } from "./shell/tab-bar";
 import { WalletTab } from "./wallet/wallet-tab";
 
 export function RoseApp() {
@@ -39,8 +40,11 @@ export function RoseApp() {
 }
 
 function Shell() {
-  const { stack, notice } = useNav();
-  const [tab, setTab] = useState<Tab>("home");
+  const { stack, notice, reset, confirmLeave } = useNav();
+  // The tab underneath; an opened screen may highlight its own (Convert: Wallet).
+  const [baseTab, setBaseTab] = useState<Tab>("home");
+  const tab = tabFor(stack, baseTab);
+  const keyboard = useKeyboardOpen();
   // At most one of the two menus is open at a time.
   const [open, setOpen] = useState<"node" | "quick" | null>(null);
 
@@ -62,13 +66,16 @@ function Shell() {
   const top = stack[stack.length - 1];
 
   return (
-    <div className="mx-auto flex min-h-dvh max-w-lg flex-col">
+    // --nav-space: the bottom bar's height (TabBar: 52px buttons, 4px + 16px padding, 1px border),
+    // which screens keep free at their foot and a form's main button sits on.
+    <div className="mx-auto flex min-h-dvh max-w-lg flex-col" style={{ "--nav-space": keyboard ? "0px" : "73px" } as React.CSSProperties}>
       {open && (
         <button
           type="button"
           aria-label="Close menu"
           onClick={() => setOpen(null)}
-          className="fixed inset-0 z-30 cursor-default bg-black/60"
+          // Over an opened screen's header too when the quick actions are open.
+          className={`fixed inset-0 cursor-default bg-black/60 ${open === "quick" ? "z-[45]" : "z-30"}`}
         />
       )}
 
@@ -77,19 +84,25 @@ function Shell() {
       ) : (
         <>
           <Header menuOpen={open === "node"} onToggleMenu={() => setOpen(open === "node" ? null : "node")} onCloseMenu={() => setOpen(null)} />
-          <main className="flex flex-1 flex-col gap-3 p-4 pb-28">
+          <main className="flex flex-1 flex-col gap-3 p-4 pb-[calc(var(--nav-space)+3rem)]">
             <TabContent tab={tab} />
           </main>
-          <TabBar
-            tab={tab}
-            onTab={(t) => {
-              setTab(t);
-              setOpen(null);
-            }}
-            quickOpen={open === "quick"}
-            onToggleQuick={() => setOpen(open === "quick" ? null : "quick")}
-          />
         </>
+      )}
+
+      {!keyboard && (
+        <TabBar
+          tab={tab}
+          onTab={(t) =>
+            confirmLeave(() => {
+              reset();
+              setBaseTab(t);
+              setOpen(null);
+            })
+          }
+          quickOpen={open === "quick"}
+          onToggleQuick={() => (open === "quick" ? setOpen(null) : confirmLeave(() => setOpen("quick")))}
+        />
       )}
 
       {notice && (

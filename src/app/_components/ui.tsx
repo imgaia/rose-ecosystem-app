@@ -5,6 +5,8 @@
 // cards, labelled rows, chips, buttons (including the disabled
 // "Needs Treasurer" kind), form fields and the screen header with a back arrow.
 
+import { useEffect } from "react";
+
 import { needsText, useActingNode, type Permission } from "./shell/acting-node";
 import { useNav } from "./shell/navigation";
 
@@ -180,19 +182,46 @@ export function Empty({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * The frame of every screen opened on top of the tabs: a back arrow, the
- * title, and which node you are acting as. No tab bar underneath.
+ * A form's main button (Send, Save, Convert…), kept in view just above the
+ * bottom bar while the form scrolls under it; at the end of the form it sits
+ * in its place.
  */
-export function SubScreen({ title, children }: { title: string; children: React.ReactNode }) {
-  const { back } = useNav();
+export function MainAction({ children, onCard = false }: { children: React.ReactNode; onCard?: boolean }) {
+  const band = onCard ? "bg-rose-surface shadow-[0_-8px_8px_var(--color-rose-surface)]" : "bg-rose-bg shadow-[0_-8px_8px_var(--color-rose-bg)]";
+  return <div className={`sticky bottom-[var(--nav-space)] z-10 mt-2 flex flex-col pt-1 pb-3 ${band}`}>{children}</div>;
+}
+
+/**
+ * The frame of every screen opened on top of the tabs: a back arrow, the
+ * title, and which node you are acting as. The tab bar stays underneath.
+ *
+ * `form`: the screen is a form. Once the person types or picks anything in
+ * it (or presses a toggle), leaving by Back, a tab or + asks first. A form
+ * that stays open after a successful send calls setChanged(false).
+ */
+export function SubScreen({ title, form = false, children }: { title: string; form?: boolean; children: React.ReactNode }) {
+  const { back, confirmLeave, setChanged } = useNav();
   const { acting } = useActingNode();
+  // Nothing changed yet when it opens; and nothing to ask about once it is gone.
+  useEffect(() => {
+    setChanged(false);
+    return () => setChanged(false);
+  }, [setChanged]);
+  const changedBy = form
+    ? {
+        onInput: () => setChanged(true),
+        onClickCapture: (e: React.MouseEvent) => {
+          if ((e.target as HTMLElement).closest("[aria-pressed], [data-changes]")) setChanged(true);
+        },
+      }
+    : {};
   return (
     <>
       <header className="sticky top-0 z-40 flex items-center gap-2 border-b border-rose-border bg-rose-surface p-2">
         <button
           type="button"
           aria-label="Back"
-          onClick={back}
+          onClick={() => confirmLeave(() => back())}
           className="flex size-11 flex-none items-center justify-center rounded-xl text-rose-muted hover:bg-white/5 hover:text-rose-text"
         >
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -205,7 +234,9 @@ export function SubScreen({ title, children }: { title: string; children: React.
         </div>
         <span className="w-11 flex-none" />
       </header>
-      <main className="flex flex-1 flex-col gap-3 p-4 pb-10">{children}</main>
+      <main className="flex flex-1 flex-col gap-3 p-4 pb-[calc(var(--nav-space)+1.5rem)]" {...changedBy}>
+        {children}
+      </main>
     </>
   );
 }

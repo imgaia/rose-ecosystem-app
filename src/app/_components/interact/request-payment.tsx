@@ -13,7 +13,7 @@ import { api } from "~/trpc/react";
 import { termsSummary } from "../describe";
 import { useActingNode } from "../shell/acting-node";
 import { useNav } from "../shell/navigation";
-import { Card, ErrorText, Field, GatedButton, Input, Row, SubScreen } from "../ui";
+import { Card, ErrorText, Field, GatedButton, Input, MainAction, Row, SubScreen } from "../ui";
 import { AmountField, NodePicker, readAmount, useCurrencies } from "./fields";
 
 export function RequestPayment({ fromNodeId, interactionId }: { fromNodeId?: string; interactionId?: string }) {
@@ -62,7 +62,7 @@ export function RequestPayment({ fromNodeId, interactionId }: { fromNodeId?: str
   }
 
   return (
-    <SubScreen title="Request a payment">
+    <SubScreen form title="Request a payment">
       {work.data ? (
         <Card className="gap-0">
           <Row label="From">{work.data.payer.name}</Row>
@@ -77,16 +77,18 @@ export function RequestPayment({ fromNodeId, interactionId }: { fromNodeId?: str
         <Input placeholder="Source material, October" value={comment} onChange={(e) => setComment(e.target.value)} />
       </Field>
       <ErrorText error={formError ? { message: formError } : (requestPayment.error ?? requestWorkPayment.error ?? work.error)} />
-      <GatedButton
-        variant="primary"
-        className="mt-2"
-        // Within work the side being paid decides; otherwise asking needs INTERACT.
-        permission={work.data ? work.data.permission : permissionFor("INTERACT")}
-        disabled={pending}
-        onClick={submit}
-      >
-        Send request
-      </GatedButton>
+      <MainAction>
+        <GatedButton
+          variant="primary"
+         
+          // Within work the side being paid decides; otherwise asking needs INTERACT.
+          permission={work.data ? work.data.permission : permissionFor("INTERACT")}
+          disabled={pending}
+          onClick={submit}
+        >
+          Send request
+        </GatedButton>
+      </MainAction>
     </SubScreen>
   );
 }

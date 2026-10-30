@@ -21,7 +21,7 @@ export function ReviewProposal({ proposalId }: { proposalId: string }) {
   const review = api.proposals.review.useQuery({ actingNodeId: acting.node.id, proposalId });
 
   return (
-    <SubScreen title="Proposal">
+    <SubScreen form title="Proposal">
       <ErrorText error={review.error} />
       {review.isLoading && <Loading />}
       {review.data && <ProposalBody proposal={review.data} />}
@@ -37,7 +37,7 @@ function ProposalBody({ proposal: p }: { proposal: ProposalView }) {
   const [comment, setComment] = useState("");
 
   const utils = api.useUtils();
-  const done = { onSuccess: () => utils.invalidate().then(back) };
+  const done = { onSuccess: () => utils.invalidate().then(() => back()) };
   const decide = api.proposals.decide.useMutation(done);
   const withdraw = api.proposals.withdraw.useMutation(done);
   const busy = decide.isPending || withdraw.isPending;

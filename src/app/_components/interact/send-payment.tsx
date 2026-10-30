@@ -12,7 +12,7 @@ import { money } from "../describe";
 import { useActingNode } from "../shell/acting-node";
 import { useNav } from "../shell/navigation";
 import { DateField } from "../date-field";
-import { Card, ErrorText, Field, GatedButton, Input, Row, SubScreen, Toggle } from "../ui";
+import { Card, ErrorText, Field, GatedButton, Input, MainAction, Row, SubScreen, Toggle } from "../ui";
 import { AmountField, NodePicker, readAmount, useCurrencies } from "./fields";
 
 export function SendPayment({ toNodeId }: { toNodeId?: string }) {
@@ -73,7 +73,7 @@ export function SendPayment({ toNodeId }: { toNodeId?: string }) {
   const after = account && typed && "amount" in typed ? account.balance - typed.amount : null;
 
   return (
-    <SubScreen title="Send a payment or gift">
+    <SubScreen form title="Send a payment or gift">
       <Toggle
         label="Kind"
         value={kind}
@@ -135,9 +135,11 @@ export function SendPayment({ toNodeId }: { toNodeId?: string }) {
       )}
 
       <ErrorText error={formError ? { message: formError } : send.error} />
-      <GatedButton variant="primary" className="mt-2" permission={permission} disabled={send.isPending} onClick={submit}>
-        {recurring ? "Set up schedule" : kind === "GIFT" ? "Send gift" : "Send payment"}
-      </GatedButton>
+      <MainAction>
+        <GatedButton variant="primary" permission={permission} disabled={send.isPending} onClick={submit}>
+          {recurring ? "Set up schedule" : kind === "GIFT" ? "Send gift" : "Send payment"}
+        </GatedButton>
+      </MainAction>
     </SubScreen>
   );
 }

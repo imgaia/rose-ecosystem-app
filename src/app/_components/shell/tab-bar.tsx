@@ -3,10 +3,14 @@
 // src/app/_components/shell/tab-bar.tsx
 // The bottom bar of every screen (PRD 4.1): the three tabs, Home,
 // Relationships and Wallet, and the + button that opens the quick actions (S26).
+// It shows on opened screens too, with their tab highlighted; on a phone it
+// hides while the on-screen keyboard is open (useKeyboardOpen).
 //
 // Each quick action names the capability it needs. If the person's roles in
 // the acting node don't carry it, the action stays visible but disabled, with
 // "Needs Treasurer" (from the same rules check the server enforces).
+
+import { useEffect, useState } from "react";
 
 import { needsText, useActingNode } from "./acting-node";
 import {
@@ -51,7 +55,7 @@ export function TabBar({ tab, onTab, quickOpen, onToggleQuick }: TabBarProps) {
   return (
     <nav
       aria-label="Main"
-      className="fixed inset-x-0 bottom-0 z-40 mx-auto flex max-w-lg items-center gap-1 border-t border-rose-border bg-rose-surface pt-1 pr-3 pb-4 pl-2"
+      className="fixed inset-x-0 bottom-0 z-50 mx-auto flex max-w-lg items-center gap-1 border-t border-rose-border bg-rose-surface pt-1 pr-3 pb-4 pl-2"
     >
       {quickOpen && <QuickActions />}
 
@@ -122,4 +126,44 @@ function QuickActions() {
       })}
     </section>
   );
+}
+
+/** Fields that bring up the on-screen keyboard (not checkboxes, buttons or the date picker). */
+function typesText(el: Element | null) {
+  if (!el) return false;
+  if (el instanceof HTMLTextAreaElement || (el as HTMLElement).isContentEditable) return true;
+  if (!(el instanceof HTMLInputElement)) return false;
+  return !["checkbox", "radio", "button", "submit", "reset", "range", "color", "file", "date", "datetime-local", "month", "time", "week", "hidden", "image"].includes(el.type);
+}
+
+/**
+ * On a phone, is the on-screen keyboard open? It is while a text field has
+ * focus on a touch screen, until the field loses focus or the keyboard is put
+ * away (the visible area grows back to its full height).
+ */
+export function useKeyboardOpen() {
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    const touch = window.matchMedia("(pointer: coarse)");
+    const viewport = window.visualViewport;
+    let tallest = viewport?.height ?? 0;
+    // On focusout the focus hasn't moved yet: look once it has.
+    const update = () => setTimeout(() => setOpen(touch.matches && typesText(document.activeElement)), 0);
+    const onResize = () => {
+      if (!viewport) return;
+      if (viewport.height >= tallest - 80) {
+        tallest = Math.max(tallest, viewport.height);
+        setOpen(false); // full height again: the keyboard was put away
+      } else update();
+    };
+    document.addEventListener("focusin", update);
+    document.addEventListener("focusout", update);
+    viewport?.addEventListener("resize", onResize);
+    return () => {
+      document.removeEventListener("focusin", update);
+      document.removeEventListener("focusout", update);
+      viewport?.removeEventListener("resize", onResize);
+    };
+  }, []);
+  return open;
 }

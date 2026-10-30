@@ -15,7 +15,7 @@ import { titleCase } from "../describe";
 import { useActingNode } from "../shell/acting-node";
 import { Avatar } from "../shell/header";
 import { useNav } from "../shell/navigation";
-import { Button, Card, Empty, ErrorText, Field, GatedButton, Input, Loading, Select, SubScreen } from "../ui";
+import { Button, Card, Empty, ErrorText, Field, GatedButton, Input, Loading, MainAction, Select, SubScreen } from "../ui";
 
 type Inside = NonNullable<RouterOutputs["nodes"]["page"]["inside"]>;
 
@@ -57,7 +57,7 @@ export function ProposeRoleChange({ holderNodeId }: { holderNodeId?: string }) {
   const holderName = members.find((m) => m.id === holderId)?.name ?? "";
 
   return (
-    <SubScreen title="Propose a role change">
+    <SubScreen form title="Propose a role change">
       <ErrorText error={page.error} />
       {page.isLoading && <Loading />}
       {inside && (
@@ -99,23 +99,25 @@ export function ProposeRoleChange({ holderNodeId }: { holderNodeId?: string }) {
             It goes to whoever must approve under {acting.node.name}&apos;s rules (R-GOV-08). Every native role keeps at least one holder.
           </p>
           <ErrorText error={propose.error} />
-          <GatedButton
-            variant="primary"
-            permission={permissionFor("EDIT_GOVERNANCE")}
-            disabled={propose.isPending || !role || !holderId}
-            onClick={() =>
-              role &&
-              propose.mutate({
-                actingNodeId: acting.node.id,
-                holderNodeId: holderId,
-                roleKey: role.key,
-                change: holds ? "REMOVE" : "ADD",
-                comment: comment.trim() || undefined,
-              })
-            }
-          >
-            {holds ? "Propose ending this role" : "Propose this role"}
-          </GatedButton>
+          <MainAction>
+            <GatedButton
+              variant="primary"
+              permission={permissionFor("EDIT_GOVERNANCE")}
+              disabled={propose.isPending || !role || !holderId}
+              onClick={() =>
+                role &&
+                propose.mutate({
+                  actingNodeId: acting.node.id,
+                  holderNodeId: holderId,
+                  roleKey: role.key,
+                  change: holds ? "REMOVE" : "ADD",
+                  comment: comment.trim() || undefined,
+                })
+              }
+            >
+              {holds ? "Propose ending this role" : "Propose this role"}
+            </GatedButton>
+          </MainAction>
         </>
       )}
     </SubScreen>
@@ -132,7 +134,7 @@ export function AddMember() {
   const propose = api.members.proposeAddMember.useMutation({ onSuccess: useProposed("Proposed. They join once it is approved.") });
 
   return (
-    <SubScreen title="Add a member">
+    <SubScreen form title="Add a member">
       <p className="text-rose-muted">Choose from your own relationships. They join {acting.node.name} once they accept.</p>
       {permission && !permission.allowed && <GatedButton permission={permission}>Add a member</GatedButton>}
       <ErrorText error={candidates.error} />
@@ -161,14 +163,16 @@ export function AddMember() {
         <Input value={comment} onChange={(e) => setComment(e.target.value)} />
       </Field>
       <ErrorText error={propose.error} />
-      <GatedButton
-        variant="primary"
-        permission={permission}
-        disabled={!chosen || propose.isPending}
-        onClick={() => chosen && propose.mutate({ actingNodeId: acting.node.id, nodeId: chosen, comment: comment.trim() || undefined })}
-      >
-        Propose as member
-      </GatedButton>
+      <MainAction>
+        <GatedButton
+          variant="primary"
+          permission={permission}
+          disabled={!chosen || propose.isPending}
+          onClick={() => chosen && propose.mutate({ actingNodeId: acting.node.id, nodeId: chosen, comment: comment.trim() || undefined })}
+        >
+          Propose as member
+        </GatedButton>
+      </MainAction>
       <Button onClick={() => open({ name: "invite" })}>Invite someone new to ROSE instead</Button>
     </SubScreen>
   );
@@ -185,7 +189,7 @@ export function ProposeRemoval({ memberNodeId }: { memberNodeId?: string }) {
   const memberId = member ?? others[0]?.id ?? "";
 
   return (
-    <SubScreen title="Propose removing a member">
+    <SubScreen form title="Propose removing a member">
       <ErrorText error={page.error} />
       {page.isLoading && <Loading />}
       {inside && (
@@ -208,14 +212,16 @@ export function ProposeRemoval({ memberNodeId }: { memberNodeId?: string }) {
           </Field>
           <p className="text-xs text-rose-muted">{approvalText(inside)} They lose the Member role and every other role here.</p>
           <ErrorText error={propose.error} />
-          <GatedButton
-            variant="primary"
-            permission={permissionFor("PROPOSE_REMOVAL")}
-            disabled={!memberId || !reason.trim() || propose.isPending}
-            onClick={() => propose.mutate({ actingNodeId: acting.node.id, memberNodeId: memberId, reason: reason.trim() })}
-          >
-            Propose removal
-          </GatedButton>
+          <MainAction>
+            <GatedButton
+              variant="primary"
+              permission={permissionFor("PROPOSE_REMOVAL")}
+              disabled={!memberId || !reason.trim() || propose.isPending}
+              onClick={() => propose.mutate({ actingNodeId: acting.node.id, memberNodeId: memberId, reason: reason.trim() })}
+            >
+              Propose removal
+            </GatedButton>
+          </MainAction>
         </>
       )}
     </SubScreen>

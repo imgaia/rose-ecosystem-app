@@ -90,6 +90,7 @@ export function DateField({
           <button
             type="button"
             aria-label="Clear date"
+            data-changes // counts as a change to the form (see SubScreen)
             onClick={(e) => {
               e.preventDefault();
               onChange("");

@@ -11,10 +11,12 @@ import { useState } from "react";
 import { api } from "~/trpc/react";
 import { formatDate, titleCase } from "../describe";
 import { useActingNode } from "../shell/acting-node";
-import { Button, Card, Chip, ErrorText, Field, GatedButton, Input, SectionLabel, SubScreen, TextArea } from "../ui";
+import { useNav } from "../shell/navigation";
+import { Button, Card, Chip, ErrorText, Field, GatedButton, Input, MainAction, SectionLabel, SubScreen, TextArea } from "../ui";
 
 export function Invite() {
   const { acting, permissionFor } = useActingNode();
+  const { setChanged } = useNav();
   const actingNodeId = acting.node.id;
   const isCollection = acting.node.kind === "COLLECTION";
   const permission = permissionFor(isCollection ? "ADD_MEMBERS" : "INVITE");
@@ -51,6 +53,7 @@ export function Invite() {
       },
       {
         onSuccess: (r) => {
+          setChanged(false); // stays open, fields emptied, to show the link
           showLink(name.trim())(r);
           setName("");
           setEmail("");
@@ -62,7 +65,7 @@ export function Invite() {
   }
 
   return (
-    <SubScreen title="Invite someone">
+    <SubScreen form title="Invite someone">
       {link && <LinkCard link={link} />}
 
       <p className="text-rose-muted">
@@ -83,9 +86,11 @@ export function Invite() {
         <TextArea placeholder="Shown on their join screen" value={message} onChange={(e) => setMessage(e.target.value)} />
       </Field>
       <ErrorText error={formError ? { message: formError } : create.error} />
-      <GatedButton variant="primary" permission={permission} disabled={create.isPending} onClick={submit}>
-        Create invitation link
-      </GatedButton>
+      <MainAction>
+        <GatedButton variant="primary" permission={permission} disabled={create.isPending} onClick={submit}>
+          Create invitation link
+        </GatedButton>
+      </MainAction>
 
       {list.data && list.data.length > 0 && (
         <>

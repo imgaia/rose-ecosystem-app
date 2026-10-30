@@ -12,7 +12,7 @@ import { useState } from "react";
 import { api, type RouterOutputs } from "~/trpc/react";
 import { useActingNode } from "../shell/acting-node";
 import { useNav } from "../shell/navigation";
-import { Button, Card, ErrorText, Field, GatedButton, Input, Loading, SectionLabel, Select, SubScreen, TextArea } from "../ui";
+import { Button, Card, ErrorText, Field, GatedButton, Input, Loading, MainAction, SectionLabel, Select, SubScreen, TextArea } from "../ui";
 
 type Identity = RouterOutputs["identity"]["get"];
 
@@ -22,7 +22,7 @@ export function EditIdentity() {
   const identity = api.identity.get.useQuery({ actingNodeId: acting.node.id }, { enabled: !!permission?.allowed });
 
   return (
-    <SubScreen title="Edit identity">
+    <SubScreen form title="Edit identity">
       {permission && !permission.allowed && <GatedButton permission={permission}>Edit identity</GatedButton>}
       <ErrorText error={identity.error} />
       {identity.isLoading && permission?.allowed && <Loading />}
@@ -44,7 +44,7 @@ export function EditIdentity() {
 
 function Details({ identity }: { identity: Identity }) {
   const { acting, permissionFor } = useActingNode();
-  const { notify } = useNav();
+  const { notify, setChanged } = useNav();
   const isPerson = identity.kind === "INDIVIDUAL";
   const [form, setForm] = useState({
     firstName: identity.firstName ?? "",
@@ -62,6 +62,7 @@ function Details({ identity }: { identity: Identity }) {
   const utils = api.useUtils();
   const update = api.identity.update.useMutation({
     onSuccess: async () => {
+      setChanged(false); // stays open after saving: nothing left to lose
       await utils.invalidate();
       notify("Saved.");
     },
@@ -117,9 +118,11 @@ function Details({ identity }: { identity: Identity }) {
         </Select>
       </Field>
       <ErrorText error={update.error} />
-      <GatedButton variant="primary" permission={permissionFor("EDIT_IDENTITY")} disabled={update.isPending} onClick={save}>
-        Save details
-      </GatedButton>
+      <MainAction onCard>
+        <GatedButton variant="primary" permission={permissionFor("EDIT_IDENTITY")} disabled={update.isPending} onClick={save}>
+          Save details
+        </GatedButton>
+      </MainAction>
     </Card>
   );
 }
@@ -148,11 +151,12 @@ function useCountries(current: string | null) {
 
 function Username({ current }: { current: string }) {
   const { acting } = useActingNode();
-  const { notify } = useNav();
+  const { notify, setChanged } = useNav();
   const [username, setUsername] = useState(current);
   const utils = api.useUtils();
   const change = api.identity.changeUsername.useMutation({
     onSuccess: async () => {
+      setChanged(false);
       await utils.identity.invalidate();
       notify("Username changed. Use it next time you sign in.");
     },
@@ -177,13 +181,14 @@ function Username({ current }: { current: string }) {
 
 function Password() {
   const { acting } = useActingNode();
-  const { notify } = useNav();
+  const { notify, setChanged } = useNav();
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [repeat, setRepeat] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
   const change = api.identity.changePassword.useMutation({
     onSuccess: () => {
+      setChanged(false);
       setCurrentPassword("");
       setNewPassword("");
       setRepeat("");
