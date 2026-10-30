@@ -42,6 +42,21 @@ rose2026
 
 **⚠️ This shared password is a known, deliberate simplification for pilot testing — not real security.** Everyone currently has the same password. Revisit before any wider or longer-lived use.
 
+## How to run the browser tests
+
+```
+npx playwright install chromium   # once per machine: the browser the tests drive
+npm run test:e2e
+```
+
+This builds a throwaway SQLite database in the system temp folder from a small fixture (`e2e/fixture.ts`: Nora, Annie and Theo, ROSE Org issuing RCC, some money and agreed work), builds the app into `.next-e2e` (so a running `npm run dev` is left alone), starts it on port 3210 against that database, runs the Playwright tests in `e2e/*.spec.ts` at 360px and 430px wide, and deletes the database afterwards. Any console error in the browser fails a test.
+
+It never touches the local, dev or production databases: the app gets only the throwaway file, and the Turso variables are removed from its environment. The test passwords exist only in that throwaway database. The tests are not part of the Vercel build.
+
+- `npm run test:e2e -- --no-build` reuses the last build (when only tests changed).
+- `npm run test:e2e -- nav` runs only the tests whose file or title matches "nav".
+- After a failure, `npx playwright show-report` opens the report, with screenshots and a step-by-step trace.
+
 ## Identity model
 
 A member's identity is split into distinct concepts, each with its own purpose:

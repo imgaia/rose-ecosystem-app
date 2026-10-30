@@ -8,6 +8,8 @@ import "./src/env.js";
 import "./src/server/rules/index";
 
 const config: NextConfig = {
+  // The browser tests (e2e/run.ts) build into .next-e2e, so a dev server using .next keeps running.
+  distDir: process.env.NEXT_DIST_DIR ?? ".next",
   // The rules loader reads rules.yaml from disk at runtime, so make sure
   // Vercel ships the file with every server function.
   outputFileTracingIncludes: {

@@ -7,14 +7,14 @@
 //
 //   npx tsx prisma/seed-reference.ts                      -> local database
 //   SEED_TARGET=dev npx tsx prisma/seed-reference.ts      -> dev database
+//
+// The browser tests' throwaway database calls seedReference() directly (e2e/fixture.ts).
 
+import { pathToFileURL } from "url";
+import type { PrismaClient } from "../generated/prisma";
 import { getDbTarget, createPrismaFor } from "../scripts/db-target";
 import { capabilityMap, roles, rulesVersion } from "../src/server/rules/index";
 import { seedCurrencies } from "./reference-currencies";
-
-const target = getDbTarget("SEED_TARGET");
-console.log(`Seeding reference data into the ${target.toUpperCase()} database (rules ${rulesVersion}).`);
-const prisma = createPrismaFor(target);
 
 // Display labels. Keys are fixed; labels can be renamed later in the database,
 // so a re-run never overwrites them.
@@ -46,7 +46,7 @@ const CAPABILITIES: Record<string, { label: string; description: string }> = {
   VERIFY_WORK: { label: "Verify work", description: "Confirm that work was done" },
 };
 
-async function main() {
+export async function seedReference(prisma: PrismaClient) {
   // Roles
   for (const key of [...roles.native, ...roles.optional]) {
     const label = ROLE_LABELS[key];
@@ -90,10 +90,16 @@ async function main() {
   await seedCurrencies(prisma);
 }
 
-main()
-  .then(() => prisma.$disconnect())
-  .catch(async (err) => {
-    console.error(err);
-    await prisma.$disconnect();
-    process.exit(1);
-  });
+// Run from the command line (not when imported).
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  const target = getDbTarget("SEED_TARGET");
+  console.log(`Seeding reference data into the ${target.toUpperCase()} database (rules ${rulesVersion}).`);
+  const prisma = createPrismaFor(target);
+  seedReference(prisma)
+    .then(() => prisma.$disconnect())
+    .catch(async (err) => {
+      console.error(err);
+      await prisma.$disconnect();
+      process.exit(1);
+    });
+}

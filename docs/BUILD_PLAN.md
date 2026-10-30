@@ -23,6 +23,7 @@ Files that come with this plan:
 - Every movement of value goes through **one ledger function** that writes the transaction row and updates both balances in one database transaction. Nothing else changes a balance.
 - Every action asks **one rules check** first: `can(person, actingNode, action)`. It uses the capability map from `rules.yaml` and the person's roles in the acting node, and returns `allowed` or the rules that block it.
 - Keep changes small. Explain TypeScript changes in plain terms; Nimesh knows Python better than TypeScript.
+- Run `npm run test:e2e` (the browser tests) before pushing screen changes.
 - Stop at the end of the step and summarise what changed and how to check it.
 
 ---

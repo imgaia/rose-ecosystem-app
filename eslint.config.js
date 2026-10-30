@@ -7,7 +7,7 @@ const compat = new FlatCompat({
 
 export default tseslint.config(
   {
-    ignores: [".next"],
+    ignores: [".next", ".next-e2e", "playwright-report", "test-results"],
   },
   ...compat.extends("next/core-web-vitals"),
   {
@@ -44,5 +44,10 @@ export default tseslint.config(
         projectService: true,
       },
     },
+  },
+  {
+    // Playwright fixtures call their callback `use`, which is not React's hook.
+    files: ["e2e/**/*.ts"],
+    rules: { "react-hooks/rules-of-hooks": "off" },
   },
 );
