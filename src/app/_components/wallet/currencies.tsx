@@ -28,18 +28,31 @@ export const POLICY_TEXT: Record<Policy, { label: string; line: string }> = {
   open: { label: "Open", line: "Beyond the reserve, swaps straight at the price with other open currencies." },
 };
 
-/** "0.5" shown with at least the fiat's decimals: "0.50". A fraction like "100/107" is shown as about "0.9346". */
+const FRACTION = /^(\d+)\/(\d+)$/;
+
+/**
+ * For display only: "0.5" shown with at least the display currency's decimals: "0.50".
+ * A fraction like "100/107" (an inverted rate) has no exact decimal, so it is
+ * rounded to those decimals: "≈ 0.93". Conversions use the exact rate.
+ */
 export function formatRate(rate: string, decimals = 2) {
-  const fraction = /^(\d+)\/(\d+)$/.exec(rate);
-  if (fraction) return `≈ ${(Number(fraction[1]) / Number(fraction[2])).toFixed(Math.max(decimals, 4))}`;
+  const fraction = FRACTION.exec(rate);
+  if (fraction) return `≈ ${(Number(fraction[1]) / Number(fraction[2])).toFixed(decimals)}`;
   const [whole, part = ""] = rate.split(".");
   return part.length >= decimals ? rate : `${whole}.${part.padEnd(decimals, "0")}`;
+}
+
+/** "1 RCC = 1.00 CHF", or "1 EUR ≈ 0.92 CHF" for an approximate (inverted) rate. */
+export function rateLine(from: string, rate: string, to: { code: string | null; name?: string; decimals: number }) {
+  const shown = formatRate(rate, to.decimals);
+  const value = shown.startsWith("≈ ") ? shown : `= ${shown}`;
+  return `1 ${from} ${value} ${to.code ?? to.name}`;
 }
 
 /** "1 RCC = 1.00 CHF", or null for fiat (no price) or a currency with no price yet. */
 export function priceLine(c: { code: string | null; name: string; price: Listed["price"] }) {
   if (!c.price) return null;
-  return `1 ${c.code ?? c.name} = ${formatRate(c.price.rate, c.price.fiat.decimals)} ${c.price.fiat.code}`;
+  return rateLine(c.code ?? c.name, c.price.rate, c.price.fiat);
 }
 
 const label = (c: { code: string | null; name: string }) => c.code ?? c.name;
@@ -296,7 +309,7 @@ function DetailBody({ c }: { c: RouterOutputs["currencies"]["detail"] }) {
           </Row>
         )}
         <Row label="Decimal places">{c.decimals}</Row>
-        {fiat && c.fiatRates.map((r) => <Row key={r.code} label={`1 ${label(c)} in ${r.code}`}>{r.rate ? formatRate(r.rate, 4) : "No rate yet"}</Row>)}
+        {fiat && c.fiatRates.map((r) => <Row key={r.code} label={`1 ${label(c)} in ${r.code}`}>{r.rate ? formatRate(r.rate, r.decimals) : "No rate yet"}</Row>)}
       </Card>
 
       {!fiat && (
@@ -525,7 +538,7 @@ function FormBody({
       </Field>
       <Card className="gap-0 py-1">
         <Row label="Price" strong>
-          {ratioOk && fiat ? `1 ${symbol} = ${formatRate(form.reserveRatio.trim(), fiat.decimals)} ${fiat.code}` : "Enter a ratio above 0"}
+          {ratioOk && fiat ? rateLine(symbol, form.reserveRatio.trim(), fiat) : "Enter a ratio above 0"}
         </Row>
         <Row label="Reserve held in">{fiat?.code ?? "Primary fiat not set"}</Row>
       </Card>

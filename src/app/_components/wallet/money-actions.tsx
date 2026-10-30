@@ -19,7 +19,7 @@ import { dateInput, readAmount } from "../interact/fields";
 import { useActingNode } from "../shell/acting-node";
 import { useNav } from "../shell/navigation";
 import { Card, ErrorText, Field, GatedButton, Input, Loading, Refusal, Row, SectionLabel, Select, SubScreen } from "../ui";
-import { formatRate, priceLine } from "./currencies";
+import { priceLine, rateLine } from "./currencies";
 
 /** Refresh everything, show a note, and go back to the Wallet. */
 function useDone(text: string) {
@@ -156,7 +156,7 @@ export function Convert({ fromAccountId: initialFrom, toCurrencyId: initialTo }:
       {from && to && q && (
         <Card className="gap-0 py-1">
           <Row label="Rate">
-            1 {from.currency.code} = {formatRate(q.rate, to.decimals)} {to.code}
+            {rateLine(from.currency.code ?? from.currency.name, q.rate, to)}
           </Row>
           <Row label="You receive" strong>
             {money(q.receive, q.currency)}
@@ -240,7 +240,7 @@ function CurrenciesTable({ fromCurrencyId, into }: { fromCurrencyId: string | un
                   <span className={cellLabel}>Price</span>
                   <span>
                     {r.currency.kind === "FIAT"
-                      ? `Fiat face value${r.fiatRate ? ` · 1 ${sym(r.currency)} = ${formatRate(r.fiatRate.rate, r.fiatRate.primary.decimals)} ${sym(r.fiatRate.primary)}` : ""}`
+                      ? `Fiat face value${r.fiatRate ? ` · ${rateLine(sym(r.currency), r.fiatRate.rate, r.fiatRate.primary)}` : ""}`
                       : (priceLine({ ...r.currency, price: r.price }) ?? "No price yet")}
                   </span>
                 </span>
@@ -251,9 +251,7 @@ function CurrenciesTable({ fromCurrencyId, into }: { fromCurrencyId: string | un
                   ) : !into || !r.into ? (
                     <span className="text-rose-muted">{into ? "Same currency" : "—"}</span>
                   ) : r.into.rate !== null ? (
-                    <span>
-                      1 {sym(r.currency)} = {formatRate(r.into.rate, into.decimals)} {sym(into)}
-                    </span>
+                    <span>{rateLine(sym(r.currency), r.into.rate, into)}</span>
                   ) : (
                     <span title={r.into.refused.message}>
                       —{" "}

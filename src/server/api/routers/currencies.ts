@@ -113,7 +113,7 @@ export const currenciesRouter = createTRPCRouter({
     // Fiat: today's rates against the other fiats on the list.
     const otherFiats = currency.kind === "FIAT" ? await ctx.db.currency.findMany({ where: { kind: "FIAT", id: { not: currency.id } } }) : [];
     const fiatRates = await Promise.all(
-      otherFiats.map(async (f) => ({ code: f.code, rate: (await core.getRate(ctx.db, currency.id, f.id).catch(() => null))?.text ?? null })),
+      otherFiats.map(async (f) => ({ code: f.code, decimals: f.decimals, rate: (await core.getRate(ctx.db, currency.id, f.id).catch(() => null))?.text ?? null })),
     );
 
     const home = await core.homeCurrencyOf(ctx.db, ctx.actor.actingNodeId).catch(() => null);

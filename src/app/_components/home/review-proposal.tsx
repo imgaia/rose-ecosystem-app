@@ -13,7 +13,7 @@ import { formatDate, frequencyLabel, money, nameOrYou, termsSummary, titleCase }
 import { useActingNode } from "../shell/acting-node";
 import { useNav } from "../shell/navigation";
 import { Button, Card, Chip, ErrorText, GatedButton, Loading, Row, SectionLabel, SubScreen, TextArea } from "../ui";
-import { formatRate } from "../wallet/currencies";
+import { rateLine } from "../wallet/currencies";
 import { proposalText, type ProposalView } from "./proposal-text";
 
 export function ReviewProposal({ proposalId }: { proposalId: string }) {
@@ -254,7 +254,7 @@ function CurrencyChangeCard({ change, issuer }: { change: NonNullable<ProposalVi
       {fields.decimals !== undefined && <Row label="Decimal places">{fields.decimals}</Row>}
       {fields.reserveRatio !== undefined && (
         <Row label="Price">
-          1 {fields.code ?? currency?.code ?? "unit"} = {formatRate(fields.reserveRatio)} {fiatCode ?? ""}
+          {rateLine(fields.code ?? currency?.code ?? "unit", fields.reserveRatio, { code: fiatCode ?? "", decimals: 2 })}
         </Row>
       )}
       {fields.policy !== undefined && <Row label="Conversion policy">{POLICY[fields.policy] ?? fields.policy}</Row>}
