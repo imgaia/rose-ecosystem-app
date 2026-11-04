@@ -4,6 +4,7 @@
 
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
+import { MAX_MINOR_UNITS } from "~/lib/money";
 import { meets, RuleError, type Actor, type Requirement } from "~/server/core";
 import type { Prisma } from "../../../../generated/prisma";
 import type { db } from "~/server/db";
@@ -22,8 +23,14 @@ export const publicNode = {
   photoUrl: true,
 } satisfies Prisma.NodeSelect;
 
-/** Amounts arrive as whole minor units (cents), never decimals. */
-export const minorUnits = z.number().int().positive();
+/**
+ * Amounts arrive as whole minor units (cents), never decimals, as a bigint
+ * (superjson carries it as text, so nothing is lost above 2^53).
+ */
+export const minorUnits = z
+  .bigint()
+  .positive()
+  .max(MAX_MINOR_UNITS, `Amounts go up to ${MAX_MINOR_UNITS.toLocaleString("en")} minor units (R-FIN-18)`);
 
 export const termsInput = z.object({
   description: z.string(),

@@ -35,7 +35,7 @@ import {
 import { roles } from "../src/server/rules/index";
 import { COLLECTION, PASSWORD, USERS } from "./fixture-data";
 
-const MIGRATIONS = ["v08-schema.sql", "v10-currencies.sql", "v10-reserves.sql", "v11-free-currencies.sql"];
+const MIGRATIONS = ["v08-schema.sql", "v10-currencies.sql", "v10-reserves.sql", "v11-free-currencies.sql", "v11-amounts-64bit.sql"];
 
 export async function buildFixture(url: string) {
   const client = createClient({ url });
@@ -97,12 +97,12 @@ export async function buildFixture(url: string) {
     });
 
     // Money: ROSE Org mints RCC (free); Nora deposits 500 CHF and buys 200 RCC from ROSE Org in a trade.
-    await mint(db, asNoraForRose, { amount: 100_000, currencyId: rcc.id });
-    await addFunds(db, asNora, { amount: 50_000, reference: "E2E deposit", depositedOn: new Date() });
+    await mint(db, asNoraForRose, { amount: 100_000n, currencyId: rcc.id });
+    await addFunds(db, asNora, { amount: 50_000n, reference: "E2E deposit", depositedOn: new Date() });
     const trade = await proposeTrade(db, asNora, {
       toNodeId: rose.id,
-      give: { amount: 20_000, currencyId: chf.id },
-      get: { amount: 20_000, currencyId: rcc.id },
+      give: { amount: 20_000n, currencyId: chf.id },
+      get: { amount: 20_000n, currencyId: rcc.id },
     });
     await respond(db, asNoraForRose, { proposalId: trade.proposal.id, approve: true });
     await setHomeCurrency(db, asNora, { currencyId: rcc.id });
@@ -112,7 +112,7 @@ export async function buildFixture(url: string) {
     const { proposal } = await proposeWork(db, asNora, {
       otherNodeId: annie.id,
       actingNodePays: true,
-      terms: { description: "Garden design", amount: 5_000, currencyId: rcc.id },
+      terms: { description: "Garden design", amount: 5_000n, currencyId: rcc.id },
     });
     await respond(db, { personId: annie.id, actingNodeId: annie.id }, { proposalId: proposal.id, approve: true });
   } finally {

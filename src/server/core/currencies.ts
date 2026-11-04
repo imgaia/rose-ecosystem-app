@@ -492,7 +492,7 @@ async function log(tx: Tx, proposal: Proposal, event: CurrencyEvent, personId: s
 export interface ConvertInput {
   fromAccountId: string;
   toCurrencyId: string;
-  amount: number; // minor units of the from-account's currency
+  amount: bigint; // minor units of the from-account's currency
 }
 
 /**
@@ -511,7 +511,7 @@ export async function quoteConvert(db: Db, actor: Actor, input: ConvertInput) {
  * `available` is the balance to check against; null skips that check (the
  * Convert screen's table asks about one unit, whatever is held).
  */
-async function quoteBetween(db: Db, nodeId: string, a: Currency, b: Currency, amount: number, available: number | null) {
+async function quoteBetween(db: Db, nodeId: string, a: Currency, b: Currency, amount: bigint, available: bigint | null) {
   if (a.id === b.id) throw refuse("same currency", "Pick a different currency to convert into");
   if (a.kind === "FIAT" && b.kind === "FIAT") throw refuse("fiat into fiat", "Fiat is never converted into another fiat", ["R-FIN-14"]);
   // R-FIN-10: only through reserves; a free currency has none.
@@ -538,7 +538,7 @@ async function quoteBetween(db: Db, nodeId: string, a: Currency, b: Currency, am
     if (a.id !== b.reserveCurrencyId) throw refuse("different fiat", `Mint ${label(b)} from its reserve fiat`, ["R-FIN-14"]);
     const rate = mintRate(await backedRatio(db, b));
     const receive = applyRate(amount, a.decimals, b.decimals, rate);
-    if (receive <= 0) throw refuse("amount too small", "That amount is too small to mint anything");
+    if (receive <= 0n) throw refuse("amount too small", "That amount is too small to mint anything");
     return {
       currency: b,
       amount,
@@ -566,13 +566,13 @@ async function quoteBetween(db: Db, nodeId: string, a: Currency, b: Currency, am
   const value = priceA ? applyRate(amount, a.decimals, fiat.decimals, priceA) : amount;
   const intoB = b.kind === "FIAT" ? null : mintRate(await backedRatio(db, b));
   const receive = intoB ? applyRate(value, fiat.decimals, b.decimals, intoB) : value;
-  if (value <= 0 || receive <= 0) throw refuse("amount too small", "That amount is too small to convert");
+  if (value <= 0n || receive <= 0n) throw refuse("amount too small", "That amount is too small to convert");
 
   // As far as A's own reserve covers (R-FIN-10).
   const reserveA = a.kind === "FIAT" ? null : await reserveBalance(db, a);
   if (reserveA !== null && reserveA < value) {
     throw refuse(
-      reserveA === 0 ? "reserve empty" : "reserve too low",
+      reserveA === 0n ? "reserve empty" : "reserve too low",
       `${label(a)}'s reserve holds ${money(reserveA, fiat)}, not enough to cover ${money(value, fiat)}`,
       ["R-FIN-10"],
     );
@@ -602,7 +602,7 @@ function refuse(short: string, message: string, ruleIds: string[] = []): Refusal
 /** One row of the Convert screen's table. `into` is null for the target currency itself. */
 export interface ConvertTableRow {
   currency: Currency;
-  balance: number | null; // null: not held (the target currency, listed anyway)
+  balance: bigint | null; // null: not held (the target currency, listed anyway)
   price: { rate: string; fiat: Currency } | null; // R-FIN-01, in its reserve fiat; null for fiat
   fiatRate: { rate: string; primary: Currency } | null; // a fiat other than the primary fiat: 1 of it in the primary fiat
   into: { rate: string } | { refused: RuleError; reason: string } | null;
@@ -616,7 +616,7 @@ export interface ConvertTableRow {
 export async function convertTable(db: Db, nodeId: string, intoCurrencyId: string | null): Promise<ConvertTableRow[]> {
   const accounts = await db.account.findMany({ where: { nodeId, isReserve: false }, include: { currency: true }, orderBy: { createdAt: "asc" } });
   const into = intoCurrencyId ? await db.currency.findUniqueOrThrow({ where: { id: intoCurrencyId } }) : null;
-  const held: { currency: Currency; balance: number | null }[] = accounts.map((a) => ({ currency: a.currency, balance: a.balance }));
+  const held: { currency: Currency; balance: bigint | null }[] = accounts.map((a) => ({ currency: a.currency, balance: a.balance }));
   if (into && !accounts.some((a) => a.currencyId === into.id)) held.push({ currency: into, balance: null });
   const primary = await primaryFiatOf(db, nodeId).catch(() => null);
 
@@ -629,7 +629,7 @@ export async function convertTable(db: Db, nodeId: string, intoCurrencyId: strin
       let row: ConvertTableRow["into"] = null;
       if (into && into.id !== currency.id) {
         try {
-          row = { rate: (await quoteBetween(db, nodeId, currency, into, 10 ** currency.decimals, null)).rate };
+          row = { rate: (await quoteBetween(db, nodeId, currency, into, 10n ** BigInt(currency.decimals), null)).rate };
         } catch (err) {
           if (!(err instanceof RuleError)) throw err;
           row = { refused: err, reason: "short" in err && typeof err.short === "string" ? err.short : err.message };
@@ -727,7 +727,7 @@ export async function convert(db: Db, actor: Actor, input: ConvertInput & { comm
 export async function postMint(
   tx: Tx,
   actor: Actor,
-  m: { sourceAccountId: string; currency: Currency; amount: number; units: number; rate: string; comment: string },
+  m: { sourceAccountId: string; currency: Currency; amount: bigint; units: bigint; rate: string; comment: string },
 ) {
   const reserve = await reserveAccount(tx, m.currency);
   const units = await unitsAccount(tx, actor.actingNodeId, m.currency.id);
@@ -751,7 +751,7 @@ function reserveKey(currency: Backed) {
 /** How much the currency's reserve holds (0 if nothing has gone in yet). */
 async function reserveBalance(db: Db, currency: Backed) {
   const reserve = await db.account.findUnique({ where: { nodeId_currencyId_isReserve_backsCurrencyId: reserveKey(currency) } });
-  return reserve?.balance ?? 0;
+  return reserve?.balance ?? 0n;
 }
 
 /** The currency's own locked reserve, opened when fiat first goes in (R-FIN-02). */
@@ -773,10 +773,11 @@ export async function currencyBacking(db: Db, currencyId: string) {
   if (currency.kind !== "COMMUNITY" || !currency.reserveCurrency) throw new RuleError(`${label(currency)} has no reserve`, ["R-FIN-02"]);
   const fiat = currency.reserveCurrency;
   const reserve = await reserveBalance(db, currency);
-  const units = (await db.account.aggregate({ where: { currencyId, isReserve: false }, _sum: { balance: true } }))._sum.balance ?? 0;
-  const price = units > 0 ? await findRate(db, currency.id, fiat.id) : null;
-  const value = price ? applyRate(units, currency.decimals, fiat.decimals, price) : 0;
-  return { currency, fiat, reserve, units, value, shareBacked: value > 0 ? reserve / value : null };
+  const units = (await db.account.aggregate({ where: { currencyId, isReserve: false }, _sum: { balance: true } }))._sum.balance ?? 0n;
+  const price = units > 0n ? await findRate(db, currency.id, fiat.id) : null;
+  const value = price ? applyRate(units, currency.decimals, fiat.decimals, price) : 0n;
+  // A share for showing, so a floating-point number is fine here.
+  return { currency, fiat, reserve, units, value, shareBacked: value > 0n ? Number(reserve) / Number(value) : null };
 }
 
 /** The node's spending account in this currency, opened the first time it receives some. */
@@ -797,4 +798,4 @@ export async function ownAccount(db: Db, nodeId: string, accountId: string) {
 }
 
 export const label = (c: { name: string; code: string | null }) => c.code ?? c.name;
-const money = (amount: number, c: { decimals: number; code: string | null }) => formatAmount(amount, c.decimals, c.code);
+const money = (amount: bigint, c: { decimals: number; code: string | null }) => formatAmount(amount, c.decimals, c.code);

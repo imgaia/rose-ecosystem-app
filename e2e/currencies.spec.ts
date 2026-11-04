@@ -67,6 +67,37 @@ test("an individual's currency: create, price, edit, mint, home currency", async
   await expect(page.getByText("Home currency", { exact: true })).toBeVisible();
 });
 
+test("8 decimals and millions of units: typed, minted and shown exactly (64-bit amounts)", async ({ signIn }, testInfo) => {
+  const symbol = perWidth("E", testInfo); // E360, E430
+  const page = await signIn("theo");
+
+  await tab(page, "Wallet").click();
+  await page.getByRole("button", { name: "Currencies", exact: true }).click();
+  await page.getByRole("button", { name: "Create a currency" }).click();
+  await field(page, "Name").fill(`Eights ${symbol}`);
+  await field(page, "Symbol").fill(symbol.toLowerCase());
+  await field(page, "Decimal places").fill("8");
+  await page.getByRole("button", { name: "Create currency" }).click();
+  await expect(notice(page)).toContainText("Currency created");
+
+  // Free: mint by amount only. 1,000,000 units, then 100,000.00000001 more.
+  for (const [typed, shown] of [
+    ["1,000,000", "1000000.00"],
+    ["100000.00000001", "100000.00000001"],
+  ] as const) {
+    await tab(page, "Wallet").click();
+    await page.getByRole("button", { name: "Mint", exact: true }).click();
+    if (await page.locator("label", { hasText: "Currency" }).count()) await choose(field(page, "Currency"), symbol);
+    await field(page, "Amount").fill(typed);
+    await expect(page.getByRole("button", { name: `Mint ${shown} ${symbol}` })).toBeVisible();
+    await page.getByRole("button", { name: `Mint ${shown} ${symbol}` }).click();
+    await expect(notice(page)).toContainText("Minted");
+  }
+  await tab(page, "Wallet").click();
+  const row = page.locator("div").filter({ has: page.getByText(symbol, { exact: true }) }).last();
+  await expect(row.getByText("1100000.00000001", { exact: true })).toBeVisible();
+});
+
 test("Convert: the currencies table, refusals named, and a conversion through a reserve", async ({ signIn }) => {
   const page = await signIn("nora");
   await tab(page, "Wallet").click();

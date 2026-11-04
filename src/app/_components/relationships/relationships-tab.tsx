@@ -110,8 +110,8 @@ export function totalsLine(totals: RelationshipCard["totals"]) {
   return totals
     .map((t) => {
       const parts = [];
-      if (t.out > 0) parts.push(`paid ${money(t.out, t)}`);
-      if (t.in > 0) parts.push(`received ${money(t.in, t)}`);
+      if (t.out > 0n) parts.push(`paid ${money(t.out, t)}`);
+      if (t.in > 0n) parts.push(`received ${money(t.in, t)}`);
       return parts.join(" · ");
     })
     .filter(Boolean)

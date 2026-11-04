@@ -14628,8 +14628,8 @@ export namespace Prisma {
 
   export type InteractionTermsSumAggregateOutputType = {
     version: number | null
-    amount: number | null
-    counterAmount: number | null
+    amount: bigint | null
+    counterAmount: bigint | null
     maxPayments: number | null
   }
 
@@ -14638,9 +14638,9 @@ export namespace Prisma {
     interactionId: string | null
     version: number | null
     description: string | null
-    amount: number | null
+    amount: bigint | null
     currencyId: string | null
-    counterAmount: number | null
+    counterAmount: bigint | null
     counterCurrencyId: string | null
     frequency: $Enums.Frequency | null
     paymentMode: $Enums.PaymentMode | null
@@ -14657,9 +14657,9 @@ export namespace Prisma {
     interactionId: string | null
     version: number | null
     description: string | null
-    amount: number | null
+    amount: bigint | null
     currencyId: string | null
-    counterAmount: number | null
+    counterAmount: bigint | null
     counterCurrencyId: string | null
     frequency: $Enums.Frequency | null
     paymentMode: $Enums.PaymentMode | null
@@ -14855,9 +14855,9 @@ export namespace Prisma {
     interactionId: string
     version: number
     description: string | null
-    amount: number
+    amount: bigint
     currencyId: string
-    counterAmount: number | null
+    counterAmount: bigint | null
     counterCurrencyId: string | null
     frequency: $Enums.Frequency
     paymentMode: $Enums.PaymentMode
@@ -15002,9 +15002,9 @@ export namespace Prisma {
       interactionId: string
       version: number
       description: string | null
-      amount: number
+      amount: bigint
       currencyId: string
-      counterAmount: number | null
+      counterAmount: bigint | null
       counterCurrencyId: string | null
       frequency: $Enums.Frequency
       paymentMode: $Enums.PaymentMode
@@ -15444,9 +15444,9 @@ export namespace Prisma {
     readonly interactionId: FieldRef<"InteractionTerms", 'String'>
     readonly version: FieldRef<"InteractionTerms", 'Int'>
     readonly description: FieldRef<"InteractionTerms", 'String'>
-    readonly amount: FieldRef<"InteractionTerms", 'Int'>
+    readonly amount: FieldRef<"InteractionTerms", 'BigInt'>
     readonly currencyId: FieldRef<"InteractionTerms", 'String'>
-    readonly counterAmount: FieldRef<"InteractionTerms", 'Int'>
+    readonly counterAmount: FieldRef<"InteractionTerms", 'BigInt'>
     readonly counterCurrencyId: FieldRef<"InteractionTerms", 'String'>
     readonly frequency: FieldRef<"InteractionTerms", 'Frequency'>
     readonly paymentMode: FieldRef<"InteractionTerms", 'PaymentMode'>
@@ -22811,14 +22811,14 @@ export namespace Prisma {
   }
 
   export type AccountSumAggregateOutputType = {
-    balance: number | null
+    balance: bigint | null
   }
 
   export type AccountMinAggregateOutputType = {
     id: string | null
     nodeId: string | null
     currencyId: string | null
-    balance: number | null
+    balance: bigint | null
     isPrimaryFiat: boolean | null
     isReserve: boolean | null
     backsCurrencyId: string | null
@@ -22829,7 +22829,7 @@ export namespace Prisma {
     id: string | null
     nodeId: string | null
     currencyId: string | null
-    balance: number | null
+    balance: bigint | null
     isPrimaryFiat: boolean | null
     isReserve: boolean | null
     backsCurrencyId: string | null
@@ -22981,7 +22981,7 @@ export namespace Prisma {
     id: string
     nodeId: string
     currencyId: string
-    balance: number
+    balance: bigint
     isPrimaryFiat: boolean
     isReserve: boolean
     backsCurrencyId: string
@@ -23089,7 +23089,7 @@ export namespace Prisma {
       id: string
       nodeId: string
       currencyId: string
-      balance: number
+      balance: bigint
       isPrimaryFiat: boolean
       isReserve: boolean
       backsCurrencyId: string
@@ -23524,7 +23524,7 @@ export namespace Prisma {
     readonly id: FieldRef<"Account", 'String'>
     readonly nodeId: FieldRef<"Account", 'String'>
     readonly currencyId: FieldRef<"Account", 'String'>
-    readonly balance: FieldRef<"Account", 'Int'>
+    readonly balance: FieldRef<"Account", 'BigInt'>
     readonly isPrimaryFiat: FieldRef<"Account", 'Boolean'>
     readonly isReserve: FieldRef<"Account", 'Boolean'>
     readonly backsCurrencyId: FieldRef<"Account", 'String'>
@@ -24007,8 +24007,8 @@ export namespace Prisma {
   }
 
   export type TransactionSumAggregateOutputType = {
-    amount: number | null
-    toAmount: number | null
+    amount: bigint | null
+    toAmount: bigint | null
   }
 
   export type TransactionMinAggregateOutputType = {
@@ -24016,8 +24016,8 @@ export namespace Prisma {
     kind: $Enums.TransactionKind | null
     fromAccountId: string | null
     toAccountId: string | null
-    amount: number | null
-    toAmount: number | null
+    amount: bigint | null
+    toAmount: bigint | null
     rate: string | null
     comment: string | null
     interactionId: string | null
@@ -24032,8 +24032,8 @@ export namespace Prisma {
     kind: $Enums.TransactionKind | null
     fromAccountId: string | null
     toAccountId: string | null
-    amount: number | null
-    toAmount: number | null
+    amount: bigint | null
+    toAmount: bigint | null
     rate: string | null
     comment: string | null
     interactionId: string | null
@@ -24211,8 +24211,8 @@ export namespace Prisma {
     kind: $Enums.TransactionKind
     fromAccountId: string | null
     toAccountId: string | null
-    amount: number
-    toAmount: number | null
+    amount: bigint
+    toAmount: bigint | null
     rate: string | null
     comment: string
     interactionId: string | null
@@ -24343,8 +24343,8 @@ export namespace Prisma {
       kind: $Enums.TransactionKind
       fromAccountId: string | null
       toAccountId: string | null
-      amount: number
-      toAmount: number | null
+      amount: bigint
+      toAmount: bigint | null
       rate: string | null
       comment: string
       interactionId: string | null
@@ -24782,8 +24782,8 @@ export namespace Prisma {
     readonly kind: FieldRef<"Transaction", 'TransactionKind'>
     readonly fromAccountId: FieldRef<"Transaction", 'String'>
     readonly toAccountId: FieldRef<"Transaction", 'String'>
-    readonly amount: FieldRef<"Transaction", 'Int'>
-    readonly toAmount: FieldRef<"Transaction", 'Int'>
+    readonly amount: FieldRef<"Transaction", 'BigInt'>
+    readonly toAmount: FieldRef<"Transaction", 'BigInt'>
     readonly rate: FieldRef<"Transaction", 'String'>
     readonly comment: FieldRef<"Transaction", 'String'>
     readonly interactionId: FieldRef<"Transaction", 'String'>
@@ -28863,6 +28863,13 @@ export namespace Prisma {
 
 
   /**
+   * Reference to a field of type 'BigInt'
+   */
+  export type BigIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'BigInt'>
+    
+
+
+  /**
    * Reference to a field of type 'Frequency'
    */
   export type EnumFrequencyFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Frequency'>
@@ -29577,9 +29584,9 @@ export namespace Prisma {
     interactionId?: StringFilter<"InteractionTerms"> | string
     version?: IntFilter<"InteractionTerms"> | number
     description?: StringNullableFilter<"InteractionTerms"> | string | null
-    amount?: IntFilter<"InteractionTerms"> | number
+    amount?: BigIntFilter<"InteractionTerms"> | bigint | number
     currencyId?: StringFilter<"InteractionTerms"> | string
-    counterAmount?: IntNullableFilter<"InteractionTerms"> | number | null
+    counterAmount?: BigIntNullableFilter<"InteractionTerms"> | bigint | number | null
     counterCurrencyId?: StringNullableFilter<"InteractionTerms"> | string | null
     frequency?: EnumFrequencyFilter<"InteractionTerms"> | $Enums.Frequency
     paymentMode?: EnumPaymentModeFilter<"InteractionTerms"> | $Enums.PaymentMode
@@ -29625,9 +29632,9 @@ export namespace Prisma {
     interactionId?: StringFilter<"InteractionTerms"> | string
     version?: IntFilter<"InteractionTerms"> | number
     description?: StringNullableFilter<"InteractionTerms"> | string | null
-    amount?: IntFilter<"InteractionTerms"> | number
+    amount?: BigIntFilter<"InteractionTerms"> | bigint | number
     currencyId?: StringFilter<"InteractionTerms"> | string
-    counterAmount?: IntNullableFilter<"InteractionTerms"> | number | null
+    counterAmount?: BigIntNullableFilter<"InteractionTerms"> | bigint | number | null
     counterCurrencyId?: StringNullableFilter<"InteractionTerms"> | string | null
     frequency?: EnumFrequencyFilter<"InteractionTerms"> | $Enums.Frequency
     paymentMode?: EnumPaymentModeFilter<"InteractionTerms"> | $Enums.PaymentMode
@@ -29674,9 +29681,9 @@ export namespace Prisma {
     interactionId?: StringWithAggregatesFilter<"InteractionTerms"> | string
     version?: IntWithAggregatesFilter<"InteractionTerms"> | number
     description?: StringNullableWithAggregatesFilter<"InteractionTerms"> | string | null
-    amount?: IntWithAggregatesFilter<"InteractionTerms"> | number
+    amount?: BigIntWithAggregatesFilter<"InteractionTerms"> | bigint | number
     currencyId?: StringWithAggregatesFilter<"InteractionTerms"> | string
-    counterAmount?: IntNullableWithAggregatesFilter<"InteractionTerms"> | number | null
+    counterAmount?: BigIntNullableWithAggregatesFilter<"InteractionTerms"> | bigint | number | null
     counterCurrencyId?: StringNullableWithAggregatesFilter<"InteractionTerms"> | string | null
     frequency?: EnumFrequencyWithAggregatesFilter<"InteractionTerms"> | $Enums.Frequency
     paymentMode?: EnumPaymentModeWithAggregatesFilter<"InteractionTerms"> | $Enums.PaymentMode
@@ -30142,7 +30149,7 @@ export namespace Prisma {
     id?: StringFilter<"Account"> | string
     nodeId?: StringFilter<"Account"> | string
     currencyId?: StringFilter<"Account"> | string
-    balance?: IntFilter<"Account"> | number
+    balance?: BigIntFilter<"Account"> | bigint | number
     isPrimaryFiat?: BoolFilter<"Account"> | boolean
     isReserve?: BoolFilter<"Account"> | boolean
     backsCurrencyId?: StringFilter<"Account"> | string
@@ -30176,7 +30183,7 @@ export namespace Prisma {
     NOT?: AccountWhereInput | AccountWhereInput[]
     nodeId?: StringFilter<"Account"> | string
     currencyId?: StringFilter<"Account"> | string
-    balance?: IntFilter<"Account"> | number
+    balance?: BigIntFilter<"Account"> | bigint | number
     isPrimaryFiat?: BoolFilter<"Account"> | boolean
     isReserve?: BoolFilter<"Account"> | boolean
     backsCurrencyId?: StringFilter<"Account"> | string
@@ -30210,7 +30217,7 @@ export namespace Prisma {
     id?: StringWithAggregatesFilter<"Account"> | string
     nodeId?: StringWithAggregatesFilter<"Account"> | string
     currencyId?: StringWithAggregatesFilter<"Account"> | string
-    balance?: IntWithAggregatesFilter<"Account"> | number
+    balance?: BigIntWithAggregatesFilter<"Account"> | bigint | number
     isPrimaryFiat?: BoolWithAggregatesFilter<"Account"> | boolean
     isReserve?: BoolWithAggregatesFilter<"Account"> | boolean
     backsCurrencyId?: StringWithAggregatesFilter<"Account"> | string
@@ -30225,8 +30232,8 @@ export namespace Prisma {
     kind?: EnumTransactionKindFilter<"Transaction"> | $Enums.TransactionKind
     fromAccountId?: StringNullableFilter<"Transaction"> | string | null
     toAccountId?: StringNullableFilter<"Transaction"> | string | null
-    amount?: IntFilter<"Transaction"> | number
-    toAmount?: IntNullableFilter<"Transaction"> | number | null
+    amount?: BigIntFilter<"Transaction"> | bigint | number
+    toAmount?: BigIntNullableFilter<"Transaction"> | bigint | number | null
     rate?: StringNullableFilter<"Transaction"> | string | null
     comment?: StringFilter<"Transaction"> | string
     interactionId?: StringNullableFilter<"Transaction"> | string | null
@@ -30266,8 +30273,8 @@ export namespace Prisma {
     kind?: EnumTransactionKindFilter<"Transaction"> | $Enums.TransactionKind
     fromAccountId?: StringNullableFilter<"Transaction"> | string | null
     toAccountId?: StringNullableFilter<"Transaction"> | string | null
-    amount?: IntFilter<"Transaction"> | number
-    toAmount?: IntNullableFilter<"Transaction"> | number | null
+    amount?: BigIntFilter<"Transaction"> | bigint | number
+    toAmount?: BigIntNullableFilter<"Transaction"> | bigint | number | null
     rate?: StringNullableFilter<"Transaction"> | string | null
     comment?: StringFilter<"Transaction"> | string
     interactionId?: StringNullableFilter<"Transaction"> | string | null
@@ -30309,8 +30316,8 @@ export namespace Prisma {
     kind?: EnumTransactionKindWithAggregatesFilter<"Transaction"> | $Enums.TransactionKind
     fromAccountId?: StringNullableWithAggregatesFilter<"Transaction"> | string | null
     toAccountId?: StringNullableWithAggregatesFilter<"Transaction"> | string | null
-    amount?: IntWithAggregatesFilter<"Transaction"> | number
-    toAmount?: IntNullableWithAggregatesFilter<"Transaction"> | number | null
+    amount?: BigIntWithAggregatesFilter<"Transaction"> | bigint | number
+    toAmount?: BigIntNullableWithAggregatesFilter<"Transaction"> | bigint | number | null
     rate?: StringNullableWithAggregatesFilter<"Transaction"> | string | null
     comment?: StringWithAggregatesFilter<"Transaction"> | string
     interactionId?: StringNullableWithAggregatesFilter<"Transaction"> | string | null
@@ -31172,8 +31179,8 @@ export namespace Prisma {
     id?: string
     version: number
     description?: string | null
-    amount: number
-    counterAmount?: number | null
+    amount: bigint | number
+    counterAmount?: bigint | number | null
     frequency?: $Enums.Frequency
     paymentMode?: $Enums.PaymentMode
     startDate?: Date | string | null
@@ -31192,9 +31199,9 @@ export namespace Prisma {
     interactionId: string
     version: number
     description?: string | null
-    amount: number
+    amount: bigint | number
     currencyId: string
-    counterAmount?: number | null
+    counterAmount?: bigint | number | null
     counterCurrencyId?: string | null
     frequency?: $Enums.Frequency
     paymentMode?: $Enums.PaymentMode
@@ -31210,8 +31217,8 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     version?: IntFieldUpdateOperationsInput | number
     description?: NullableStringFieldUpdateOperationsInput | string | null
-    amount?: IntFieldUpdateOperationsInput | number
-    counterAmount?: NullableIntFieldUpdateOperationsInput | number | null
+    amount?: BigIntFieldUpdateOperationsInput | bigint | number
+    counterAmount?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     frequency?: EnumFrequencyFieldUpdateOperationsInput | $Enums.Frequency
     paymentMode?: EnumPaymentModeFieldUpdateOperationsInput | $Enums.PaymentMode
     startDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -31230,9 +31237,9 @@ export namespace Prisma {
     interactionId?: StringFieldUpdateOperationsInput | string
     version?: IntFieldUpdateOperationsInput | number
     description?: NullableStringFieldUpdateOperationsInput | string | null
-    amount?: IntFieldUpdateOperationsInput | number
+    amount?: BigIntFieldUpdateOperationsInput | bigint | number
     currencyId?: StringFieldUpdateOperationsInput | string
-    counterAmount?: NullableIntFieldUpdateOperationsInput | number | null
+    counterAmount?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     counterCurrencyId?: NullableStringFieldUpdateOperationsInput | string | null
     frequency?: EnumFrequencyFieldUpdateOperationsInput | $Enums.Frequency
     paymentMode?: EnumPaymentModeFieldUpdateOperationsInput | $Enums.PaymentMode
@@ -31249,9 +31256,9 @@ export namespace Prisma {
     interactionId: string
     version: number
     description?: string | null
-    amount: number
+    amount: bigint | number
     currencyId: string
-    counterAmount?: number | null
+    counterAmount?: bigint | number | null
     counterCurrencyId?: string | null
     frequency?: $Enums.Frequency
     paymentMode?: $Enums.PaymentMode
@@ -31267,8 +31274,8 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     version?: IntFieldUpdateOperationsInput | number
     description?: NullableStringFieldUpdateOperationsInput | string | null
-    amount?: IntFieldUpdateOperationsInput | number
-    counterAmount?: NullableIntFieldUpdateOperationsInput | number | null
+    amount?: BigIntFieldUpdateOperationsInput | bigint | number
+    counterAmount?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     frequency?: EnumFrequencyFieldUpdateOperationsInput | $Enums.Frequency
     paymentMode?: EnumPaymentModeFieldUpdateOperationsInput | $Enums.PaymentMode
     startDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -31284,9 +31291,9 @@ export namespace Prisma {
     interactionId?: StringFieldUpdateOperationsInput | string
     version?: IntFieldUpdateOperationsInput | number
     description?: NullableStringFieldUpdateOperationsInput | string | null
-    amount?: IntFieldUpdateOperationsInput | number
+    amount?: BigIntFieldUpdateOperationsInput | bigint | number
     currencyId?: StringFieldUpdateOperationsInput | string
-    counterAmount?: NullableIntFieldUpdateOperationsInput | number | null
+    counterAmount?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     counterCurrencyId?: NullableStringFieldUpdateOperationsInput | string | null
     frequency?: EnumFrequencyFieldUpdateOperationsInput | $Enums.Frequency
     paymentMode?: EnumPaymentModeFieldUpdateOperationsInput | $Enums.PaymentMode
@@ -31776,7 +31783,7 @@ export namespace Prisma {
 
   export type AccountCreateInput = {
     id?: string
-    balance?: number
+    balance?: bigint | number
     isPrimaryFiat?: boolean
     isReserve?: boolean
     backsCurrencyId?: string
@@ -31791,7 +31798,7 @@ export namespace Prisma {
     id?: string
     nodeId: string
     currencyId: string
-    balance?: number
+    balance?: bigint | number
     isPrimaryFiat?: boolean
     isReserve?: boolean
     backsCurrencyId?: string
@@ -31802,7 +31809,7 @@ export namespace Prisma {
 
   export type AccountUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
-    balance?: IntFieldUpdateOperationsInput | number
+    balance?: BigIntFieldUpdateOperationsInput | bigint | number
     isPrimaryFiat?: BoolFieldUpdateOperationsInput | boolean
     isReserve?: BoolFieldUpdateOperationsInput | boolean
     backsCurrencyId?: StringFieldUpdateOperationsInput | string
@@ -31817,7 +31824,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     nodeId?: StringFieldUpdateOperationsInput | string
     currencyId?: StringFieldUpdateOperationsInput | string
-    balance?: IntFieldUpdateOperationsInput | number
+    balance?: BigIntFieldUpdateOperationsInput | bigint | number
     isPrimaryFiat?: BoolFieldUpdateOperationsInput | boolean
     isReserve?: BoolFieldUpdateOperationsInput | boolean
     backsCurrencyId?: StringFieldUpdateOperationsInput | string
@@ -31830,7 +31837,7 @@ export namespace Prisma {
     id?: string
     nodeId: string
     currencyId: string
-    balance?: number
+    balance?: bigint | number
     isPrimaryFiat?: boolean
     isReserve?: boolean
     backsCurrencyId?: string
@@ -31839,7 +31846,7 @@ export namespace Prisma {
 
   export type AccountUpdateManyMutationInput = {
     id?: StringFieldUpdateOperationsInput | string
-    balance?: IntFieldUpdateOperationsInput | number
+    balance?: BigIntFieldUpdateOperationsInput | bigint | number
     isPrimaryFiat?: BoolFieldUpdateOperationsInput | boolean
     isReserve?: BoolFieldUpdateOperationsInput | boolean
     backsCurrencyId?: StringFieldUpdateOperationsInput | string
@@ -31850,7 +31857,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     nodeId?: StringFieldUpdateOperationsInput | string
     currencyId?: StringFieldUpdateOperationsInput | string
-    balance?: IntFieldUpdateOperationsInput | number
+    balance?: BigIntFieldUpdateOperationsInput | bigint | number
     isPrimaryFiat?: BoolFieldUpdateOperationsInput | boolean
     isReserve?: BoolFieldUpdateOperationsInput | boolean
     backsCurrencyId?: StringFieldUpdateOperationsInput | string
@@ -31860,8 +31867,8 @@ export namespace Prisma {
   export type TransactionCreateInput = {
     id?: string
     kind: $Enums.TransactionKind
-    amount: number
-    toAmount?: number | null
+    amount: bigint | number
+    toAmount?: bigint | number | null
     rate?: string | null
     comment: string
     groupId?: string | null
@@ -31878,8 +31885,8 @@ export namespace Prisma {
     kind: $Enums.TransactionKind
     fromAccountId?: string | null
     toAccountId?: string | null
-    amount: number
-    toAmount?: number | null
+    amount: bigint | number
+    toAmount?: bigint | number | null
     rate?: string | null
     comment: string
     interactionId?: string | null
@@ -31892,8 +31899,8 @@ export namespace Prisma {
   export type TransactionUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     kind?: EnumTransactionKindFieldUpdateOperationsInput | $Enums.TransactionKind
-    amount?: IntFieldUpdateOperationsInput | number
-    toAmount?: NullableIntFieldUpdateOperationsInput | number | null
+    amount?: BigIntFieldUpdateOperationsInput | bigint | number
+    toAmount?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     rate?: NullableStringFieldUpdateOperationsInput | string | null
     comment?: StringFieldUpdateOperationsInput | string
     groupId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -31910,8 +31917,8 @@ export namespace Prisma {
     kind?: EnumTransactionKindFieldUpdateOperationsInput | $Enums.TransactionKind
     fromAccountId?: NullableStringFieldUpdateOperationsInput | string | null
     toAccountId?: NullableStringFieldUpdateOperationsInput | string | null
-    amount?: IntFieldUpdateOperationsInput | number
-    toAmount?: NullableIntFieldUpdateOperationsInput | number | null
+    amount?: BigIntFieldUpdateOperationsInput | bigint | number
+    toAmount?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     rate?: NullableStringFieldUpdateOperationsInput | string | null
     comment?: StringFieldUpdateOperationsInput | string
     interactionId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -31926,8 +31933,8 @@ export namespace Prisma {
     kind: $Enums.TransactionKind
     fromAccountId?: string | null
     toAccountId?: string | null
-    amount: number
-    toAmount?: number | null
+    amount: bigint | number
+    toAmount?: bigint | number | null
     rate?: string | null
     comment: string
     interactionId?: string | null
@@ -31940,8 +31947,8 @@ export namespace Prisma {
   export type TransactionUpdateManyMutationInput = {
     id?: StringFieldUpdateOperationsInput | string
     kind?: EnumTransactionKindFieldUpdateOperationsInput | $Enums.TransactionKind
-    amount?: IntFieldUpdateOperationsInput | number
-    toAmount?: NullableIntFieldUpdateOperationsInput | number | null
+    amount?: BigIntFieldUpdateOperationsInput | bigint | number
+    toAmount?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     rate?: NullableStringFieldUpdateOperationsInput | string | null
     comment?: StringFieldUpdateOperationsInput | string
     groupId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -31955,8 +31962,8 @@ export namespace Prisma {
     kind?: EnumTransactionKindFieldUpdateOperationsInput | $Enums.TransactionKind
     fromAccountId?: NullableStringFieldUpdateOperationsInput | string | null
     toAccountId?: NullableStringFieldUpdateOperationsInput | string | null
-    amount?: IntFieldUpdateOperationsInput | number
-    toAmount?: NullableIntFieldUpdateOperationsInput | number | null
+    amount?: BigIntFieldUpdateOperationsInput | bigint | number
+    toAmount?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     rate?: NullableStringFieldUpdateOperationsInput | string | null
     comment?: StringFieldUpdateOperationsInput | string
     interactionId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -32893,15 +32900,26 @@ export namespace Prisma {
     not?: NestedIntFilter<$PrismaModel> | number
   }
 
-  export type IntNullableFilter<$PrismaModel = never> = {
-    equals?: number | IntFieldRefInput<$PrismaModel> | null
-    in?: number[] | null
-    notIn?: number[] | null
-    lt?: number | IntFieldRefInput<$PrismaModel>
-    lte?: number | IntFieldRefInput<$PrismaModel>
-    gt?: number | IntFieldRefInput<$PrismaModel>
-    gte?: number | IntFieldRefInput<$PrismaModel>
-    not?: NestedIntNullableFilter<$PrismaModel> | number | null
+  export type BigIntFilter<$PrismaModel = never> = {
+    equals?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    in?: bigint[] | number[]
+    notIn?: bigint[] | number[]
+    lt?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    lte?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    gt?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    gte?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    not?: NestedBigIntFilter<$PrismaModel> | bigint | number
+  }
+
+  export type BigIntNullableFilter<$PrismaModel = never> = {
+    equals?: bigint | number | BigIntFieldRefInput<$PrismaModel> | null
+    in?: bigint[] | number[] | null
+    notIn?: bigint[] | number[] | null
+    lt?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    lte?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    gt?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    gte?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    not?: NestedBigIntNullableFilter<$PrismaModel> | bigint | number | null
   }
 
   export type EnumFrequencyFilter<$PrismaModel = never> = {
@@ -32916,6 +32934,17 @@ export namespace Prisma {
     in?: $Enums.PaymentMode[]
     notIn?: $Enums.PaymentMode[]
     not?: NestedEnumPaymentModeFilter<$PrismaModel> | $Enums.PaymentMode
+  }
+
+  export type IntNullableFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel> | null
+    in?: number[] | null
+    notIn?: number[] | null
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntNullableFilter<$PrismaModel> | number | null
   }
 
   export type InteractionScalarRelationFilter = {
@@ -33015,20 +33044,36 @@ export namespace Prisma {
     _max?: NestedIntFilter<$PrismaModel>
   }
 
-  export type IntNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: number | IntFieldRefInput<$PrismaModel> | null
-    in?: number[] | null
-    notIn?: number[] | null
-    lt?: number | IntFieldRefInput<$PrismaModel>
-    lte?: number | IntFieldRefInput<$PrismaModel>
-    gt?: number | IntFieldRefInput<$PrismaModel>
-    gte?: number | IntFieldRefInput<$PrismaModel>
-    not?: NestedIntNullableWithAggregatesFilter<$PrismaModel> | number | null
+  export type BigIntWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    in?: bigint[] | number[]
+    notIn?: bigint[] | number[]
+    lt?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    lte?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    gt?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    gte?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    not?: NestedBigIntWithAggregatesFilter<$PrismaModel> | bigint | number
+    _count?: NestedIntFilter<$PrismaModel>
+    _avg?: NestedFloatFilter<$PrismaModel>
+    _sum?: NestedBigIntFilter<$PrismaModel>
+    _min?: NestedBigIntFilter<$PrismaModel>
+    _max?: NestedBigIntFilter<$PrismaModel>
+  }
+
+  export type BigIntNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: bigint | number | BigIntFieldRefInput<$PrismaModel> | null
+    in?: bigint[] | number[] | null
+    notIn?: bigint[] | number[] | null
+    lt?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    lte?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    gt?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    gte?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    not?: NestedBigIntNullableWithAggregatesFilter<$PrismaModel> | bigint | number | null
     _count?: NestedIntNullableFilter<$PrismaModel>
     _avg?: NestedFloatNullableFilter<$PrismaModel>
-    _sum?: NestedIntNullableFilter<$PrismaModel>
-    _min?: NestedIntNullableFilter<$PrismaModel>
-    _max?: NestedIntNullableFilter<$PrismaModel>
+    _sum?: NestedBigIntNullableFilter<$PrismaModel>
+    _min?: NestedBigIntNullableFilter<$PrismaModel>
+    _max?: NestedBigIntNullableFilter<$PrismaModel>
   }
 
   export type EnumFrequencyWithAggregatesFilter<$PrismaModel = never> = {
@@ -33049,6 +33094,22 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumPaymentModeFilter<$PrismaModel>
     _max?: NestedEnumPaymentModeFilter<$PrismaModel>
+  }
+
+  export type IntNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel> | null
+    in?: number[] | null
+    notIn?: number[] | null
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntNullableWithAggregatesFilter<$PrismaModel> | number | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _avg?: NestedFloatNullableFilter<$PrismaModel>
+    _sum?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedIntNullableFilter<$PrismaModel>
+    _max?: NestedIntNullableFilter<$PrismaModel>
   }
 
   export type InteractionCuratorInteractionIdCuratorNodeIdCompoundUniqueInput = {
@@ -34704,12 +34765,20 @@ export namespace Prisma {
     divide?: number
   }
 
-  export type NullableIntFieldUpdateOperationsInput = {
-    set?: number | null
-    increment?: number
-    decrement?: number
-    multiply?: number
-    divide?: number
+  export type BigIntFieldUpdateOperationsInput = {
+    set?: bigint | number
+    increment?: bigint | number
+    decrement?: bigint | number
+    multiply?: bigint | number
+    divide?: bigint | number
+  }
+
+  export type NullableBigIntFieldUpdateOperationsInput = {
+    set?: bigint | number | null
+    increment?: bigint | number
+    decrement?: bigint | number
+    multiply?: bigint | number
+    divide?: bigint | number
   }
 
   export type EnumFrequencyFieldUpdateOperationsInput = {
@@ -34718,6 +34787,14 @@ export namespace Prisma {
 
   export type EnumPaymentModeFieldUpdateOperationsInput = {
     set?: $Enums.PaymentMode
+  }
+
+  export type NullableIntFieldUpdateOperationsInput = {
+    set?: number | null
+    increment?: number
+    decrement?: number
+    multiply?: number
+    divide?: number
   }
 
   export type InteractionUpdateOneRequiredWithoutTermsNestedInput = {
@@ -35725,6 +35802,28 @@ export namespace Prisma {
     _max?: NestedEnumInteractionStatusFilter<$PrismaModel>
   }
 
+  export type NestedBigIntFilter<$PrismaModel = never> = {
+    equals?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    in?: bigint[] | number[]
+    notIn?: bigint[] | number[]
+    lt?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    lte?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    gt?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    gte?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    not?: NestedBigIntFilter<$PrismaModel> | bigint | number
+  }
+
+  export type NestedBigIntNullableFilter<$PrismaModel = never> = {
+    equals?: bigint | number | BigIntFieldRefInput<$PrismaModel> | null
+    in?: bigint[] | number[] | null
+    notIn?: bigint[] | number[] | null
+    lt?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    lte?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    gt?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    gte?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    not?: NestedBigIntNullableFilter<$PrismaModel> | bigint | number | null
+  }
+
   export type NestedEnumFrequencyFilter<$PrismaModel = never> = {
     equals?: $Enums.Frequency | EnumFrequencyFieldRefInput<$PrismaModel>
     in?: $Enums.Frequency[]
@@ -35755,20 +35854,36 @@ export namespace Prisma {
     _max?: NestedIntFilter<$PrismaModel>
   }
 
-  export type NestedIntNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: number | IntFieldRefInput<$PrismaModel> | null
-    in?: number[] | null
-    notIn?: number[] | null
-    lt?: number | IntFieldRefInput<$PrismaModel>
-    lte?: number | IntFieldRefInput<$PrismaModel>
-    gt?: number | IntFieldRefInput<$PrismaModel>
-    gte?: number | IntFieldRefInput<$PrismaModel>
-    not?: NestedIntNullableWithAggregatesFilter<$PrismaModel> | number | null
+  export type NestedBigIntWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    in?: bigint[] | number[]
+    notIn?: bigint[] | number[]
+    lt?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    lte?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    gt?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    gte?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    not?: NestedBigIntWithAggregatesFilter<$PrismaModel> | bigint | number
+    _count?: NestedIntFilter<$PrismaModel>
+    _avg?: NestedFloatFilter<$PrismaModel>
+    _sum?: NestedBigIntFilter<$PrismaModel>
+    _min?: NestedBigIntFilter<$PrismaModel>
+    _max?: NestedBigIntFilter<$PrismaModel>
+  }
+
+  export type NestedBigIntNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: bigint | number | BigIntFieldRefInput<$PrismaModel> | null
+    in?: bigint[] | number[] | null
+    notIn?: bigint[] | number[] | null
+    lt?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    lte?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    gt?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    gte?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    not?: NestedBigIntNullableWithAggregatesFilter<$PrismaModel> | bigint | number | null
     _count?: NestedIntNullableFilter<$PrismaModel>
     _avg?: NestedFloatNullableFilter<$PrismaModel>
-    _sum?: NestedIntNullableFilter<$PrismaModel>
-    _min?: NestedIntNullableFilter<$PrismaModel>
-    _max?: NestedIntNullableFilter<$PrismaModel>
+    _sum?: NestedBigIntNullableFilter<$PrismaModel>
+    _min?: NestedBigIntNullableFilter<$PrismaModel>
+    _max?: NestedBigIntNullableFilter<$PrismaModel>
   }
 
   export type NestedFloatNullableFilter<$PrismaModel = never> = {
@@ -35800,6 +35915,22 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumPaymentModeFilter<$PrismaModel>
     _max?: NestedEnumPaymentModeFilter<$PrismaModel>
+  }
+
+  export type NestedIntNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel> | null
+    in?: number[] | null
+    notIn?: number[] | null
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntNullableWithAggregatesFilter<$PrismaModel> | number | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _avg?: NestedFloatNullableFilter<$PrismaModel>
+    _sum?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedIntNullableFilter<$PrismaModel>
+    _max?: NestedIntNullableFilter<$PrismaModel>
   }
 
   export type NestedEnumProposalKindFilter<$PrismaModel = never> = {
@@ -36052,7 +36183,7 @@ export namespace Prisma {
 
   export type AccountCreateWithoutNodeInput = {
     id?: string
-    balance?: number
+    balance?: bigint | number
     isPrimaryFiat?: boolean
     isReserve?: boolean
     backsCurrencyId?: string
@@ -36065,7 +36196,7 @@ export namespace Prisma {
   export type AccountUncheckedCreateWithoutNodeInput = {
     id?: string
     currencyId: string
-    balance?: number
+    balance?: bigint | number
     isPrimaryFiat?: boolean
     isReserve?: boolean
     backsCurrencyId?: string
@@ -36395,7 +36526,7 @@ export namespace Prisma {
     id?: StringFilter<"Account"> | string
     nodeId?: StringFilter<"Account"> | string
     currencyId?: StringFilter<"Account"> | string
-    balance?: IntFilter<"Account"> | number
+    balance?: BigIntFilter<"Account"> | bigint | number
     isPrimaryFiat?: BoolFilter<"Account"> | boolean
     isReserve?: BoolFilter<"Account"> | boolean
     backsCurrencyId?: StringFilter<"Account"> | string
@@ -37706,8 +37837,8 @@ export namespace Prisma {
     id?: string
     version: number
     description?: string | null
-    amount: number
-    counterAmount?: number | null
+    amount: bigint | number
+    counterAmount?: bigint | number | null
     frequency?: $Enums.Frequency
     paymentMode?: $Enums.PaymentMode
     startDate?: Date | string | null
@@ -37724,9 +37855,9 @@ export namespace Prisma {
     id?: string
     version: number
     description?: string | null
-    amount: number
+    amount: bigint | number
     currencyId: string
-    counterAmount?: number | null
+    counterAmount?: bigint | number | null
     counterCurrencyId?: string | null
     frequency?: $Enums.Frequency
     paymentMode?: $Enums.PaymentMode
@@ -37792,8 +37923,8 @@ export namespace Prisma {
   export type TransactionCreateWithoutInteractionInput = {
     id?: string
     kind: $Enums.TransactionKind
-    amount: number
-    toAmount?: number | null
+    amount: bigint | number
+    toAmount?: bigint | number | null
     rate?: string | null
     comment: string
     groupId?: string | null
@@ -37809,8 +37940,8 @@ export namespace Prisma {
     kind: $Enums.TransactionKind
     fromAccountId?: string | null
     toAccountId?: string | null
-    amount: number
-    toAmount?: number | null
+    amount: bigint | number
+    toAmount?: bigint | number | null
     rate?: string | null
     comment: string
     groupId?: string | null
@@ -37920,9 +38051,9 @@ export namespace Prisma {
     interactionId?: StringFilter<"InteractionTerms"> | string
     version?: IntFilter<"InteractionTerms"> | number
     description?: StringNullableFilter<"InteractionTerms"> | string | null
-    amount?: IntFilter<"InteractionTerms"> | number
+    amount?: BigIntFilter<"InteractionTerms"> | bigint | number
     currencyId?: StringFilter<"InteractionTerms"> | string
-    counterAmount?: IntNullableFilter<"InteractionTerms"> | number | null
+    counterAmount?: BigIntNullableFilter<"InteractionTerms"> | bigint | number | null
     counterCurrencyId?: StringNullableFilter<"InteractionTerms"> | string | null
     frequency?: EnumFrequencyFilter<"InteractionTerms"> | $Enums.Frequency
     paymentMode?: EnumPaymentModeFilter<"InteractionTerms"> | $Enums.PaymentMode
@@ -38010,8 +38141,8 @@ export namespace Prisma {
     kind?: EnumTransactionKindFilter<"Transaction"> | $Enums.TransactionKind
     fromAccountId?: StringNullableFilter<"Transaction"> | string | null
     toAccountId?: StringNullableFilter<"Transaction"> | string | null
-    amount?: IntFilter<"Transaction"> | number
-    toAmount?: IntNullableFilter<"Transaction"> | number | null
+    amount?: BigIntFilter<"Transaction"> | bigint | number
+    toAmount?: BigIntNullableFilter<"Transaction"> | bigint | number | null
     rate?: StringNullableFilter<"Transaction"> | string | null
     comment?: StringFilter<"Transaction"> | string
     interactionId?: StringNullableFilter<"Transaction"> | string | null
@@ -38929,7 +39060,7 @@ export namespace Prisma {
 
   export type AccountCreateWithoutCurrencyInput = {
     id?: string
-    balance?: number
+    balance?: bigint | number
     isPrimaryFiat?: boolean
     isReserve?: boolean
     backsCurrencyId?: string
@@ -38942,7 +39073,7 @@ export namespace Prisma {
   export type AccountUncheckedCreateWithoutCurrencyInput = {
     id?: string
     nodeId: string
-    balance?: number
+    balance?: bigint | number
     isPrimaryFiat?: boolean
     isReserve?: boolean
     backsCurrencyId?: string
@@ -38964,8 +39095,8 @@ export namespace Prisma {
     id?: string
     version: number
     description?: string | null
-    amount: number
-    counterAmount?: number | null
+    amount: bigint | number
+    counterAmount?: bigint | number | null
     frequency?: $Enums.Frequency
     paymentMode?: $Enums.PaymentMode
     startDate?: Date | string | null
@@ -38983,8 +39114,8 @@ export namespace Prisma {
     interactionId: string
     version: number
     description?: string | null
-    amount: number
-    counterAmount?: number | null
+    amount: bigint | number
+    counterAmount?: bigint | number | null
     counterCurrencyId?: string | null
     frequency?: $Enums.Frequency
     paymentMode?: $Enums.PaymentMode
@@ -39009,8 +39140,8 @@ export namespace Prisma {
     id?: string
     version: number
     description?: string | null
-    amount: number
-    counterAmount?: number | null
+    amount: bigint | number
+    counterAmount?: bigint | number | null
     frequency?: $Enums.Frequency
     paymentMode?: $Enums.PaymentMode
     startDate?: Date | string | null
@@ -39028,9 +39159,9 @@ export namespace Prisma {
     interactionId: string
     version: number
     description?: string | null
-    amount: number
+    amount: bigint | number
     currencyId: string
-    counterAmount?: number | null
+    counterAmount?: bigint | number | null
     frequency?: $Enums.Frequency
     paymentMode?: $Enums.PaymentMode
     startDate?: Date | string | null
@@ -39739,8 +39870,8 @@ export namespace Prisma {
   export type TransactionCreateWithoutFromInput = {
     id?: string
     kind: $Enums.TransactionKind
-    amount: number
-    toAmount?: number | null
+    amount: bigint | number
+    toAmount?: bigint | number | null
     rate?: string | null
     comment: string
     groupId?: string | null
@@ -39755,8 +39886,8 @@ export namespace Prisma {
     id?: string
     kind: $Enums.TransactionKind
     toAccountId?: string | null
-    amount: number
-    toAmount?: number | null
+    amount: bigint | number
+    toAmount?: bigint | number | null
     rate?: string | null
     comment: string
     interactionId?: string | null
@@ -39778,8 +39909,8 @@ export namespace Prisma {
   export type TransactionCreateWithoutToInput = {
     id?: string
     kind: $Enums.TransactionKind
-    amount: number
-    toAmount?: number | null
+    amount: bigint | number
+    toAmount?: bigint | number | null
     rate?: string | null
     comment: string
     groupId?: string | null
@@ -39794,8 +39925,8 @@ export namespace Prisma {
     id?: string
     kind: $Enums.TransactionKind
     fromAccountId?: string | null
-    amount: number
-    toAmount?: number | null
+    amount: bigint | number
+    toAmount?: bigint | number | null
     rate?: string | null
     comment: string
     interactionId?: string | null
@@ -39966,7 +40097,7 @@ export namespace Prisma {
 
   export type AccountCreateWithoutOutgoingInput = {
     id?: string
-    balance?: number
+    balance?: bigint | number
     isPrimaryFiat?: boolean
     isReserve?: boolean
     backsCurrencyId?: string
@@ -39980,7 +40111,7 @@ export namespace Prisma {
     id?: string
     nodeId: string
     currencyId: string
-    balance?: number
+    balance?: bigint | number
     isPrimaryFiat?: boolean
     isReserve?: boolean
     backsCurrencyId?: string
@@ -39995,7 +40126,7 @@ export namespace Prisma {
 
   export type AccountCreateWithoutIncomingInput = {
     id?: string
-    balance?: number
+    balance?: bigint | number
     isPrimaryFiat?: boolean
     isReserve?: boolean
     backsCurrencyId?: string
@@ -40009,7 +40140,7 @@ export namespace Prisma {
     id?: string
     nodeId: string
     currencyId: string
-    balance?: number
+    balance?: bigint | number
     isPrimaryFiat?: boolean
     isReserve?: boolean
     backsCurrencyId?: string
@@ -40072,7 +40203,7 @@ export namespace Prisma {
 
   export type AccountUpdateWithoutOutgoingInput = {
     id?: StringFieldUpdateOperationsInput | string
-    balance?: IntFieldUpdateOperationsInput | number
+    balance?: BigIntFieldUpdateOperationsInput | bigint | number
     isPrimaryFiat?: BoolFieldUpdateOperationsInput | boolean
     isReserve?: BoolFieldUpdateOperationsInput | boolean
     backsCurrencyId?: StringFieldUpdateOperationsInput | string
@@ -40086,7 +40217,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     nodeId?: StringFieldUpdateOperationsInput | string
     currencyId?: StringFieldUpdateOperationsInput | string
-    balance?: IntFieldUpdateOperationsInput | number
+    balance?: BigIntFieldUpdateOperationsInput | bigint | number
     isPrimaryFiat?: BoolFieldUpdateOperationsInput | boolean
     isReserve?: BoolFieldUpdateOperationsInput | boolean
     backsCurrencyId?: StringFieldUpdateOperationsInput | string
@@ -40107,7 +40238,7 @@ export namespace Prisma {
 
   export type AccountUpdateWithoutIncomingInput = {
     id?: StringFieldUpdateOperationsInput | string
-    balance?: IntFieldUpdateOperationsInput | number
+    balance?: BigIntFieldUpdateOperationsInput | bigint | number
     isPrimaryFiat?: BoolFieldUpdateOperationsInput | boolean
     isReserve?: BoolFieldUpdateOperationsInput | boolean
     backsCurrencyId?: StringFieldUpdateOperationsInput | string
@@ -40121,7 +40252,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     nodeId?: StringFieldUpdateOperationsInput | string
     currencyId?: StringFieldUpdateOperationsInput | string
-    balance?: IntFieldUpdateOperationsInput | number
+    balance?: BigIntFieldUpdateOperationsInput | bigint | number
     isPrimaryFiat?: BoolFieldUpdateOperationsInput | boolean
     isReserve?: BoolFieldUpdateOperationsInput | boolean
     backsCurrencyId?: StringFieldUpdateOperationsInput | string
@@ -40431,7 +40562,7 @@ export namespace Prisma {
   export type AccountCreateManyNodeInput = {
     id?: string
     currencyId: string
-    balance?: number
+    balance?: bigint | number
     isPrimaryFiat?: boolean
     isReserve?: boolean
     backsCurrencyId?: string
@@ -40544,7 +40675,7 @@ export namespace Prisma {
 
   export type AccountUpdateWithoutNodeInput = {
     id?: StringFieldUpdateOperationsInput | string
-    balance?: IntFieldUpdateOperationsInput | number
+    balance?: BigIntFieldUpdateOperationsInput | bigint | number
     isPrimaryFiat?: BoolFieldUpdateOperationsInput | boolean
     isReserve?: BoolFieldUpdateOperationsInput | boolean
     backsCurrencyId?: StringFieldUpdateOperationsInput | string
@@ -40557,7 +40688,7 @@ export namespace Prisma {
   export type AccountUncheckedUpdateWithoutNodeInput = {
     id?: StringFieldUpdateOperationsInput | string
     currencyId?: StringFieldUpdateOperationsInput | string
-    balance?: IntFieldUpdateOperationsInput | number
+    balance?: BigIntFieldUpdateOperationsInput | bigint | number
     isPrimaryFiat?: BoolFieldUpdateOperationsInput | boolean
     isReserve?: BoolFieldUpdateOperationsInput | boolean
     backsCurrencyId?: StringFieldUpdateOperationsInput | string
@@ -40569,7 +40700,7 @@ export namespace Prisma {
   export type AccountUncheckedUpdateManyWithoutNodeInput = {
     id?: StringFieldUpdateOperationsInput | string
     currencyId?: StringFieldUpdateOperationsInput | string
-    balance?: IntFieldUpdateOperationsInput | number
+    balance?: BigIntFieldUpdateOperationsInput | bigint | number
     isPrimaryFiat?: BoolFieldUpdateOperationsInput | boolean
     isReserve?: BoolFieldUpdateOperationsInput | boolean
     backsCurrencyId?: StringFieldUpdateOperationsInput | string
@@ -40890,9 +41021,9 @@ export namespace Prisma {
     id?: string
     version: number
     description?: string | null
-    amount: number
+    amount: bigint | number
     currencyId: string
-    counterAmount?: number | null
+    counterAmount?: bigint | number | null
     counterCurrencyId?: string | null
     frequency?: $Enums.Frequency
     paymentMode?: $Enums.PaymentMode
@@ -40921,8 +41052,8 @@ export namespace Prisma {
     kind: $Enums.TransactionKind
     fromAccountId?: string | null
     toAccountId?: string | null
-    amount: number
-    toAmount?: number | null
+    amount: bigint | number
+    toAmount?: bigint | number | null
     rate?: string | null
     comment: string
     groupId?: string | null
@@ -40948,8 +41079,8 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     version?: IntFieldUpdateOperationsInput | number
     description?: NullableStringFieldUpdateOperationsInput | string | null
-    amount?: IntFieldUpdateOperationsInput | number
-    counterAmount?: NullableIntFieldUpdateOperationsInput | number | null
+    amount?: BigIntFieldUpdateOperationsInput | bigint | number
+    counterAmount?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     frequency?: EnumFrequencyFieldUpdateOperationsInput | $Enums.Frequency
     paymentMode?: EnumPaymentModeFieldUpdateOperationsInput | $Enums.PaymentMode
     startDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -40966,9 +41097,9 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     version?: IntFieldUpdateOperationsInput | number
     description?: NullableStringFieldUpdateOperationsInput | string | null
-    amount?: IntFieldUpdateOperationsInput | number
+    amount?: BigIntFieldUpdateOperationsInput | bigint | number
     currencyId?: StringFieldUpdateOperationsInput | string
-    counterAmount?: NullableIntFieldUpdateOperationsInput | number | null
+    counterAmount?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     counterCurrencyId?: NullableStringFieldUpdateOperationsInput | string | null
     frequency?: EnumFrequencyFieldUpdateOperationsInput | $Enums.Frequency
     paymentMode?: EnumPaymentModeFieldUpdateOperationsInput | $Enums.PaymentMode
@@ -40984,9 +41115,9 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     version?: IntFieldUpdateOperationsInput | number
     description?: NullableStringFieldUpdateOperationsInput | string | null
-    amount?: IntFieldUpdateOperationsInput | number
+    amount?: BigIntFieldUpdateOperationsInput | bigint | number
     currencyId?: StringFieldUpdateOperationsInput | string
-    counterAmount?: NullableIntFieldUpdateOperationsInput | number | null
+    counterAmount?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     counterCurrencyId?: NullableStringFieldUpdateOperationsInput | string | null
     frequency?: EnumFrequencyFieldUpdateOperationsInput | $Enums.Frequency
     paymentMode?: EnumPaymentModeFieldUpdateOperationsInput | $Enums.PaymentMode
@@ -41037,8 +41168,8 @@ export namespace Prisma {
   export type TransactionUpdateWithoutInteractionInput = {
     id?: StringFieldUpdateOperationsInput | string
     kind?: EnumTransactionKindFieldUpdateOperationsInput | $Enums.TransactionKind
-    amount?: IntFieldUpdateOperationsInput | number
-    toAmount?: NullableIntFieldUpdateOperationsInput | number | null
+    amount?: BigIntFieldUpdateOperationsInput | bigint | number
+    toAmount?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     rate?: NullableStringFieldUpdateOperationsInput | string | null
     comment?: StringFieldUpdateOperationsInput | string
     groupId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -41054,8 +41185,8 @@ export namespace Prisma {
     kind?: EnumTransactionKindFieldUpdateOperationsInput | $Enums.TransactionKind
     fromAccountId?: NullableStringFieldUpdateOperationsInput | string | null
     toAccountId?: NullableStringFieldUpdateOperationsInput | string | null
-    amount?: IntFieldUpdateOperationsInput | number
-    toAmount?: NullableIntFieldUpdateOperationsInput | number | null
+    amount?: BigIntFieldUpdateOperationsInput | bigint | number
+    toAmount?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     rate?: NullableStringFieldUpdateOperationsInput | string | null
     comment?: StringFieldUpdateOperationsInput | string
     groupId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -41069,8 +41200,8 @@ export namespace Prisma {
     kind?: EnumTransactionKindFieldUpdateOperationsInput | $Enums.TransactionKind
     fromAccountId?: NullableStringFieldUpdateOperationsInput | string | null
     toAccountId?: NullableStringFieldUpdateOperationsInput | string | null
-    amount?: IntFieldUpdateOperationsInput | number
-    toAmount?: NullableIntFieldUpdateOperationsInput | number | null
+    amount?: BigIntFieldUpdateOperationsInput | bigint | number
+    toAmount?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     rate?: NullableStringFieldUpdateOperationsInput | string | null
     comment?: StringFieldUpdateOperationsInput | string
     groupId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -41186,7 +41317,7 @@ export namespace Prisma {
   export type AccountCreateManyCurrencyInput = {
     id?: string
     nodeId: string
-    balance?: number
+    balance?: bigint | number
     isPrimaryFiat?: boolean
     isReserve?: boolean
     backsCurrencyId?: string
@@ -41198,8 +41329,8 @@ export namespace Prisma {
     interactionId: string
     version: number
     description?: string | null
-    amount: number
-    counterAmount?: number | null
+    amount: bigint | number
+    counterAmount?: bigint | number | null
     counterCurrencyId?: string | null
     frequency?: $Enums.Frequency
     paymentMode?: $Enums.PaymentMode
@@ -41216,9 +41347,9 @@ export namespace Prisma {
     interactionId: string
     version: number
     description?: string | null
-    amount: number
+    amount: bigint | number
     currencyId: string
-    counterAmount?: number | null
+    counterAmount?: bigint | number | null
     frequency?: $Enums.Frequency
     paymentMode?: $Enums.PaymentMode
     startDate?: Date | string | null
@@ -41385,7 +41516,7 @@ export namespace Prisma {
 
   export type AccountUpdateWithoutCurrencyInput = {
     id?: StringFieldUpdateOperationsInput | string
-    balance?: IntFieldUpdateOperationsInput | number
+    balance?: BigIntFieldUpdateOperationsInput | bigint | number
     isPrimaryFiat?: BoolFieldUpdateOperationsInput | boolean
     isReserve?: BoolFieldUpdateOperationsInput | boolean
     backsCurrencyId?: StringFieldUpdateOperationsInput | string
@@ -41398,7 +41529,7 @@ export namespace Prisma {
   export type AccountUncheckedUpdateWithoutCurrencyInput = {
     id?: StringFieldUpdateOperationsInput | string
     nodeId?: StringFieldUpdateOperationsInput | string
-    balance?: IntFieldUpdateOperationsInput | number
+    balance?: BigIntFieldUpdateOperationsInput | bigint | number
     isPrimaryFiat?: BoolFieldUpdateOperationsInput | boolean
     isReserve?: BoolFieldUpdateOperationsInput | boolean
     backsCurrencyId?: StringFieldUpdateOperationsInput | string
@@ -41410,7 +41541,7 @@ export namespace Prisma {
   export type AccountUncheckedUpdateManyWithoutCurrencyInput = {
     id?: StringFieldUpdateOperationsInput | string
     nodeId?: StringFieldUpdateOperationsInput | string
-    balance?: IntFieldUpdateOperationsInput | number
+    balance?: BigIntFieldUpdateOperationsInput | bigint | number
     isPrimaryFiat?: BoolFieldUpdateOperationsInput | boolean
     isReserve?: BoolFieldUpdateOperationsInput | boolean
     backsCurrencyId?: StringFieldUpdateOperationsInput | string
@@ -41421,8 +41552,8 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     version?: IntFieldUpdateOperationsInput | number
     description?: NullableStringFieldUpdateOperationsInput | string | null
-    amount?: IntFieldUpdateOperationsInput | number
-    counterAmount?: NullableIntFieldUpdateOperationsInput | number | null
+    amount?: BigIntFieldUpdateOperationsInput | bigint | number
+    counterAmount?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     frequency?: EnumFrequencyFieldUpdateOperationsInput | $Enums.Frequency
     paymentMode?: EnumPaymentModeFieldUpdateOperationsInput | $Enums.PaymentMode
     startDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -41440,8 +41571,8 @@ export namespace Prisma {
     interactionId?: StringFieldUpdateOperationsInput | string
     version?: IntFieldUpdateOperationsInput | number
     description?: NullableStringFieldUpdateOperationsInput | string | null
-    amount?: IntFieldUpdateOperationsInput | number
-    counterAmount?: NullableIntFieldUpdateOperationsInput | number | null
+    amount?: BigIntFieldUpdateOperationsInput | bigint | number
+    counterAmount?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     counterCurrencyId?: NullableStringFieldUpdateOperationsInput | string | null
     frequency?: EnumFrequencyFieldUpdateOperationsInput | $Enums.Frequency
     paymentMode?: EnumPaymentModeFieldUpdateOperationsInput | $Enums.PaymentMode
@@ -41458,8 +41589,8 @@ export namespace Prisma {
     interactionId?: StringFieldUpdateOperationsInput | string
     version?: IntFieldUpdateOperationsInput | number
     description?: NullableStringFieldUpdateOperationsInput | string | null
-    amount?: IntFieldUpdateOperationsInput | number
-    counterAmount?: NullableIntFieldUpdateOperationsInput | number | null
+    amount?: BigIntFieldUpdateOperationsInput | bigint | number
+    counterAmount?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     counterCurrencyId?: NullableStringFieldUpdateOperationsInput | string | null
     frequency?: EnumFrequencyFieldUpdateOperationsInput | $Enums.Frequency
     paymentMode?: EnumPaymentModeFieldUpdateOperationsInput | $Enums.PaymentMode
@@ -41475,8 +41606,8 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     version?: IntFieldUpdateOperationsInput | number
     description?: NullableStringFieldUpdateOperationsInput | string | null
-    amount?: IntFieldUpdateOperationsInput | number
-    counterAmount?: NullableIntFieldUpdateOperationsInput | number | null
+    amount?: BigIntFieldUpdateOperationsInput | bigint | number
+    counterAmount?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     frequency?: EnumFrequencyFieldUpdateOperationsInput | $Enums.Frequency
     paymentMode?: EnumPaymentModeFieldUpdateOperationsInput | $Enums.PaymentMode
     startDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -41494,9 +41625,9 @@ export namespace Prisma {
     interactionId?: StringFieldUpdateOperationsInput | string
     version?: IntFieldUpdateOperationsInput | number
     description?: NullableStringFieldUpdateOperationsInput | string | null
-    amount?: IntFieldUpdateOperationsInput | number
+    amount?: BigIntFieldUpdateOperationsInput | bigint | number
     currencyId?: StringFieldUpdateOperationsInput | string
-    counterAmount?: NullableIntFieldUpdateOperationsInput | number | null
+    counterAmount?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     frequency?: EnumFrequencyFieldUpdateOperationsInput | $Enums.Frequency
     paymentMode?: EnumPaymentModeFieldUpdateOperationsInput | $Enums.PaymentMode
     startDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -41512,9 +41643,9 @@ export namespace Prisma {
     interactionId?: StringFieldUpdateOperationsInput | string
     version?: IntFieldUpdateOperationsInput | number
     description?: NullableStringFieldUpdateOperationsInput | string | null
-    amount?: IntFieldUpdateOperationsInput | number
+    amount?: BigIntFieldUpdateOperationsInput | bigint | number
     currencyId?: StringFieldUpdateOperationsInput | string
-    counterAmount?: NullableIntFieldUpdateOperationsInput | number | null
+    counterAmount?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     frequency?: EnumFrequencyFieldUpdateOperationsInput | $Enums.Frequency
     paymentMode?: EnumPaymentModeFieldUpdateOperationsInput | $Enums.PaymentMode
     startDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -41610,8 +41741,8 @@ export namespace Prisma {
     id?: string
     kind: $Enums.TransactionKind
     toAccountId?: string | null
-    amount: number
-    toAmount?: number | null
+    amount: bigint | number
+    toAmount?: bigint | number | null
     rate?: string | null
     comment: string
     interactionId?: string | null
@@ -41625,8 +41756,8 @@ export namespace Prisma {
     id?: string
     kind: $Enums.TransactionKind
     fromAccountId?: string | null
-    amount: number
-    toAmount?: number | null
+    amount: bigint | number
+    toAmount?: bigint | number | null
     rate?: string | null
     comment: string
     interactionId?: string | null
@@ -41639,8 +41770,8 @@ export namespace Prisma {
   export type TransactionUpdateWithoutFromInput = {
     id?: StringFieldUpdateOperationsInput | string
     kind?: EnumTransactionKindFieldUpdateOperationsInput | $Enums.TransactionKind
-    amount?: IntFieldUpdateOperationsInput | number
-    toAmount?: NullableIntFieldUpdateOperationsInput | number | null
+    amount?: BigIntFieldUpdateOperationsInput | bigint | number
+    toAmount?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     rate?: NullableStringFieldUpdateOperationsInput | string | null
     comment?: StringFieldUpdateOperationsInput | string
     groupId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -41655,8 +41786,8 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     kind?: EnumTransactionKindFieldUpdateOperationsInput | $Enums.TransactionKind
     toAccountId?: NullableStringFieldUpdateOperationsInput | string | null
-    amount?: IntFieldUpdateOperationsInput | number
-    toAmount?: NullableIntFieldUpdateOperationsInput | number | null
+    amount?: BigIntFieldUpdateOperationsInput | bigint | number
+    toAmount?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     rate?: NullableStringFieldUpdateOperationsInput | string | null
     comment?: StringFieldUpdateOperationsInput | string
     interactionId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -41670,8 +41801,8 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     kind?: EnumTransactionKindFieldUpdateOperationsInput | $Enums.TransactionKind
     toAccountId?: NullableStringFieldUpdateOperationsInput | string | null
-    amount?: IntFieldUpdateOperationsInput | number
-    toAmount?: NullableIntFieldUpdateOperationsInput | number | null
+    amount?: BigIntFieldUpdateOperationsInput | bigint | number
+    toAmount?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     rate?: NullableStringFieldUpdateOperationsInput | string | null
     comment?: StringFieldUpdateOperationsInput | string
     interactionId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -41684,8 +41815,8 @@ export namespace Prisma {
   export type TransactionUpdateWithoutToInput = {
     id?: StringFieldUpdateOperationsInput | string
     kind?: EnumTransactionKindFieldUpdateOperationsInput | $Enums.TransactionKind
-    amount?: IntFieldUpdateOperationsInput | number
-    toAmount?: NullableIntFieldUpdateOperationsInput | number | null
+    amount?: BigIntFieldUpdateOperationsInput | bigint | number
+    toAmount?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     rate?: NullableStringFieldUpdateOperationsInput | string | null
     comment?: StringFieldUpdateOperationsInput | string
     groupId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -41700,8 +41831,8 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     kind?: EnumTransactionKindFieldUpdateOperationsInput | $Enums.TransactionKind
     fromAccountId?: NullableStringFieldUpdateOperationsInput | string | null
-    amount?: IntFieldUpdateOperationsInput | number
-    toAmount?: NullableIntFieldUpdateOperationsInput | number | null
+    amount?: BigIntFieldUpdateOperationsInput | bigint | number
+    toAmount?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     rate?: NullableStringFieldUpdateOperationsInput | string | null
     comment?: StringFieldUpdateOperationsInput | string
     interactionId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -41715,8 +41846,8 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     kind?: EnumTransactionKindFieldUpdateOperationsInput | $Enums.TransactionKind
     fromAccountId?: NullableStringFieldUpdateOperationsInput | string | null
-    amount?: IntFieldUpdateOperationsInput | number
-    toAmount?: NullableIntFieldUpdateOperationsInput | number | null
+    amount?: BigIntFieldUpdateOperationsInput | bigint | number
+    toAmount?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     rate?: NullableStringFieldUpdateOperationsInput | string | null
     comment?: StringFieldUpdateOperationsInput | string
     interactionId?: NullableStringFieldUpdateOperationsInput | string | null

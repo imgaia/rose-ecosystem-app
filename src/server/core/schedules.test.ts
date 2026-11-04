@@ -28,7 +28,7 @@ async function schedule(extra: Partial<Terms>, anaBalance = 10_000) {
   await t.account(ana.id, t.rcc.id, anaBalance);
   const { interaction, proposal } = await sendPayment(t.db, self(ana), {
     toNodeId: ben.id,
-    terms: { description: "Rent", amount: 1_000, currencyId: t.rcc.id, frequency: "MONTHLY", ...extra },
+    terms: { description: "Rent", amount: 1_000n, currencyId: t.rcc.id, frequency: "MONTHLY", ...extra },
   });
   await accept(t.db, self(ben), proposal.id);
   return { ana, ben, interactionId: interaction.id };
@@ -44,11 +44,11 @@ describe("running due scheduled payments (UC-PAY-01)", () => {
     const second = await runDuePayments(t.db, now);
     expect(second).toEqual({ paid: [], completed: [], failed: [], errors: [] });
 
-    expect(await t.balanceOf(ana.id, t.rcc.id)).toBe(9_000);
-    expect(await t.balanceOf(ben.id, t.rcc.id)).toBe(1_000);
+    expect(await t.balanceOf(ana.id, t.rcc.id)).toBe(9_000n);
+    expect(await t.balanceOf(ben.id, t.rcc.id)).toBe(1_000n);
     const rows = await paymentsOf(interactionId);
     expect(rows).toHaveLength(1);
-    expect(rows[0]).toMatchObject({ kind: "PAYMENT", amount: 1_000, comment: "Scheduled payment 1 of 12: Rent" });
+    expect(rows[0]).toMatchObject({ kind: "PAYMENT", amount: 1_000n, comment: "Scheduled payment 1 of 12: Rent" });
     expect((await interactionOf(interactionId)).nextDueAt).toEqual(day("2026-02-15"));
   });
 
@@ -84,8 +84,8 @@ describe("running due scheduled payments (UC-PAY-01)", () => {
 
     expect((await runDuePayments(t.db, day("2026-12-31"))).paid).toEqual([]);
     expect(await paymentsOf(interactionId)).toHaveLength(3);
-    expect(await t.balanceOf(ana.id, t.rcc.id)).toBe(7_000);
-    expect(await t.balanceOf(ben.id, t.rcc.id)).toBe(3_000);
+    expect(await t.balanceOf(ana.id, t.rcc.id)).toBe(7_000n);
+    expect(await t.balanceOf(ben.id, t.rcc.id)).toBe(3_000n);
     const activity = await t.db.activity.findMany({ where: { type: "interaction.completed", refId: interactionId } });
     expect(activity.map((a) => a.nodeId).sort()).toEqual([ana.id, ben.id].sort());
   });
@@ -114,7 +114,7 @@ describe("running due scheduled payments (UC-PAY-01)", () => {
     const { interaction, proposal } = await proposeWork(t.db, self(ana), {
       otherNodeId: ben.id,
       actingNodePays: true,
-      terms: { description: "Gardening", amount: 2_000, currencyId: t.rcc.id, frequency: "WEEKLY", maxPayments: 2, startDate: day("2026-05-04") },
+      terms: { description: "Gardening", amount: 2_000n, currencyId: t.rcc.id, frequency: "WEEKLY", maxPayments: 2, startDate: day("2026-05-04") },
     });
     await accept(t.db, self(ben), proposal.id);
     const result = await runDuePayments(t.db, day("2026-05-20"));
@@ -123,7 +123,7 @@ describe("running due scheduled payments (UC-PAY-01)", () => {
       "Scheduled payment 2 of 2: Gardening",
     ]);
     expect((await interactionOf(interaction.id)).status).toBe("COMPLETED");
-    expect(await t.balanceOf(ben.id, t.rcc.id)).toBe(4_000);
+    expect(await t.balanceOf(ben.id, t.rcc.id)).toBe(4_000n);
   });
 
   it("cancels the schedule when a payment fails, notifies both sides and lowers the trust score (R-PAY-05)", async () => {
@@ -143,7 +143,7 @@ describe("running due scheduled payments (UC-PAY-01)", () => {
 
     // Nothing moved for the failed payment.
     expect(await paymentsOf(interactionId)).toHaveLength(1);
-    expect(await t.balanceOf(ana.id, t.rcc.id)).toBe(500);
+    expect(await t.balanceOf(ana.id, t.rcc.id)).toBe(500n);
 
     const notices = await t.db.activity.findMany({ where: { type: "schedule.failed", refId: interactionId } });
     expect(notices.map((n) => n.nodeId).sort()).toEqual([ana.id, ben.id].sort());

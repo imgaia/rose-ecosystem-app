@@ -14,7 +14,7 @@ import { assertSees, permission, publicNode, type Ctx } from "./shared";
 async function proposalView(ctx: Ctx, proposal: Proposal) {
   const payload = JSON.parse(proposal.payload) as {
     termsVersion?: number;
-    amount?: number;
+    amount?: string | number; // a payment request's, as text (a number before step 11a-2)
     currencyId?: string;
     comment?: string;
     // ROLE_CHANGE
@@ -91,7 +91,7 @@ async function proposalView(ctx: Ctx, proposal: Proposal) {
     paymentRequest:
       proposal.kind === "PAYMENT_REQUEST"
         ? {
-            amount: payload.amount!,
+            amount: BigInt(payload.amount!),
             comment: payload.comment!,
             currency: await ctx.db.currency.findUnique({ where: { id: payload.currencyId! } }),
           }

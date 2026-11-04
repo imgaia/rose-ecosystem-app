@@ -5,7 +5,7 @@
 import { formatAmount } from "~/lib/money";
 
 type CurrencyLike = { code: string | null; decimals: number };
-type TermsLike = { amount: number; frequency: string; currency: CurrencyLike; description?: string | null };
+type TermsLike = { amount: bigint; frequency: string; currency: CurrencyLike; description?: string | null };
 
 // Fixed month names, not the browser's language, so a date never reads as
 // 10/09 (October or September?) and looks the same for everyone.
@@ -31,7 +31,7 @@ export function dateOrderError(start: string, end: string) {
   return start && end && end < start ? `End can't be before Start (${formatDay(start).replace(/ /g, "\u00a0")}).` : null;
 }
 
-export function money(amount: number, currency: CurrencyLike | null | undefined) {
+export function money(amount: bigint, currency: CurrencyLike | null | undefined) {
   return currency ? formatAmount(amount, currency.decimals, currency.code) : String(amount);
 }
 

@@ -4,6 +4,7 @@
 // They call the real routers against a throwaway database (test-helpers.ts).
 
 import { TRPCError } from "@trpc/server";
+import superjson from "superjson";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { RuleError } from "~/server/core";
 import { createTestDb, type TestDb } from "~/server/core/test-helpers";
@@ -54,7 +55,7 @@ async function org() {
   return { ana: ana!, tess: tess!, mo: mo!, zed: zed!, rose };
 }
 
-const terms = (currencyId: string, amount: number, description = "Thanks") => ({ description, amount, currencyId });
+const terms = (currencyId: string, amount: bigint, description = "Thanks") => ({ description, amount, currencyId });
 
 /** RCC issued by `node` and fiat-backed at 1 CHF (it is free since step 11), for the mint and convert tests. Returns the undo. */
 async function rccBackedBy(node: { id: string }) {
@@ -104,7 +105,7 @@ describe("a collection: any member accepts money in, only a Treasurer pays out",
   it("refuses a Member sending a payment for the collection, naming the Treasurer role", async () => {
     const { mo, ana, rose } = await org();
     const e = await refused(
-      as(mo).interactions.sendPayment({ actingNodeId: rose.id, toNodeId: ana.id, terms: terms(t.rcc.id, 100) }),
+      as(mo).interactions.sendPayment({ actingNodeId: rose.id, toNodeId: ana.id, terms: terms(t.rcc.id, 100n) }),
     );
     expect(e).toMatchObject({ code: "FORBIDDEN", ruleIds: ["R-GOV-05"], needsRoles: ["TREASURER"] });
     expect(await t.db.interaction.count({ where: { payerNodeId: rose.id } })).toBe(0);
@@ -112,15 +113,15 @@ describe("a collection: any member accepts money in, only a Treasurer pays out",
 
   it("lets a Member accept a payment coming in", async () => {
     const { mo, ana, rose } = await org();
-    await as(ana).interactions.sendPayment({ actingNodeId: ana.id, toNodeId: rose.id, terms: terms(t.rcc.id, 1_500) });
+    await as(ana).interactions.sendPayment({ actingNodeId: ana.id, toNodeId: rose.id, terms: terms(t.rcc.id, 1_500n) });
 
     const inbox = await as(mo).proposals.inbox({ actingNodeId: rose.id });
     expect(inbox.waiting).toHaveLength(1);
     expect(inbox.waiting[0]!.permission).toMatchObject({ allowed: true });
 
     await as(mo).proposals.decide({ actingNodeId: rose.id, proposalId: inbox.waiting[0]!.id, approve: true });
-    expect(await t.balanceOf(rose.id, t.rcc.id)).toBe(6_500);
-    expect(await t.balanceOf(ana.id, t.rcc.id)).toBe(8_500);
+    expect(await t.balanceOf(rose.id, t.rcc.id)).toBe(6_500n);
+    expect(await t.balanceOf(ana.id, t.rcc.id)).toBe(8_500n);
   });
 
   it("shows a payment request to the collection as needing a Treasurer, and refuses a Member", async () => {
@@ -128,7 +129,7 @@ describe("a collection: any member accepts money in, only a Treasurer pays out",
     await as(ana).interactions.requestPayment({
       actingNodeId: ana.id,
       fromNodeId: rose.id,
-      amount: 700,
+      amount: 700n,
       currencyId: t.rcc.id,
       comment: "Flyers",
     });
@@ -139,12 +140,12 @@ describe("a collection: any member accepts money in, only a Treasurer pays out",
     expect(e).toMatchObject({ code: "FORBIDDEN", needsRoles: ["TREASURER"] });
 
     await as(tess).interactions.accept({ actingNodeId: rose.id, proposalId: waiting!.id });
-    expect(await t.balanceOf(rose.id, t.rcc.id)).toBe(4_300);
+    expect(await t.balanceOf(rose.id, t.rcc.id)).toBe(4_300n);
   });
 
   it("refuses a Member proposing work the collection would pay for, but not work it is paid for", async () => {
     const { mo, ana, rose } = await org();
-    const work = { otherNodeId: ana.id, terms: terms(t.rcc.id, 4_000, "Garden bench") };
+    const work = { otherNodeId: ana.id, terms: terms(t.rcc.id, 4_000n, "Garden bench") };
     const e = await refused(as(mo).interactions.proposeWork({ actingNodeId: rose.id, actingNodePays: true, ...work }));
     expect(e.needsRoles).toEqual(["TREASURER"]);
     const ok = await as(mo).interactions.proposeWork({ actingNodeId: rose.id, actingNodePays: false, ...work });
@@ -157,7 +158,7 @@ describe("a collection: any member accepts money in, only a Treasurer pays out",
       actingNodeId: rose.id,
       actingNodePays: true,
       otherNodeId: ana.id,
-      terms: { ...terms(t.rcc.id, 1_000, "Weekly cleaning"), frequency: "WEEKLY", paymentMode: "ON_REQUEST" },
+      terms: { ...terms(t.rcc.id, 1_000n, "Weekly cleaning"), frequency: "WEEKLY", paymentMode: "ON_REQUEST" },
     });
     await as(ana).interactions.accept({ actingNodeId: ana.id, proposalId: proposal.id });
 
@@ -174,7 +175,7 @@ describe("seeing only what the acting node is part of (R-VIS-01)", () => {
     const { interaction, proposal } = await as(ana).interactions.sendPayment({
       actingNodeId: ana.id,
       toNodeId: rose.id,
-      terms: terms(t.rcc.id, 100),
+      terms: terms(t.rcc.id, 100n),
     });
     const z = as(zed);
     for (const call of [
@@ -191,14 +192,14 @@ describe("seeing only what the acting node is part of (R-VIS-01)", () => {
     const { proposal } = await as(ana).interactions.sendPayment({
       actingNodeId: ana.id,
       toNodeId: rose.id,
-      terms: terms(t.rcc.id, 250),
+      terms: terms(t.rcc.id, 250n),
     });
     await as(tess).proposals.decide({ actingNodeId: rose.id, proposalId: proposal.id, approve: true });
 
     const [card] = await as(ana).relationships.list({ actingNodeId: ana.id });
     expect(card).toMatchObject({ status: "ACTIVE", otherNode: { id: rose.id } });
     expect(typeof card!.trustScore).toBe("number");
-    expect(card!.totals).toEqual([expect.objectContaining({ currencyId: t.rcc.id, out: 250, in: 0 })]);
+    expect(card!.totals).toEqual([expect.objectContaining({ currencyId: t.rcc.id, out: 250n, in: 0n })]);
   });
 });
 
@@ -208,72 +209,93 @@ describe("wallet", () => {
     expect((await refused(as(mo).wallet.accounts({ actingNodeId: rose.id }))).needsRoles).toEqual(["TREASURER"]);
     expect((await refused(as(mo).wallet.transactions({ actingNodeId: rose.id }))).needsRoles).toEqual(["TREASURER"]);
     const { accounts } = await as(tess).wallet.accounts({ actingNodeId: rose.id });
-    expect(accounts.map((a) => a.balance)).toEqual([5_000]);
+    expect(accounts.map((a) => a.balance)).toEqual([5_000n]);
   });
 
   it("adds funds to the primary fiat account, creating it if missing (R-FIN-07)", async () => {
     const { tess, mo, rose } = await org();
-    const input = { actingNodeId: rose.id, amount: 20_000, reference: "UBS 123", depositedOn: new Date("2026-10-20") };
+    const input = { actingNodeId: rose.id, amount: 20_000n, reference: "UBS 123", depositedOn: new Date("2026-10-20") };
     expect((await refused(as(mo).wallet.addFunds(input))).needsRoles).toEqual(["TREASURER"]);
 
     const row = await as(tess).wallet.addFunds(input);
-    expect(row).toMatchObject({ kind: "DEPOSIT", amount: 20_000, comment: "Deposit UBS 123", effectiveDate: input.depositedOn });
+    expect(row).toMatchObject({ kind: "DEPOSIT", amount: 20_000n, comment: "Deposit UBS 123", effectiveDate: input.depositedOn });
     const chf = await t.db.account.findFirstOrThrow({ where: { nodeId: rose.id, isPrimaryFiat: true } });
-    expect(chf).toMatchObject({ currencyId: t.chf.id, balance: 20_000 });
+    expect(chf).toMatchObject({ currencyId: t.chf.id, balance: 20_000n });
   });
 
   it("mints the node's own currency from fiat, against a locked reserve", async () => {
     const { tess, mo, rose } = await org();
     const undo = await rccBackedBy(rose);
-    await as(tess).wallet.addFunds({ actingNodeId: rose.id, amount: 10_000, reference: "r", depositedOn: new Date() });
+    await as(tess).wallet.addFunds({ actingNodeId: rose.id, amount: 10_000n, reference: "r", depositedOn: new Date() });
     const chf = await t.db.account.findFirstOrThrow({ where: { nodeId: rose.id, isPrimaryFiat: true } });
     const rcc = await t.db.account.findFirstOrThrow({ where: { nodeId: rose.id, currencyId: t.rcc.id } });
 
-    const input = { actingNodeId: rose.id, sourceAccountId: chf.id, amount: 4_000 };
+    const input = { actingNodeId: rose.id, sourceAccountId: chf.id, amount: 4_000n };
     expect((await refused(as(mo).wallet.mint(input))).needsRoles).toEqual(["TREASURER"]);
-    expect((await as(tess).wallet.quoteMint(input)).units).toBe(4_000); // rate 1, reserve ratio 1
+    expect((await as(tess).wallet.quoteMint(input)).units).toBe(4_000n); // rate 1, reserve ratio 1
 
     const { locked, minted } = await as(tess).wallet.mint(input);
     expect(locked!.groupId).toBe(minted.groupId);
-    expect(await t.balanceOf(rose.id, t.chf.id)).toBe(6_000);
-    expect(await t.balanceOf(rose.id, t.rcc.id)).toBe(9_000);
+    expect(await t.balanceOf(rose.id, t.chf.id)).toBe(6_000n);
+    expect(await t.balanceOf(rose.id, t.rcc.id)).toBe(9_000n);
     const reserve = await t.db.account.findFirstOrThrow({ where: { nodeId: rose.id, isReserve: true, backsCurrencyId: t.rcc.id } });
-    expect(reserve.balance).toBe(4_000);
+    expect(reserve.balance).toBe(4_000n);
 
     // Only fiat can be minted from, and reserves are locked.
     expect((await refused(as(tess).wallet.mint({ ...input, sourceAccountId: rcc.id }))).ruleIds).toEqual(["R-FIN-02"]);
     expect((await refused(as(tess).wallet.mint({ ...input, sourceAccountId: reserve.id }))).ruleIds).toEqual(["R-FIN-02"]);
     // Converting fiat into your own currency is a mint: the same two MINT rows into the same reserve.
-    const own = await as(tess).wallet.convert({ actingNodeId: rose.id, fromAccountId: chf.id, toCurrencyId: t.rcc.id, amount: 100 });
+    const own = await as(tess).wallet.convert({ actingNodeId: rose.id, fromAccountId: chf.id, toCurrencyId: t.rcc.id, amount: 100n });
     expect(own.mode).toBe("MINT");
     expect(own.rows.map((r) => r.kind)).toEqual(["MINT", "MINT"]);
-    expect((await t.db.account.findUniqueOrThrow({ where: { id: reserve.id } })).balance).toBe(4_100);
+    expect((await t.db.account.findUniqueOrThrow({ where: { id: reserve.id } })).balance).toBe(4_100n);
     await undo();
+  });
+
+  it("carries 64-bit amounts exactly, and refuses one above the limit (step 11a-2)", async () => {
+    const ana = await t.person("Ana");
+    await as(ana).currencies.propose({
+      actingNodeId: ana.id,
+      action: "CREATE",
+      fields: { name: "Eight", code: "EGT", description: null, decimals: 8, backing: "FREE", reserveRatio: null },
+    });
+    const egt = await t.db.currency.findFirstOrThrow({ where: { code: "EGT", issuerNodeId: ana.id } });
+    const million = 100_000_000_000_000n; // 1,000,000.00000000 EGT
+    const minted = await as(ana).wallet.mint({ actingNodeId: ana.id, amount: million, currencyId: egt.id });
+    expect(minted.minted.amount).toBe(million);
+
+    // What a screen receives: superjson turns the bigint into text and back, exactly.
+    const { accounts } = await as(ana).wallet.accounts({ actingNodeId: ana.id });
+    const wire = superjson.parse<typeof accounts>(superjson.stringify(accounts));
+    expect(wire.find((a) => a.currencyId === egt.id)?.balance).toBe(million);
+    expect(JSON.stringify(superjson.serialize(million).json)).toBe('"100000000000000"');
+
+    expect((await refused(as(ana).wallet.mint({ actingNodeId: ana.id, amount: 2n ** 63n, currencyId: egt.id }))).code).toBe("BAD_REQUEST");
   });
 
   it("convert goes through the reserves: fiat into the issuer's reserve, units minted", async () => {
     const { ana, mo, zed, rose } = await org();
     const undo = await rccBackedBy(rose);
     const chf = await t.account(ana.id, t.chf.id, 3_000);
-    const input = { actingNodeId: ana.id, fromAccountId: chf.id, toCurrencyId: t.rcc.id, amount: 1_250 };
+    const input = { actingNodeId: ana.id, fromAccountId: chf.id, toCurrencyId: t.rcc.id, amount: 1_250n };
 
-    expect((await as(ana).wallet.quoteConvert(input)).quote).toMatchObject({ receive: 1_250, rate: "1", mode: "RESERVES" });
+    expect((await as(ana).wallet.quoteConvert(input)).quote).toMatchObject({ receive: 1_250n, rate: "1", mode: "RESERVES" });
     // A refused quote is an answer naming the rule, not an error.
     const eurQuote = await as(ana).wallet.quoteConvert({ ...input, toCurrencyId: (await t.db.currency.create({ data: { name: "Euro", code: "EUQ", kind: "FIAT" } })).id });
     expect(eurQuote).toMatchObject({ quote: null, refused: { data: { blockedBy: [{ ruleId: "R-FIN-14" }] } } });
     const { rows } = await as(ana).wallet.convert(input);
     const [paid, minted] = rows;
-    expect(paid).toMatchObject({ kind: "EXCHANGE", amount: 1_250, fromAccountId: chf.id });
-    expect(minted).toMatchObject({ kind: "EXCHANGE", amount: 1_250, fromAccountId: null, groupId: paid!.groupId });
-    expect(await t.balanceOf(ana.id, t.chf.id)).toBe(1_750);
-    expect(await t.balanceOf(ana.id, t.rcc.id)).toBe(11_250);
+    expect(paid).toMatchObject({ kind: "EXCHANGE", amount: 1_250n, fromAccountId: chf.id });
+    expect(minted).toMatchObject({ kind: "EXCHANGE", amount: 1_250n, fromAccountId: null, groupId: paid!.groupId });
+    expect(await t.balanceOf(ana.id, t.chf.id)).toBe(1_750n);
+    expect(await t.balanceOf(ana.id, t.rcc.id)).toBe(11_250n);
     const issuerReserve = await t.db.account.findFirstOrThrow({ where: { nodeId: rose.id, isReserve: true, backsCurrencyId: t.rcc.id } });
-    expect(issuerReserve).toMatchObject({ currencyId: t.chf.id, balance: 1_250 });
-    expect(await t.balanceOf(rose.id, t.rcc.id)).toBe(5_000); // the issuer's own balance is untouched
+    expect(issuerReserve).toMatchObject({ currencyId: t.chf.id, balance: 1_250n });
+    expect(await t.balanceOf(rose.id, t.rcc.id)).toBe(5_000n); // the issuer's own balance is untouched
 
     // Out of RCC only as far as the reserve covers (R-FIN-10); never fiat into fiat (R-FIN-14).
     const anaRcc = await t.db.account.findFirstOrThrow({ where: { nodeId: ana.id, currencyId: t.rcc.id } });
-    const out = await refused(as(ana).wallet.convert({ ...input, fromAccountId: anaRcc.id, toCurrencyId: t.chf.id, amount: 2_000 }));
+    const out = await refused(as(ana).wallet.convert({ ...input, fromAccountId: anaRcc.id, toCurrencyId: t.chf.id, amount: 2_000n }));
     expect(out.ruleIds).toEqual(["R-FIN-10"]);
     const eur = await t.db.currency.create({ data: { name: "Euro", code: "EUR", kind: "FIAT", country: "DE" } });
     expect((await refused(as(ana).wallet.convert({ ...input, toCurrencyId: eur.id }))).ruleIds).toEqual(["R-FIN-14"]);
@@ -306,7 +328,7 @@ describe("currencies (S15, S27)", () => {
     expect(overview.homeChoices.map((c) => c.id)).toContain(hvs.id);
 
     const mine = await as(ana).currencies.detail({ actingNodeId: ana.id, currencyId: hvs.id });
-    expect(mine).toMatchObject({ actingIsIssuer: true, everHeld: false, backing: "FIAT", reserve: { reserve: 0, units: 0, shareBacked: null } });
+    expect(mine).toMatchObject({ actingIsIssuer: true, everHeld: false, backing: "FIAT", reserve: { reserve: 0n, units: 0n, shareBacked: null } });
     expect(mine.history.map((h) => [h.rate, h.source])).toEqual([["0.5", "RESERVE_RATIO"]]);
     // Anyone sees the currency; only the issuer's Treasurers see what backs it.
     const theirs = await as(zed).currencies.detail({ actingNodeId: zed.id, currencyId: hvs.id });

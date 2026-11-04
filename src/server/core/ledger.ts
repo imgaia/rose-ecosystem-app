@@ -5,11 +5,11 @@
 // single database transaction. Ledger rows are never edited or deleted, so a
 // balance can always be recomputed from them (recomputeBalance).
 //
-// Amounts are whole numbers of minor units (cents). A row's `amount` leaves
+// Amounts are whole numbers of minor units (cents), as bigint (64-bit). A row's `amount` leaves
 // the from-account; the to-account receives `toAmount` when the currency
 // changes (exchange, mint), otherwise the same `amount`.
 
-import { formatAmount } from "~/lib/money";
+import { formatAmount, MAX_MINOR_UNITS } from "~/lib/money";
 import { getRule } from "~/server/rules";
 import type { Transaction, TransactionKind } from "../../../generated/prisma";
 import { recordActivity } from "./activity";
@@ -20,8 +20,8 @@ export interface PostTransactionInput {
   kind: TransactionKind;
   fromAccountId?: string | null; // null for a deposit or newly minted units
   toAccountId?: string | null; // null for a withdrawal
-  amount: number;
-  toAmount?: number; // only when the two accounts have different currencies
+  amount: bigint;
+  toAmount?: bigint; // only when the two accounts have different currencies
   rate?: string;
   comment: string; // required (R-PAY-03)
   interactionId?: string | null;
@@ -32,42 +32,37 @@ export interface PostTransactionInput {
   summary?: string;
 }
 
-/**
- * The largest amount or balance the database can hold for now: amounts are
- * 32-bit whole numbers. At 2 decimals that is 21,474,836.47; at 8 decimals
- * only 21.47483647 (R-FIN-18). Moving amounts to 64-bit BigInt lifts it.
- */
-export const MAX_MINOR_UNITS = 2_147_483_647;
+// MAX_MINOR_UNITS (money.ts): 64-bit. SQLite turns a sum past it into an
+// inexact decimal instead of failing, so the ledger checks it first.
 
-function assertWholePositive(value: number, what: string) {
-  if (!Number.isSafeInteger(value) || value <= 0) {
-    throw new RuleError(`${what} must be a whole number of minor units above 0 (got ${value})`);
+function assertWholePositive(value: bigint, what: string) {
+  if (typeof value !== "bigint" || value <= 0n) {
+    throw new RuleError(`${what} must be a whole number of minor units above 0 (got ${String(value)})`);
   }
   if (value > MAX_MINOR_UNITS) throw tooLarge(what);
 }
 
 const tooLarge = (what: string) =>
-  new RuleError(`${what} is above ${MAX_MINOR_UNITS.toLocaleString("en")} minor units, the most the app can store for now`, ["R-FIN-18"]);
+  new RuleError(`${what} is above ${MAX_MINOR_UNITS.toLocaleString("en")} minor units, the most the app can store`, ["R-FIN-18"]);
 
 /**
  * R-PAY-02: how far below zero this node's balances may go, in minor units.
  * The node's own value if it set one, otherwise the default in rules.yaml.
  * 0 means a balance may not go negative at all.
  */
-export async function negativeBalanceLimit(db: Db, nodeId: string): Promise<number> {
+export async function negativeBalanceLimit(db: Db, nodeId: string): Promise<bigint> {
   const own = await db.nodeRuleValue.findUnique({
     where: { nodeId_ruleId: { nodeId, ruleId: "R-PAY-02" } },
   });
-  const raw = own?.value ?? getRule("R-PAY-02")?.default ?? 0;
-  const limit = Number(raw);
-  if (!Number.isSafeInteger(limit) || limit < 0) {
+  const raw = String(own?.value ?? getRule("R-PAY-02")?.default ?? 0);
+  if (!/^\d+$/.test(raw) || BigInt(raw) > MAX_MINOR_UNITS) {
     throw new Error(`R-PAY-02 value "${raw}" for node ${nodeId} is not a whole number of 0 or more`);
   }
-  return limit;
+  return BigInt(raw);
 }
 
 /** How much can leave this account right now without breaking R-PAY-02. */
-export async function spendable(db: Db, accountId: string): Promise<number> {
+export async function spendable(db: Db, accountId: string): Promise<bigint> {
   const account = await db.account.findUniqueOrThrow({ where: { id: accountId } });
   return account.balance + (await negativeBalanceLimit(db, account.nodeId));
 }
@@ -100,7 +95,7 @@ export async function postTransaction(db: Db, input: PostTransactionInput) {
       // "take amount off, but only if the balance stays at or above -limit".
       // If no row matched, the payment would break the limit.
       // A reserve never goes below zero: it is the fiat behind a currency.
-      const limit = from.isReserve ? 0 : await negativeBalanceLimit(tx, from.nodeId);
+      const limit = from.isReserve ? 0n : await negativeBalanceLimit(tx, from.nodeId);
       const { count } = await tx.account.updateMany({
         where: { id: from.id, balance: { gte: input.amount - limit } },
         data: { balance: { decrement: input.amount } },
@@ -115,7 +110,7 @@ export async function postTransaction(db: Db, input: PostTransactionInput) {
 
     if (to) {
       const received = changesCurrency ? input.toAmount! : input.amount;
-      // Same idea as above: add only if the balance stays storable.
+      // Same idea as above: add only if the balance stays within 64 bits.
       const { count } = await tx.account.updateMany({
         where: { id: to.id, balance: { lte: MAX_MINOR_UNITS - received } },
         data: { balance: { increment: received } },
@@ -176,13 +171,13 @@ async function recordTransactionActivity(tx: Tx, row: Transaction, summary?: str
 }
 
 /** The balance this account should have: everything in minus everything out. */
-export async function ledgerBalance(db: Db, accountId: string): Promise<number> {
+export async function ledgerBalance(db: Db, accountId: string): Promise<bigint> {
   const [inSame, inConverted, out] = await Promise.all([
     db.transaction.aggregate({ where: { toAccountId: accountId, toAmount: null }, _sum: { amount: true } }),
     db.transaction.aggregate({ where: { toAccountId: accountId, toAmount: { not: null } }, _sum: { toAmount: true } }),
     db.transaction.aggregate({ where: { fromAccountId: accountId }, _sum: { amount: true } }),
   ]);
-  return (inSame._sum.amount ?? 0) + (inConverted._sum.toAmount ?? 0) - (out._sum.amount ?? 0);
+  return (inSame._sum.amount ?? 0n) + (inConverted._sum.toAmount ?? 0n) - (out._sum.amount ?? 0n);
 }
 
 /**

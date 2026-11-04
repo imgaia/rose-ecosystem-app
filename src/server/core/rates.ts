@@ -80,10 +80,8 @@ const inverse = (r: Rate) => rateOf(r.den, r.num);
  * `amount` minor units of a currency with `fromDecimals`, at `rate`, in minor
  * units of a currency with `toDecimals`, rounded down.
  */
-export function applyRate(amount: number, fromDecimals: number, toDecimals: number, rate: Rate): number {
-  const top = BigInt(amount) * 10n ** BigInt(toDecimals) * rate.num;
-  const bottom = 10n ** BigInt(fromDecimals) * rate.den;
-  return Number(top / bottom);
+export function applyRate(amount: bigint, fromDecimals: number, toDecimals: number, rate: Rate): bigint {
+  return (amount * 10n ** BigInt(toDecimals) * rate.num) / (10n ** BigInt(fromDecimals) * rate.den);
 }
 
 /** The longest chain of current rates findRate follows (CO -> CHF -> EUR -> LF is 3). */

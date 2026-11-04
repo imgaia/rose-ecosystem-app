@@ -19,7 +19,7 @@ export async function createTestDb() {
   const url = `file:${path.join(dir, "test.db")}`;
 
   const client = createClient({ url });
-  for (const file of ["v08-schema.sql", "v10-currencies.sql", "v10-reserves.sql", "v11-free-currencies.sql"]) {
+  for (const file of ["v08-schema.sql", "v10-currencies.sql", "v10-reserves.sql", "v11-free-currencies.sql", "v11-amounts-64bit.sql"]) {
     await client.executeMultiple(readFileSync(path.join(process.cwd(), "scripts/migrations", file), "utf-8"));
   }
   client.close();
@@ -70,13 +70,13 @@ export async function createTestDb() {
   }
 
   /** An account, funded through the ledger (a deposit), so balance = ledger from the start. */
-  async function account(nodeId: string, currencyId: string, opening = 0) {
+  async function account(nodeId: string, currencyId: string, opening: bigint | number = 0) {
     const acc = await db.account.create({ data: { nodeId, currencyId } });
     if (opening > 0) {
       await postTransaction(db, {
         kind: "DEPOSIT",
         toAccountId: acc.id,
-        amount: opening,
+        amount: BigInt(opening),
         comment: "Test deposit",
         actedByPersonId: nodeId,
       });

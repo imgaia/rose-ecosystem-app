@@ -32,7 +32,7 @@ import { assertCan } from "./rules";
 export async function addFunds(
   db: Db,
   actor: Actor,
-  input: { amount: number; reference: string; depositedOn: Date },
+  input: { amount: bigint; reference: string; depositedOn: Date },
 ) {
   if (!input.reference.trim()) throw new RuleError("Enter the bank reference of the deposit", ["R-PAY-03"]);
   return inTransaction(db, async (tx) => {
@@ -60,7 +60,7 @@ export async function addFunds(
 export async function quoteMint(
   db: Db,
   actor: Actor,
-  input: { sourceAccountId?: string; amount: number; currencyId?: string },
+  input: { sourceAccountId?: string; amount: bigint; currencyId?: string },
 ) {
   const issued = await db.currency.findMany({ where: { issuerNodeId: actor.actingNodeId, kind: "COMMUNITY", status: "ACTIVE" } });
   const currency = input.currencyId ? issued.find((c) => c.id === input.currencyId) : issued[0];
@@ -100,7 +100,7 @@ export async function quoteMint(
   const ratio = await backedRatio(db, currency);
   const rate = mintRate(ratio);
   const units = applyRate(input.amount, source.currency.decimals, currency.decimals, rate);
-  if (units <= 0) throw new RuleError("That amount is too small to mint anything");
+  if (units <= 0n) throw new RuleError("That amount is too small to mint anything");
   return {
     backing: currency.backing,
     source,
@@ -121,7 +121,7 @@ export async function quoteMint(
 export async function mint(
   db: Db,
   actor: Actor,
-  input: { sourceAccountId?: string; amount: number; currencyId?: string; comment?: string },
+  input: { sourceAccountId?: string; amount: bigint; currencyId?: string; comment?: string },
 ) {
   return inTransaction(db, async (tx) => {
     await assertCan(tx, actor.personId, actor.actingNodeId, "MINT");
@@ -159,8 +159,8 @@ export async function mint(
  * screen can say so; it is never guessed.
  */
 export async function walletTotal(db: Db, nodeId: string, currency: Currency) {
-  const accounts = await db.account.findMany({ where: { nodeId, isReserve: false, balance: { not: 0 } }, include: { currency: true }, orderBy: { createdAt: "asc" } });
-  let amount = 0;
+  const accounts = await db.account.findMany({ where: { nodeId, isReserve: false, balance: { not: 0n } }, include: { currency: true }, orderBy: { createdAt: "asc" } });
+  let amount = 0n;
   const unpriced: string[] = [];
   for (const a of accounts) {
     const rate = await findRate(db, a.currencyId, currency.id);
@@ -168,14 +168,15 @@ export async function walletTotal(db: Db, nodeId: string, currency: Currency) {
       unpriced.push(label(a.currency));
       continue;
     }
-    const sign = a.balance < 0 ? -1 : 1;
-    amount += sign * applyRate(Math.abs(a.balance), a.currency.decimals, currency.decimals, rate);
+    // Round towards zero either way: what is owed isn't made bigger by rounding.
+    const converted = applyRate(a.balance < 0n ? -a.balance : a.balance, a.currency.decimals, currency.decimals, rate);
+    amount += a.balance < 0n ? -converted : converted;
   }
   return { currency, amount, unpriced };
 }
 
 // ───────────────────────── Helpers ─────────────────────────
 
-function money(amount: number, account: Account & { currency: { decimals: number; code: string | null } }) {
+function money(amount: bigint, account: Account & { currency: { decimals: number; code: string | null } }) {
   return formatAmount(amount, account.currency.decimals, account.currency.code);
 }

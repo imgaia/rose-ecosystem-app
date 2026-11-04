@@ -30,9 +30,9 @@ describe("rates", () => {
   });
 
   it("converts in whole minor units, rounding down", () => {
-    expect(applyRate(1_000, 2, 2, rateOf(1n, 1n))).toBe(1_000);
-    expect(applyRate(1_000, 2, 2, rateOf(1n, 3n))).toBe(333);
-    expect(applyRate(1_000, 2, 0, rateOf(1n, 1n))).toBe(10);
+    expect(applyRate(1_000n, 2, 2, rateOf(1n, 1n))).toBe(1_000n);
+    expect(applyRate(1_000n, 2, 2, rateOf(1n, 3n))).toBe(333n);
+    expect(applyRate(1_000n, 2, 0, rateOf(1n, 1n))).toBe(10n);
   });
 
   it("a new rate closes the previous one; a past date finds the rate valid then (R-FIN-15)", async () => {

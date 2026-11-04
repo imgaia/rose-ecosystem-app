@@ -1,6 +1,8 @@
 // scripts/migrate-v11.test.ts
 // Runs scripts/migrate-v11.ts on a throwaway copy of the 4 Nov 2026 seed
-// candidate (dev data, scrubbed), after v11-free-currencies.sql.
+// candidate (dev data, scrubbed), after v11-free-currencies.sql and
+// v11-amounts-64bit.sql (the order for dev in step 11c). Also checks that
+// v11-amounts-64bit.sql keeps every amount as it was.
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { priceOf } from "../src/server/core/currencies";
@@ -13,7 +15,7 @@ let report: V11Report;
 const now = new Date();
 
 beforeAll(async () => {
-  copy = await createDbFromBackup("prisma/seed-candidates/2026-11-04-dev.json", ["v11-free-currencies.sql"]);
+  copy = await createDbFromBackup("prisma/seed-candidates/2026-11-04-dev.json", ["v11-free-currencies.sql", "v11-amounts-64bit.sql"]);
   report = await migrateV11(copy.db, now);
 });
 afterAll(async () => {
@@ -79,5 +81,35 @@ describe("migrate-v11 on the 4 Nov seed candidate", () => {
     await copy.db.currency.update({ where: { id: jcn.id }, data: { decimals: 9 } });
     await expect(migrateV11(copy.db)).rejects.toThrow(/JCN \(9\)/);
     await copy.db.currency.update({ where: { id: jcn.id }, data: { decimals: 6 } });
+  });
+});
+
+describe("v11-amounts-64bit.sql on the 4 Nov seed candidate", () => {
+  const AMOUNTS = { Account: ["balance"], Transaction: ["amount", "toAmount"], InteractionTerms: ["amount", "counterAmount"] };
+  // Every row's amounts as text (exact whatever the column's declared type), by id.
+  const amounts = (db: typeof copy.db) =>
+    Promise.all(
+      Object.entries(AMOUNTS).map(([table, columns]) =>
+        db.$queryRawUnsafe<Record<string, string | null>[]>(
+          `SELECT id, ${columns.map((c) => `CAST("${c}" AS TEXT) AS "${c}"`).join(", ")} FROM "${table}" ORDER BY id`,
+        ),
+      ),
+    );
+
+  it("declares the amount columns BIGINT and keeps every value, row count and index", async () => {
+    const before = await createDbFromBackup("prisma/seed-candidates/2026-11-04-dev.json", ["v11-free-currencies.sql"]);
+    try {
+      expect(await amounts(copy.db)).toEqual(await amounts(before.db));
+      for (const [table, columns] of Object.entries(AMOUNTS)) {
+        const info = await copy.db.$queryRawUnsafe<{ name: string; type: string }[]>(`PRAGMA table_info("${table}")`);
+        const types = Object.fromEntries(info.map((c) => [c.name, c.type]));
+        for (const c of columns) expect(types[c]).toBe("BIGINT");
+        const indexes = `SELECT name FROM sqlite_master WHERE type = 'index' AND tbl_name = '${table}' ORDER BY name`;
+        expect(await copy.db.$queryRawUnsafe(indexes)).toEqual(await before.db.$queryRawUnsafe(indexes));
+      }
+      expect(await copy.db.$queryRawUnsafe("PRAGMA foreign_key_check")).toEqual([]);
+    } finally {
+      await before.cleanup();
+    }
   });
 });

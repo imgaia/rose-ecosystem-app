@@ -13,10 +13,13 @@ const createPrismaClient = () => {
   // Pass a plain config object directly — the adapter builds its own
   // client internally (passing a pre-built client instance here does
   // NOT work with this version of the adapter).
+  // intMode "bigint": whole numbers come back exact, however large (64-bit
+  // amounts, step 11a-2); by default the client refuses anything above 2^53.
   if (process.env.TURSO_DATABASE_URL) {
     const adapter = new PrismaLibSql({
       url: process.env.TURSO_DATABASE_URL,
       authToken: process.env.TURSO_AUTH_TOKEN,
+      intMode: "bigint",
     });
     return new PrismaClient({ adapter, log: [...logLevels] });
   }

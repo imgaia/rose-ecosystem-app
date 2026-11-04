@@ -21,18 +21,33 @@ describe("formatAmount", () => {
     expect(formatAmount(-250_000, 4, "RBO")).toBe("-25.00 RBO");
     expect(formatAmount(7, 1, "ONE")).toBe("0.7 ONE");
   });
+
+  it("formats 64-bit amounts exactly, beyond what a JavaScript number holds", () => {
+    expect(formatAmount(100_000_000_000_000n, 8, "BTC")).toBe("1000000.00 BTC"); // 1,000,000 units at 8 decimals
+    expect(formatAmount(10_000_000_000_000n, 8, "BTC")).toBe("100000.00 BTC");
+    expect(formatAmount(123_456_789_012_345_678n, 8, "BTC")).toBe("1234567890.12345678 BTC");
+    expect(formatAmount(2n ** 63n - 1n, 8, "BTC")).toBe("92233720368.54775807 BTC");
+    expect(formatAmount(-(2n ** 63n), 2)).toBe("-92233720368547758.08");
+    expect(formatAmount(2_147_483_648n, 2, "CHF")).toBe("21474836.48 CHF");
+  });
 });
 
 describe("parseAmount", () => {
   it("reads typed amounts as minor units", () => {
-    expect(parseAmount("25.50", 2)).toBe(2550);
-    expect(parseAmount("25.5", 2)).toBe(2550);
-    expect(parseAmount("25", 2)).toBe(2500);
-    expect(parseAmount("25.", 2)).toBe(2500);
-    expect(parseAmount(" 1'234.05 ", 2)).toBe(123405);
-    expect(parseAmount("1,234", 2)).toBe(123400);
-    expect(parseAmount("42", 0)).toBe(42);
-    expect(parseAmount("0.12345678", 8)).toBe(12_345_678);
+    expect(parseAmount("25.50", 2)).toBe(2550n);
+    expect(parseAmount("25.5", 2)).toBe(2550n);
+    expect(parseAmount("25", 2)).toBe(2500n);
+    expect(parseAmount("25.", 2)).toBe(2500n);
+    expect(parseAmount(" 1'234.05 ", 2)).toBe(123405n);
+    expect(parseAmount("1,234", 2)).toBe(123400n);
+    expect(parseAmount("42", 0)).toBe(42n);
+    expect(parseAmount("0.12345678", 8)).toBe(12_345_678n);
+  });
+
+  it("reads large amounts exactly", () => {
+    expect(parseAmount("1000000", 8)).toBe(100_000_000_000_000n);
+    expect(parseAmount("1,000,000.00000001", 8)).toBe(100_000_000_000_001n);
+    expect(parseAmount("92233720368.54775807", 8)).toBe(2n ** 63n - 1n);
   });
 
   it("refuses what isn't an amount", () => {

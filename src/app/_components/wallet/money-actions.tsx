@@ -115,16 +115,16 @@ export function Convert({ fromAccountId: initialFrom, toCurrencyId: initialTo }:
   const [fromAccountId, setFromAccountId] = useState(initialFrom ?? "");
   const [toCurrencyId, setToCurrencyId] = useState(initialTo ?? "");
   const [amount, setAmount] = useState("");
-  const from = own.find((a) => a.id === fromAccountId) ?? own.find((a) => a.balance > 0) ?? own[0];
+  const from = own.find((a) => a.id === fromAccountId) ?? own.find((a) => a.balance > 0n) ?? own[0];
   // Into: any active currency but the one converted from. Fiat into fiat is refused by the rules (R-FIN-14), and shown so.
   const targets = (currencies.data ?? []).filter((c) => c.id !== from?.currencyId && c.status === "ACTIVE");
   const to = targets.find((c) => c.id === toCurrencyId) ?? targets[0];
   const typed = from ? readAmount(amount, from.currency) : null;
-  const units = typed && "amount" in typed ? typed.amount : 0;
+  const units = typed && "amount" in typed ? typed.amount : 0n;
 
   const quote = api.wallet.quoteConvert.useQuery(
     { actingNodeId, fromAccountId: from?.id ?? "", toCurrencyId: to?.id ?? "", amount: units },
-    { enabled: !!from && !!to && units > 0, retry: false },
+    { enabled: !!from && !!to && units > 0n, retry: false },
   );
   const convert = api.wallet.convert.useMutation({ onSuccess: useDone("Converted.") });
   const q = quote.data?.quote;
@@ -286,11 +286,11 @@ export function Mint() {
   const sources = fiat.list.filter((a) => !currency || a.currencyId === currency.reserveCurrencyId);
   const source = free ? undefined : (sources.find((a) => a.id === sourceAccountId) ?? sources[0]);
   const typed = free ? readAmount(amount, currency) : source ? readAmount(amount, source.currency) : null;
-  const units = typed && "amount" in typed ? typed.amount : 0;
+  const units = typed && "amount" in typed ? typed.amount : 0n;
 
   const quote = api.wallet.quoteMint.useQuery(
     { actingNodeId, sourceAccountId: source?.id, amount: units, currencyId: currency?.id },
-    { enabled: (free || !!source) && !!currency && units > 0, retry: false },
+    { enabled: (free || !!source) && !!currency && units > 0n, retry: false },
   );
   const mint = api.wallet.mint.useMutation({ onSuccess: useDone("Minted.") });
   const code = quote.data?.currency.code;

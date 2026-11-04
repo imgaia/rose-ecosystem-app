@@ -51,9 +51,9 @@ export interface Actor {
 
 export interface Terms {
   description: string; // the work, or the comment for a payment or gift (required); optional for a trade
-  amount: number; // minor units
+  amount: bigint; // minor units
   currencyId: string;
-  counterAmount?: number | null; // a trade: what the payee gives back, in minor units of counterCurrencyId
+  counterAmount?: bigint | null; // a trade: what the payee gives back, in minor units of counterCurrencyId
   counterCurrencyId?: string | null;
   frequency?: Frequency; // default ONCE
   paymentMode?: PaymentMode; // default AUTOMATIC; ON_REQUEST is for work only
@@ -96,7 +96,7 @@ export async function sendPayment(
 export async function requestPayment(
   db: Db,
   actor: Actor,
-  input: { fromNodeId: string; amount: number; currencyId: string; comment: string },
+  input: { fromNodeId: string; amount: bigint; currencyId: string; comment: string },
 ) {
   const terms: Terms = { description: input.comment, amount: input.amount, currencyId: input.currencyId };
   validateTerms("PAYMENT", terms);
@@ -112,7 +112,7 @@ export async function requestPayment(
 export async function requestWorkPayment(
   db: Db,
   actor: Actor,
-  input: { interactionId: string; comment: string; amount?: number; currencyId?: string },
+  input: { interactionId: string; comment: string; amount?: bigint; currencyId?: string },
 ) {
   return inTransaction(db, async (tx) => {
     const interaction = await loadInteraction(tx, input.interactionId);
@@ -124,12 +124,13 @@ export async function requestWorkPayment(
       throw new RuleError(`Can't request a payment on a ${interaction.status.toLowerCase()} interaction`);
     }
     const terms = await currentTerms(tx, interaction.id);
-    const payload: PaymentRequestPayload = {
+    const request = {
       amount: input.amount ?? terms.amount,
       currencyId: input.currencyId ?? terms.currencyId,
       comment: input.comment.trim(),
     };
-    validateTerms("PAYMENT", { description: payload.comment, amount: payload.amount, currencyId: payload.currencyId });
+    validateTerms("PAYMENT", { description: request.comment, amount: request.amount, currencyId: request.currencyId });
+    const payload: PaymentRequestPayload = { ...request, amount: request.amount.toString() };
 
     const proposal = await createProposal(
       tx,
@@ -156,7 +157,7 @@ export async function requestWorkPayment(
 export async function proposeTrade(
   db: Db,
   actor: Actor,
-  input: { toNodeId: string; give: { amount: number; currencyId: string }; get: { amount: number; currencyId: string }; comment?: string },
+  input: { toNodeId: string; give: { amount: bigint; currencyId: string }; get: { amount: bigint; currencyId: string }; comment?: string },
 ) {
   const terms: Terms = {
     description: input.comment ?? "",
@@ -388,7 +389,7 @@ export const SCHEDULE_ACTOR = "system:schedule";
 export async function payScheduled(
   tx: Tx,
   interaction: Interaction,
-  payment: { amount: number; currencyId: string; comment: string },
+  payment: { amount: bigint; currencyId: string; comment: string },
 ) {
   const [payer, payee] = await sideNames(tx, interaction);
   const currency = await tx.currency.findUniqueOrThrow({ where: { id: payment.currencyId } });
@@ -429,9 +430,15 @@ interface TermsPayload {
   termsVersion: number;
 }
 interface PaymentRequestPayload {
-  amount: number;
+  amount: string | number; // minor units as text (JSON has no 64-bit numbers); a number in requests made before step 11a-2
   currencyId: string;
   comment: string;
+}
+
+/** A payment request's payload, with its amount as a bigint. */
+function readRequest(proposal: Proposal) {
+  const request = readPayload<PaymentRequestPayload>(proposal);
+  return { ...request, amount: BigInt(request.amount) };
 }
 
 async function capabilityForSide(tx: Tx, proposal: { interactionId: string | null }, nodeId: string) {
@@ -485,7 +492,7 @@ const paymentRequestHandler: ProposalHandler = {
   capabilityFor: capabilityForSide,
   async apply(tx, proposal, personId) {
     const interaction = await loadInteraction(tx, proposal.interactionId!);
-    await pay(tx, interaction, readPayload<PaymentRequestPayload>(proposal), personId);
+    await pay(tx, interaction, readRequest(proposal), personId);
   },
 };
 
@@ -517,7 +524,7 @@ async function logProposal(tx: Tx, proposal: Proposal, event: ProposalEvent, act
   const interaction = await loadInteraction(tx, proposal.interactionId!);
   let what: string;
   if (proposal.kind === "PAYMENT_REQUEST") {
-    const request = readPayload<PaymentRequestPayload>(proposal);
+    const request = readRequest(proposal);
     const currency = await tx.currency.findUniqueOrThrow({ where: { id: request.currencyId } });
     const work = await currentTerms(tx, interaction.id);
     what = `a payment request of ${formatAmount(request.amount, currency.decimals, currency.code)} for "${work.description}"`;
@@ -709,7 +716,7 @@ async function agreeTerms(tx: Tx, interactionId: string, version: number, person
 async function pay(
   tx: Tx,
   interaction: Interaction,
-  payment: { amount: number; currencyId: string; comment: string },
+  payment: { amount: bigint; currencyId: string; comment: string },
   personId: string,
   summary?: string, // the activity text, when the ledger's default isn't enough
 ) {
@@ -755,7 +762,7 @@ async function trade(tx: Tx, interaction: Interaction, terms: InteractionTerms, 
   const gave = formatAmount(terms.amount, give.decimals, give.code);
   const got = formatAmount(terms.counterAmount!, get.decimals, get.code);
   // One unit of `give` is worth this many units of `get`.
-  const rate = rateOf(BigInt(terms.counterAmount!) * 10n ** BigInt(give.decimals), BigInt(terms.amount) * 10n ** BigInt(get.decimals));
+  const rate = rateOf(terms.counterAmount! * 10n ** BigInt(give.decimals), terms.amount * 10n ** BigInt(get.decimals));
   const back = rateOf(rate.den, rate.num);
   const base = {
     kind: "EXCHANGE" as const,
@@ -765,7 +772,7 @@ async function trade(tx: Tx, interaction: Interaction, terms: InteractionTerms, 
     actedByPersonId: personId,
   };
 
-  const leg = async (fromNodeId: string, toNodeId: string, currencyId: string, amount: number, legRate: string, summary: string) => {
+  const leg = async (fromNodeId: string, toNodeId: string, currencyId: string, amount: bigint, legRate: string, summary: string) => {
     const from = await accountOf(tx, fromNodeId, currencyId);
     if (!from) throw new RuleError("Not enough funds for this trade (negative-balance limit)", ["R-PAY-02"]);
     const to = await tx.account.upsert({
@@ -822,12 +829,12 @@ function assertMayManage(interaction: Interaction, nodeId: string) {
 }
 
 function validateTerms(kind: InteractionKind, terms: Terms) {
-  if (!Number.isSafeInteger(terms.amount) || terms.amount <= 0) {
+  if (typeof terms.amount !== "bigint" || terms.amount <= 0n) {
     throw new RuleError(`Amount must be a whole number of minor units above 0 (got ${terms.amount})`);
   }
   if (kind === "TRADE") {
     // The comment is optional: the ledger rows get "Trade: 1.00 GAIA for 3.00 THC".
-    if (!Number.isSafeInteger(terms.counterAmount) || terms.counterAmount! <= 0) {
+    if (typeof terms.counterAmount !== "bigint" || terms.counterAmount <= 0n) {
       throw new RuleError(`The amount you get must be a whole number of minor units above 0 (got ${terms.counterAmount})`);
     }
     if (!terms.counterCurrencyId) throw new RuleError("Pick the currency you get");

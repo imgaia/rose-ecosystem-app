@@ -10,7 +10,7 @@
 import { z } from "zod";
 import * as core from "~/server/core";
 import { actingProcedure, createTRPCRouter, requireCan } from "~/server/api/trpc";
-import { assertSees, permission, publicNode, termsInput } from "./shared";
+import { assertSees, minorUnits, permission, publicNode, termsInput } from "./shared";
 
 const byInteraction = z.object({ interactionId: z.string().min(1) });
 const byProposal = z.object({ proposalId: z.string().min(1), comment: z.string().optional() });
@@ -59,7 +59,7 @@ export const interactionsRouter = createTRPCRouter({
   /** UC-INT-02: ask another node for a one-off payment. */
   requestPayment: actingProcedure
     .input(
-      z.object({ fromNodeId: z.string().min(1), amount: z.number().int().positive(), currencyId: z.string().min(1), comment: z.string() }),
+      z.object({ fromNodeId: z.string().min(1), amount: minorUnits, currencyId: z.string().min(1), comment: z.string() }),
     )
     .mutation(async ({ ctx, input }) => {
       await requireCan(ctx, "INTERACT");
@@ -71,7 +71,7 @@ export const interactionsRouter = createTRPCRouter({
     .input(
       byInteraction.extend({
         comment: z.string(),
-        amount: z.number().int().positive().optional(),
+        amount: minorUnits.optional(),
         currencyId: z.string().min(1).optional(),
       }),
     )

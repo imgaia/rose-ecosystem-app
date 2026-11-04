@@ -26,13 +26,13 @@ async function totalsEachWay(ctx: Ctx, relationshipIds: string[]) {
       from: { select: { nodeId: true, currency: { select: { id: true, code: true, decimals: true } } } },
     },
   });
-  type Total = { currencyId: string; code: string | null; decimals: number; in: number; out: number };
+  type Total = { currencyId: string; code: string | null; decimals: number; in: bigint; out: bigint };
   const byRelationship = new Map<string, Map<string, Total>>();
   for (const row of rows) {
     if (!row.interaction || !row.from) continue;
     const totals = byRelationship.get(row.interaction.relationshipId) ?? new Map<string, Total>();
     const currency = row.from.currency;
-    const total = totals.get(currency.id) ?? { currencyId: currency.id, code: currency.code, decimals: currency.decimals, in: 0, out: 0 };
+    const total = totals.get(currency.id) ?? { currencyId: currency.id, code: currency.code, decimals: currency.decimals, in: 0n, out: 0n };
     if (row.from.nodeId === ctx.actor.actingNodeId) total.out += row.amount;
     else total.in += row.amount;
     totals.set(currency.id, total);

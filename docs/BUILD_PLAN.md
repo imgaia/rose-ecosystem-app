@@ -313,7 +313,7 @@ Three slices, one chat each. Stop at the end of each.
 - On the 4 Nov seed candidate (the test, `scripts/migrate-v11.test.ts`): GAIA, JCN, THC and RCR become fiat-backed with their ratios; RBO and RCC become free; RBO's and RCC's reserve-ratio rows are closed; RBO's ratio and the five R-FIN-10 values are removed; 57 transactions and 34 balances unchanged.
 - Decided when it came up (4 Nov):
   - **RCC is free even though its reserve holds something** (304.00 CHF on dev, from test conversions and mints). The script leaves that reserve untouched and reports it; nothing can convert out of it, since RCC is free. How to release it is still open.
-  - **Amounts are 32-bit for now.** Prisma's `Int` holds at most 2,147,483,647 minor units: 21.47 units at 8 decimals, and JCN's largest dev balance is already 1,229.769229 (57% of its limit at 6 decimals). The ledger refuses anything larger with a clear message (R-FIN-18) instead of a database error; step 11a-2 lifts the limit.
+  - **Amounts were 32-bit** (lifted in 11a-2). Prisma's `Int` holds at most 2,147,483,647 minor units: 21.47 units at 8 decimals, and JCN's largest dev balance is already 1,229.769229 (57% of its limit at 6 decimals). The ledger refuses anything larger with a clear message (R-FIN-18) instead of a database error; step 11a-2 lifts the limit.
 - Other things that differ from the plan above:
   - Convert prices through the **reserve ratios**, not the pair's latest rate: a trade may move the published rate, but a reserve takes in and pays out at the ratio it was minted at.
   - A trade needs **PAY on both sides** (each side gives money). Its rate is stored as an exact fraction ("1/3") when it has no exact decimal, as transactions already did. The rate row's `setBy` is `trade:<interaction id>`, not a person. Both legs are EXCHANGE rows with one groupId; a trade doesn't step the trust score. Fiat for fiat is refused (R-FIN-14), so trades never override the feed.
@@ -359,6 +359,17 @@ Decided on 4 Nov while doing 11a. Change `Account.balance`, `Transaction.amount`
 
 **Done when:** unit and browser tests, type check, lint and build pass, and an amount of 100,000.00000000 in an 8-decimal currency moves and shows correctly.
 
+Status: done (5 Nov), committed locally, not pushed (held with 11a until 11c). Local database backed up first (`backups/backup-local-2026-11-04T23-01-42-122Z.json`), then `v11-amounts-64bit.sql` applied with sqlite3; every balance still equals its ledger.
+- **It did need SQL.** Prisma reads a column by its *declared* type in the database: `INTEGER` is read as 32-bit (anything larger fails to load), only `BIGINT` as 64-bit, both in Prisma's own SQLite engine (local, tests) and in the libSQL adapter (Turso). SQLite can't change a declared type, so `scripts/migrations/v11-amounts-64bit.sql` replaces each of the five columns in place, without rebuilding tables: add a `BIGINT` copy, copy the values, drop the old column, rename the copy. Values, row counts, indexes and foreign keys are unchanged (checked on the 4 Nov seed candidate in `scripts/migrate-v11.test.ts`). The new NOT NULL columns carry `DEFAULT 0` (SQLite needs it to add them); the app always writes the amount.
+- **Turso connection:** `intMode: "bigint"` in `src/server/db.ts` and `scripts/db-target.ts`, so the libSQL client returns whole numbers exactly; by default it refuses anything above 2^53. Checked against a local file through the adapter; Turso itself is first exercised in 11c.
+- **How amounts travel:** database `BIGINT` → Prisma `bigint` → core and routers `bigint` → superjson (already the API's transformer) sends it as text tagged as a bigint → the screen gets a `bigint` again → `formatAmount`. Typing goes the other way: `parseAmount` turns the text straight into a `bigint`, never through a floating-point number. The API takes amounts as `z.bigint()` (`minorUnits` in `routers/shared.ts`), up to the limit.
+- **The limit** is now 9,223,372,036,854,775,807 minor units (about 92 billion units at 8 decimals): `MAX_MINOR_UNITS` in `src/lib/money.ts`, checked by the amount fields, the API and the ledger (R-FIN-18 message). SQLite would turn a sum past it into an inexact decimal rather than fail, so the ledger still checks the receiving balance first.
+- Payment-request proposals keep their amount in the JSON payload: new ones store it as text; older ones hold a number, and both are read with `BigInt()`.
+- React Query's cache key can't hold a bigint (its default uses JSON.stringify), so `src/trpc/query-client.ts` has a key function that writes bigints as text (the Convert and Mint quotes).
+- The wallet total rounds a negative balance towards zero, as it already did.
+- Tests: the formatter and parser on bigint up to the limit; the ledger moving balances past 2^31 and 2^53 and refusing past 2^63; minting 1,000,000.00000000 of an 8-decimal currency and trading 100,000.00000000 of it (`trades.test.ts`); the API carrying it through superjson and refusing 2^63 (`routers.test.ts`); and a browser test typing and minting 1,000,000 and 100,000.00000001 and seeing 1100000.00000001 in the wallet.
+- In 11c, dev gets `v11-free-currencies.sql`, then `v11-amounts-64bit.sql`, then `migrate-v11.ts`, then the push.
+
 ### 11b. Screens
 
 From the wireframes:
@@ -377,6 +388,6 @@ Extend the browser tests (`npm run test:e2e`) to cover: create free and backed, 
 
 ### 11c. Move dev
 
-Back up dev; show the SQL, then apply `v11-free-currencies.sql` to dev (DB_TARGET=dev) after I say yes; run `scripts/migrate-v11.ts` on dev after I say yes and show its report; check every balance is unchanged and equals its ledger; push dev and give me a click-through checklist. Never DB_TARGET=production.
+Back up dev; show the SQL, then apply `v11-free-currencies.sql` and `v11-amounts-64bit.sql` to dev (DB_TARGET=dev) after I say yes; run `scripts/migrate-v11.ts` on dev after I say yes and show its report; check every balance is unchanged and equals its ledger; push dev and give me a click-through checklist. Never DB_TARGET=production.
 
 **Done when:** the dev site shows free and backed currencies, trading, the decimals fix and the whole-network map, with everyone's balances unchanged.

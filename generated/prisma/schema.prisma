@@ -230,9 +230,9 @@ model InteractionTerms {
   interactionId     String
   version           Int
   description       String? // the work; or the comment for a payment, gift or trade
-  amount            Int // minor units
+  amount            BigInt // minor units
   currencyId        String
-  counterAmount     Int? // trades only: minor units of counterCurrencyId
+  counterAmount     BigInt? // trades only: minor units of counterCurrencyId
   counterCurrencyId String?
   frequency         Frequency   @default(ONCE)
   paymentMode       PaymentMode @default(AUTOMATIC)
@@ -400,7 +400,7 @@ model Account {
   id              String   @id @default(cuid())
   nodeId          String
   currencyId      String
-  balance         Int      @default(0) // minor units; always equals the sum of its transactions
+  balance         BigInt   @default(0) // minor units; always equals the sum of its transactions
   isPrimaryFiat   Boolean  @default(false)
   isReserve       Boolean  @default(false) // locked reserve behind a community currency
   // For a reserve: the currency it backs, so each currency has its own reserve
@@ -433,8 +433,8 @@ model Transaction {
   kind            TransactionKind
   fromAccountId   String? // null for a deposit or newly minted units
   toAccountId     String? // null for a withdrawal
-  amount          Int // minor units, in the from-account's currency
-  toAmount        Int? // when the currency changes (exchange, mint)
+  amount          BigInt // minor units, in the from-account's currency
+  toAmount        BigInt? // when the currency changes (exchange, mint)
   rate            String? // the rate used, kept as text for exactness
   comment         String
   interactionId   String?

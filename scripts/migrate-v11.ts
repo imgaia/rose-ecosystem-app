@@ -37,7 +37,7 @@ export interface CurrencyLine {
   issuer: string;
   decimals: number;
   reserve: string; // what its own reserve holds, as text
-  reserveMinor: number; // the same in minor units (0 if it has none)
+  reserveMinor: bigint; // the same in minor units (0 if it has none)
   ratio: string | null;
   price: string | null; // current rate in its reserve fiat
   backing: CurrencyBacking;
@@ -79,7 +79,7 @@ export async function migrateV11(prisma: PrismaClient, now = new Date()): Promis
       const currencies = await tx.currency.findMany({ where: { kind: "COMMUNITY" }, orderBy: { createdAt: "asc" } });
       for (const c of currencies) {
         const reserve = await tx.account.findFirst({ where: { isReserve: true, backsCurrencyId: c.id } });
-        const backing: CurrencyBacking = !isRcc(c) && (reserve?.balance ?? 0) > 0 ? "FIAT" : "FREE";
+        const backing: CurrencyBacking = !isRcc(c) && (reserve?.balance ?? 0n) > 0n ? "FIAT" : "FREE";
 
         if (backing === "FIAT") {
           // Keep its ratio; if only the price row has it, store it as the ratio too.
@@ -129,7 +129,7 @@ export async function migrateV11(prisma: PrismaClient, now = new Date()): Promis
     before,
     after,
     ...result,
-    frozenReserves: after.filter((c) => c.backing === "FREE" && c.reserveMinor > 0).map((c) => `${c.code} (${c.reserve})`),
+    frozenReserves: after.filter((c) => c.backing === "FREE" && c.reserveMinor > 0n).map((c) => `${c.code} (${c.reserve})`),
     transactions: { before: txBefore, after: await prisma.transaction.count() },
     balances: { accounts: accounts.length, changed, notMatchingLedger },
   };
@@ -153,7 +153,7 @@ async function currencyLines(prisma: PrismaClient, at: Date): Promise<CurrencyLi
         issuer: c.issuer?.name ?? "-",
         decimals: c.decimals,
         reserve: reserve && fiat ? formatAmount(reserve.balance, fiat.decimals, fiat.code) : "none",
-        reserveMinor: reserve?.balance ?? 0,
+        reserveMinor: reserve?.balance ?? 0n,
         ratio: ratio?.value ?? null,
         price: price && fiat ? `${price.text} ${fiat.code}` : null,
         backing: c.backing,

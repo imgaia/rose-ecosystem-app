@@ -302,7 +302,7 @@ async function main(file: string) {
       for (const accountId of rccAccount.values()) {
         const inSum = await tx.transaction.aggregate({ where: { toAccountId: accountId }, _sum: { amount: true } });
         const outSum = await tx.transaction.aggregate({ where: { fromAccountId: accountId }, _sum: { amount: true } });
-        const balance = (inSum._sum.amount ?? 0) - (outSum._sum.amount ?? 0);
+        const balance = (inSum._sum.amount ?? 0n) - (outSum._sum.amount ?? 0n);
         await tx.account.update({ where: { id: accountId }, data: { balance } });
       }
     },
@@ -323,12 +323,13 @@ async function printCheck(old: OldBackup["tables"], oldBalance: Map<string, numb
     const rows = await prisma.transaction.findMany({
       where: { OR: [{ toAccountId: account.id }, { fromAccountId: account.id }] },
     });
-    const ledger = rows.reduce((s, r) => s + (r.toAccountId === account.id ? r.amount : -r.amount), 0);
+    const ledger = Number(rows.reduce((s, r) => s + (r.toAccountId === account.id ? r.amount : -r.amount), 0n));
     const want = oldBalance.get(m.id)!;
-    const match = want === account.balance && account.balance === ledger;
+    const balance = Number(account.balance); // old RCC wallets: small enough to be exact
+    const match = want === balance && balance === ledger;
     if (!match) ok = false;
     console.log(
-      `  ${m.username.padEnd(12)}${fmt(want).padStart(12)}${fmt(account.balance).padStart(13)}${fmt(ledger).padStart(12)}  ${match ? "ok" : "MISMATCH"}`,
+      `  ${m.username.padEnd(12)}${fmt(want).padStart(12)}${fmt(balance).padStart(13)}${fmt(ledger).padStart(12)}  ${match ? "ok" : "MISMATCH"}`,
     );
   }
 

@@ -10,7 +10,7 @@
 
 import { useEffect, useState } from "react";
 
-import { formatAmount, parseAmount } from "~/lib/money";
+import { formatAmount, MAX_MINOR_UNITS, maxAmountText, parseAmount } from "~/lib/money";
 import { api, type RouterInputs, type RouterOutputs } from "~/trpc/react";
 import { DateField } from "../date-field";
 import { dateOrderError } from "../describe";
@@ -137,10 +137,11 @@ export function AmountField({
 }
 
 /** Minor units from the typed text, or an error message for the form. */
-export function readAmount(text: string, currency: Currency | undefined): { amount: number } | { error: string } {
+export function readAmount(text: string, currency: Currency | undefined): { amount: bigint } | { error: string } {
   if (!currency) return { error: "Choose a currency" };
   const amount = parseAmount(text, currency.decimals);
-  if (amount === null || amount <= 0) return { error: `Enter an amount, like ${formatAmount(2550, currency.decimals)}` };
+  if (amount === null || amount <= 0n) return { error: `Enter an amount, like ${formatAmount(2550n, currency.decimals)}` };
+  if (amount > MAX_MINOR_UNITS) return { error: `That is more than the app can hold: at most ${maxAmountText(currency.decimals, currency.code)}` };
   return { amount };
 }
 
@@ -181,7 +182,7 @@ export const emptyTerms: TermsDraft = {
 /** Fill the form from terms already proposed or agreed (to counter-propose or amend). */
 export function draftFromTerms(t: {
   description: string | null;
-  amount: number;
+  amount: bigint;
   currencyId: string;
   currency: { decimals: number };
   frequency: string;

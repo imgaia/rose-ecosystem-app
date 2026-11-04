@@ -40,5 +40,6 @@ export function createPrismaFor(target: DbTarget): PrismaClient {
       throw new Error("STOP: .env.dev.local points at the PRODUCTION database. Fix it before running dev commands.");
     }
   }
-  return new PrismaClient({ adapter: new PrismaLibSql({ url: creds.url, authToken: creds.authToken }) });
+  // intMode "bigint", as in src/server/db.ts: 64-bit amounts come back exact.
+  return new PrismaClient({ adapter: new PrismaLibSql({ url: creds.url, authToken: creds.authToken, intMode: "bigint" }) });
 }
