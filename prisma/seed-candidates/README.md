@@ -19,6 +19,19 @@ roles and relationships.
 The full, unscrubbed copy of each stays outside git, in
 `backups/seed-candidates/<date>-dev-full.json`.
 
+## Making one
+
+One command takes a fresh dev backup (read-only on dev), keeps the full copy
+and writes today's scrubbed candidate. It never overwrites an existing one.
+
+```
+npx tsx scripts/scrub-seed-candidate.ts
+```
+
+To scrub an existing backup instead, pass it:
+`npx tsx scripts/scrub-seed-candidate.ts backups/<file>.json`. Then add a row
+for the new candidate to the table below.
+
 ## Loading one
 
 Into the local database, or a throwaway SQLite file. The script refuses dev

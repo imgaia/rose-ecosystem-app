@@ -34,11 +34,7 @@ npx prisma db seed      # loads the reference data: roles, capabilities, CHF and
 npm run dev
 ```
 
-Open `http://localhost:3000`. Log in with any seeded person's **username** (not their display name — see "Identity model" below) and the shared default password:
-
-```
-rose2026
-```
+Open `http://localhost:3000`. Log in with any seeded person's **username** (not their display name — see "Identity model" below) and the shared default password: ask the team lead for access.
 
 **⚠️ This shared password is a known, deliberate simplification for pilot testing — not real security.** Everyone currently has the same password. Revisit before any wider or longer-lived use.
 
@@ -138,7 +134,7 @@ For a brand new database only, `npx prisma migrate diff --from-empty --to-schema
 
 ## Known gaps / deliberate simplifications
 
-- **Shared password, no reset flow.** Everyone uses `rose2026`. Password-reset via email (Resend) was scaffolded (see `email`/`PasswordResetToken` in the schema) and then paused — revisit once ready.
+- **Shared password, no reset flow.** Everyone uses the same password; ask the team lead for access. Password-reset via email (Resend) was scaffolded (see `email`/`PasswordResetToken` in the schema) and then paused — revisit once ready.
 - **Username is provisional.** See "Identity model" above.
 - **No backups automation.** Backups are manual (`scripts/backup.ts`), not scheduled. Fine for pilot data; worth automating before this holds anything irreplaceable.
 - **Default Vercel domain.** Currently `*.vercel.app` — a custom domain is a cosmetic upgrade, not yet done.
