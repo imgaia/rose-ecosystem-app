@@ -4,7 +4,7 @@
 // Node currencies (PRD 2.8), opened from the Wallet tab:
 // - CurrenciesScreen (S15): the home currency and primary fiat, each with
 //   Change; the currencies the node issues and holds; Create a currency.
-// - CurrencyDetail (S27): what a currency is, its price and history, policy
+// - CurrencyDetail (S27): what a currency is, its price and history, backing
 //   and status; the issuer's Treasurers also see what backs it. Edit, Retire
 //   and (only if never held) Delete; Set as home currency.
 // - CurrencyForm: create or edit one. For a collection it goes out as a
@@ -21,11 +21,11 @@ import { useNav } from "../shell/navigation";
 import { Button, Card, Chip, Empty, ErrorText, Field, GatedButton, Input, Loading, MainAction, Refusal, Row, SectionLabel, Select, SubScreen, TextArea, Toggle } from "../ui";
 
 type Listed = RouterOutputs["currencies"]["overview"]["issued"][number];
-type Policy = "reserve" | "open";
+type Backing = "FREE" | "FIAT";
 
-export const POLICY_TEXT: Record<Policy, { label: string; line: string }> = {
-  reserve: { label: "Reserve", line: "Converts only as far as the reserve covers it." },
-  open: { label: "Open", line: "Beyond the reserve, swaps straight at the price with other open currencies." },
+export const BACKING_TEXT: Record<Backing, { label: string; line: string }> = {
+  FREE: { label: "Free", line: "Mint any amount; no price until it is traded (R-FIN-17)." },
+  FIAT: { label: "Fiat-backed", line: "Minted only from fiat locked in its reserve; priced at its reserve ratio (R-FIN-01)." },
 };
 
 const FRACTION = /^(\d+)\/(\d+)$/;
@@ -141,7 +141,7 @@ function CurrencyRow({
   sub?: string;
   onOpen: () => void;
 }) {
-  const details = [sub, priceLine(c), c.policy ? POLICY_TEXT[c.policy].label : null].filter(Boolean).join(" · ");
+  const details = [sub, priceLine(c), c.kind === "COMMUNITY" ? BACKING_TEXT[c.backing].label : null].filter(Boolean).join(" · ");
   return (
     <button
       type="button"
@@ -275,7 +275,7 @@ function DetailBody({ c }: { c: RouterOutputs["currencies"]["detail"] }) {
   const setUp = permissionFor("SET_UP_CURRENCY");
   const isCollection = acting.node.kind === "COLLECTION";
   const fiat = c.kind === "FIAT";
-  const b = c.backing;
+  const b = c.reserve;
 
   return (
     <>
@@ -300,11 +300,11 @@ function DetailBody({ c }: { c: RouterOutputs["currencies"]["detail"] }) {
             {priceLine(c) ?? "No price yet"}
           </Row>
         )}
-        {c.policy && (
-          <Row label="Conversion policy">
+        {!fiat && (
+          <Row label="Backing">
             <span className="flex flex-col items-end">
-              <span>{POLICY_TEXT[c.policy].label}</span>
-              <span className="text-xs text-rose-muted">{POLICY_TEXT[c.policy].line}</span>
+              <span>{BACKING_TEXT[c.backing].label}</span>
+              <span className="text-xs text-rose-muted">{BACKING_TEXT[c.backing].line}</span>
             </span>
           </Row>
         )}
@@ -455,8 +455,8 @@ function FormBody({
     code: current?.code ?? "",
     description: current?.description ?? "",
     decimals: String(current?.decimals ?? 2),
+    backing: current?.backing ?? "FREE",
     reserveRatio: current?.reserveRatio ?? "1",
-    policy: current?.policy ?? "reserve",
   };
   const [form, setForm] = useState(initial);
   // Read live, not copied into state, so it follows a home currency changed elsewhere.
@@ -472,17 +472,26 @@ function FormBody({
 
   // The reserve fiat: the currency's own, or the node's primary fiat for a new one.
   const fiat = current?.price?.fiat ?? (overview.primaryFiat && { code: overview.primaryFiat.code, decimals: overview.primaryFiat.decimals });
+  const backed = form.backing === "FIAT";
   const ratioOk = /^\d+(\.\d+)?$/.test(form.reserveRatio.trim()) && Number(form.reserveRatio) > 0;
+  // What is sent: a free currency has no ratio (R-FIN-17).
+  const fieldsOf = (f: typeof form) => ({
+    ...f,
+    decimals: Number(f.decimals),
+    reserveRatio: f.backing === "FIAT" ? f.reserveRatio.trim() : null,
+    description: f.description || null,
+  });
   const symbol = form.code.trim() || "unit";
 
   async function submit() {
     setFormError(null);
     if (!form.name.trim()) return setFormError("Give the currency a name");
     if (!form.code.trim()) return setFormError("Give the currency a symbol, like HVS");
-    if (!ratioOk) return setFormError("The reserve ratio is a number above 0, like 1 or 0.5");
+    if (backed && !ratioOk) return setFormError("The reserve ratio is a number above 0, like 1 or 0.5");
     const decimals = Number(form.decimals);
-    if (!Number.isInteger(decimals) || decimals < 0 || decimals > 6) return setFormError("Decimal places: a whole number from 0 to 6");
-    const fields = { ...form, decimals, reserveRatio: form.reserveRatio.trim(), description: form.description || null };
+    if (!Number.isInteger(decimals) || decimals < 0 || decimals > 8) return setFormError("Decimal places: a whole number from 0 to 8");
+    const fields = fieldsOf(form);
+    const before = fieldsOf(initial);
     const proposed = "Proposed. It applies once a Treasurer and an Owner approve.";
     const done = async (message: string) => {
       await utils.invalidate();
@@ -502,7 +511,7 @@ function FormBody({
       // Edit: send only what changed. The home currency is separate and set at once.
       const changed = Object.fromEntries(
         (Object.keys(fields) as (keyof typeof fields)[])
-          .filter((k) => String(fields[k] ?? "") !== String(initial[k] ?? ""))
+          .filter((k) => String(fields[k] ?? "") !== String(before[k] ?? ""))
           .map((k) => [k, fields[k]]),
       );
       const homeNow = makeHome && !isHome;
@@ -533,33 +542,31 @@ function FormBody({
       <Field label="Description">
         <TextArea rows={2} placeholder="What it is for" value={form.description} onChange={(e) => set({ description: e.target.value })} />
       </Field>
-      <Field label="Reserve ratio" hint="One unit costs the ratio in the reserve fiat: its price (R-FIN-01)">
-        <Input inputMode="decimal" value={form.reserveRatio} onChange={(e) => set({ reserveRatio: e.target.value })} />
-      </Field>
-      <Card className="gap-0 py-1">
-        <Row label="Price" strong>
-          {ratioOk && fiat ? rateLine(symbol, form.reserveRatio.trim(), fiat) : "Enter a ratio above 0"}
-        </Row>
-        <Row label="Reserve held in">{fiat?.code ?? "Primary fiat not set"}</Row>
-      </Card>
-      <Field label="Conversion policy">
+      <Field label="Backing">
         <Toggle
-          label="Conversion policy"
+          label="Backing"
           options={[
-            { value: "reserve", label: POLICY_TEXT.reserve.label },
-            { value: "open", label: POLICY_TEXT.open.label },
+            { value: "FREE", label: BACKING_TEXT.FREE.label },
+            { value: "FIAT", label: BACKING_TEXT.FIAT.label },
           ]}
-          value={form.policy}
-          onChange={(policy) => set({ policy })}
+          value={form.backing}
+          onChange={(backing) => set({ backing })}
         />
       </Field>
-      <ul className="-mt-1 flex flex-col gap-1 text-xs text-rose-muted">
-        {(["reserve", "open"] as const).map((p) => (
-          <li key={p} className={form.policy === p ? "text-rose-text" : ""}>
-            <span className="font-semibold">{POLICY_TEXT[p].label}:</span> {POLICY_TEXT[p].line}
-          </li>
-        ))}
-      </ul>
+      <p className="-mt-1 text-xs text-rose-muted">{BACKING_TEXT[form.backing].line}</p>
+      {backed && (
+        <>
+          <Field label="Reserve ratio" hint="One unit costs the ratio in the reserve fiat: its price (R-FIN-01)">
+            <Input inputMode="decimal" value={form.reserveRatio} onChange={(e) => set({ reserveRatio: e.target.value })} />
+          </Field>
+          <Card className="gap-0 py-1">
+            <Row label="Price" strong>
+              {ratioOk && fiat ? rateLine(symbol, form.reserveRatio.trim(), fiat) : "Enter a ratio above 0"}
+            </Row>
+            <Row label="Reserve held in">{fiat?.code ?? "Primary fiat not set"}</Row>
+          </Card>
+        </>
+      )}
 
       {isCollection && (
         <Card>

@@ -6,13 +6,17 @@
 //   rules.yaml (R-FIN-11: a Treasurer and an Owner); for an individual both
 //   are the person, so it applies at once. A currency someone has held can
 //   only be retired, and its decimals are fixed once units exist (R-FIN-12).
-//   Its reserve ratio and conversion policy are kept per currency
-//   (R-FIN-01, R-FIN-10), and every new ratio writes its price row.
+// - Free or fiat-backed. A currency is free by default (R-FIN-17): no reserve,
+//   no ratio, no price until it is traded. A fiat-backed one has a reserve
+//   ratio (R-FIN-01, kept per currency), and every new ratio writes its price
+//   row. A free currency can become backed; a backed one can become free
+//   only while its reserve is empty.
 // - Home currency and primary fiat (R-FIN-04, R-FIN-07, R-FIN-13).
-// - Converting (UC-FIN-03): any currency into any other, through the two
-//   issuers' reserves at their prices; beyond the reserve only as a straight
-//   swap, when both currencies are open (R-FIN-10). Never fiat into fiat, and
-//   through reserves only between currencies backed by the same fiat (R-FIN-14).
+// - Converting (UC-FIN-03): only through reserves (R-FIN-10): fiat into a
+//   backed currency, a backed currency into fiat, or one backed currency into
+//   another, at their reserve ratios and as far as the reserve covers. Free
+//   currencies are exchanged by trading instead (interactions.ts). Never fiat
+//   into fiat, and only between currencies backed by the same fiat (R-FIN-14).
 //
 // Value moves only through postTransaction (ledger.ts); rates only through
 // rates.ts. The quote functions do the arithmetic without moving anything,
@@ -21,44 +25,43 @@
 import { randomUUID } from "crypto";
 import { formatAmount } from "~/lib/money";
 import { getRule } from "~/server/rules";
-import type { Currency, Proposal, ProposalKind } from "../../../generated/prisma";
+import type { Currency, CurrencyBacking, Proposal, ProposalKind } from "../../../generated/prisma";
 import { actorName, recordActivity } from "./activity";
 import { inTransaction, type Db, type Tx } from "./db";
 import { RuleError, textOrNull } from "./errors";
 import type { Actor } from "./interactions";
 import { postTransaction } from "./ledger";
 import { createProposal, decide, readPayload, withdraw, type ProposalHandler } from "./proposals";
-import { applyRate, deleteRatesOfUnheldCurrency, getRate, parseDecimal, rateOf, setRate, type Rate } from "./rates";
+import { applyRate, closeCurrentRates, deleteRatesOfUnheldCurrency, findRate, parseDecimal, rateOf, setRate, type Rate } from "./rates";
 import { assertCan } from "./rules";
 
 // ───────────────────────── Per-currency rule values ─────────────────────────
 
-/** A currency_level rule's value for this currency (CurrencyRuleValue), or the default in rules.yaml. */
-async function currencyRule(db: Db, currencyId: string, ruleId: string): Promise<string> {
-  const own = await db.currencyRuleValue.findUnique({ where: { currencyId_ruleId: { currencyId, ruleId } } });
-  return String(own?.value ?? getRule(ruleId)?.default ?? "");
+/**
+ * R-FIN-01: a fiat-backed currency's reserve ratio (one unit costs the ratio
+ * in its reserve fiat). Null for a free currency, which has none (R-FIN-17).
+ */
+export async function reserveRatio(db: Db, currencyId: string): Promise<string | null> {
+  const own = await db.currencyRuleValue.findUnique({ where: { currencyId_ruleId: { currencyId, ruleId: "R-FIN-01" } } });
+  return own?.value ?? null;
 }
 
-/** R-FIN-01: the currency's reserve ratio, which is also its price in its reserve fiat. */
-export async function reserveRatio(db: Db, currencyId: string): Promise<string> {
-  return (await currencyRule(db, currencyId, "R-FIN-01")) || "1";
-}
-
-export type ConversionPolicy = "reserve" | "open";
-
-/** R-FIN-10: how far conversion may go. Fiat has no policy: no one issues it. */
-export async function conversionPolicy(db: Db, currencyId: string): Promise<ConversionPolicy> {
-  return (await currencyRule(db, currencyId, "R-FIN-10")) === "open" ? "open" : "reserve";
+/** The ratio of a currency that must be backed (minting from fiat, converting); refuses a free one. */
+export async function backedRatio(db: Db, currency: Currency): Promise<string> {
+  const ratio = currency.backing === "FIAT" ? await reserveRatio(db, currency.id) : null;
+  if (!ratio) throw new RuleError(`${label(currency)} is not fiat-backed, so it has no reserve ratio`, ["R-FIN-01"]);
+  return ratio;
 }
 
 /**
- * A node currency's price now: one unit in its reserve fiat (R-FIN-01, read
- * from the rates table). Null for fiat, or a currency with no price yet.
+ * A node currency's price now: one unit in its reserve fiat, from the rates
+ * table (a backed currency's ratio, or the latest trades, R-FIN-05). Null for
+ * fiat, or for a currency with no price yet.
  */
 export async function priceOf(db: Db, currencyId: string) {
   const currency = await db.currency.findUniqueOrThrow({ where: { id: currencyId }, include: { reserveCurrency: true } });
   if (currency.kind === "FIAT" || !currency.reserveCurrency) return null;
-  const rate = await getRate(db, currency.id, currency.reserveCurrency.id).catch(() => null);
+  const rate = await findRate(db, currency.id, currency.reserveCurrency.id);
   return rate ? { rate: rate.text, fiat: currency.reserveCurrency } : null;
 }
 
@@ -66,6 +69,12 @@ export async function priceOf(db: Db, currencyId: string) {
 export function mintRate(ratio: string): Rate {
   const r = parseDecimal(ratio);
   return rateOf(r.den, r.num);
+}
+
+/** The ratio itself as a rate: one unit is worth the ratio in the reserve fiat (R-FIN-01). */
+export function priceRate(ratio: string): Rate {
+  const r = parseDecimal(ratio);
+  return rateOf(r.num, r.den);
 }
 
 function checkRatio(text: string) {
@@ -76,10 +85,8 @@ function checkRatio(text: string) {
   }
 }
 
-function checkPolicy(value: string) {
-  const allowed = getRule("R-FIN-10")?.values ?? ["reserve", "open"];
-  if (!allowed.includes(value)) throw new RuleError(`The conversion policy must be one of: ${allowed.join(", ")}`, ["R-FIN-10"]);
-}
+/** R-FIN-18: the most decimal places a currency may have. */
+export const MAX_DECIMALS = Number(getRule("R-FIN-18")?.default ?? 8);
 
 // ───────────────────────── Primary fiat and home currency ─────────────────────────
 
@@ -214,8 +221,8 @@ export interface CurrencyFields {
   code: string; // the symbol on screens
   description: string | null;
   decimals: number;
-  reserveRatio: string; // R-FIN-01
-  policy: ConversionPolicy; // R-FIN-10
+  backing: CurrencyBacking; // FREE (R-FIN-17) or FIAT (R-FIN-01)
+  reserveRatio: string | null; // R-FIN-01: fiat-backed only
 }
 
 /** What a CURRENCY_CHANGE proposal stores: a new currency's full fields, or the change to one. */
@@ -268,14 +275,14 @@ export async function proposeCurrencyChange(db: Db, actor: Actor, input: Currenc
   });
 }
 
-/** Trimmed fields, with defaults for a new currency (rules.yaml for ratio and policy). */
+/** Trimmed fields, with defaults for a new currency: free (R-FIN-17), 2 decimals. */
 function normalise(input: CurrencyChangeInput): CurrencyChangePayload {
   const clean = <T extends Partial<CurrencyFields>>(f: T): T => ({
     ...f,
     ...(f.name !== undefined ? { name: f.name.trim() } : {}),
     ...(f.code !== undefined ? { code: f.code.trim() } : {}),
     ...(f.description !== undefined ? { description: textOrNull(f.description) } : {}),
-    ...(f.reserveRatio !== undefined ? { reserveRatio: String(f.reserveRatio).trim() } : {}),
+    ...(f.reserveRatio !== undefined ? { reserveRatio: f.reserveRatio === null ? null : String(f.reserveRatio).trim() || null } : {}),
   });
   if (input.action === "EDIT") return { ...input, fields: clean(input.fields) };
   if (input.action !== "CREATE") return input;
@@ -288,8 +295,8 @@ function normalise(input: CurrencyChangeInput): CurrencyChangePayload {
       code: f.code,
       description: f.description ?? null,
       decimals: f.decimals ?? 2,
-      reserveRatio: f.reserveRatio ?? String(getRule("R-FIN-01")?.default ?? "1"),
-      policy: f.policy ?? (String(getRule("R-FIN-10")?.default ?? "reserve") as ConversionPolicy),
+      backing: f.backing ?? "FREE",
+      reserveRatio: f.reserveRatio ?? null,
     },
   };
 }
@@ -302,18 +309,29 @@ async function checkChange(tx: Tx, issuerId: string, payload: CurrencyChangePayl
 
   if (fields.name !== undefined && !fields.name) throw new RuleError("Give the currency a name", ["R-FIN-06"]);
   if (fields.code !== undefined && !/^\S{1,8}$/.test(fields.code)) throw new RuleError("The symbol is 1 to 8 characters, no spaces");
-  if (fields.decimals !== undefined && !(Number.isInteger(fields.decimals) && fields.decimals >= 0 && fields.decimals <= 6)) {
-    throw new RuleError("Decimal places must be a whole number from 0 to 6");
+  if (fields.decimals !== undefined && !(Number.isInteger(fields.decimals) && fields.decimals >= 0 && fields.decimals <= MAX_DECIMALS)) {
+    throw new RuleError(`Decimal places must be a whole number from 0 to ${MAX_DECIMALS}`, ["R-FIN-18"]);
   }
-  if (fields.reserveRatio !== undefined) checkRatio(fields.reserveRatio);
-  if (fields.policy !== undefined) checkPolicy(fields.policy);
+  if (fields.backing !== undefined && fields.backing !== "FREE" && fields.backing !== "FIAT") {
+    throw new RuleError("A currency is free or fiat-backed", ["R-FIN-17"]);
+  }
+  if (fields.reserveRatio) checkRatio(fields.reserveRatio);
 
   if (payload.action === "CREATE") {
     await primaryFiatOf(tx, issuerId); // becomes its reserve fiat; refuses if the node has none
+    checkBacking(fields.backing ?? "FREE", fields.reserveRatio ?? null);
     return;
   }
   const currency = await tx.currency.findUnique({ where: { id: payload.currencyId } });
   if (currency?.issuerNodeId !== issuerId) throw new RuleError("This node does not issue that currency", ["R-FIN-11"]);
+  if (payload.action === "EDIT") {
+    const backing = fields.backing ?? currency.backing;
+    const ratio = fields.reserveRatio !== undefined ? fields.reserveRatio : await reserveRatio(tx, currency.id);
+    checkBacking(backing, backing === "FIAT" ? ratio : (fields.reserveRatio ?? null));
+    if (currency.backing === "FIAT" && backing === "FREE" && (await reserveBalance(tx, currency)) > 0) {
+      throw new RuleError(`${label(currency)} stays fiat-backed while its reserve holds anything`, ["R-FIN-02"]);
+    }
+  }
   if (payload.action === "EDIT" && fields.decimals !== undefined && fields.decimals !== currency.decimals && (await everHeld(tx, currency.id))) {
     throw new RuleError("The decimal places can't change once units exist", ["R-FIN-12"]);
   }
@@ -324,6 +342,12 @@ async function checkChange(tx: Tx, issuerId: string, payload: CurrencyChangePayl
       throw new RuleError(`${label(currency)} is used in an interaction's terms, so it can only be retired`, ["R-FIN-12"]);
     }
   }
+}
+
+/** A fiat-backed currency needs a reserve ratio (R-FIN-01); a free one has none (R-FIN-17). */
+function checkBacking(backing: CurrencyBacking, ratio: string | null) {
+  if (backing === "FIAT" && !ratio) throw new RuleError("A fiat-backed currency needs a reserve ratio, like 1 or 0.5", ["R-FIN-01"]);
+  if (backing === "FREE" && ratio) throw new RuleError("A free currency has no reserve ratio", ["R-FIN-17"]);
 }
 
 /** R-FIN-12: has any account in this currency ever had a ledger row? */
@@ -349,15 +373,14 @@ async function writePrice(tx: Tx, currency: Currency, ratio: string, personId: s
   });
 }
 
-async function writePolicy(tx: Tx, currencyId: string, policy: ConversionPolicy) {
-  await tx.currencyRuleValue.upsert({
-    where: { currencyId_ruleId: { currencyId, ruleId: "R-FIN-10" } },
-    create: { currencyId, ruleId: "R-FIN-10", value: policy },
-    update: { value: policy },
-  });
+/** A backed currency becomes free: its ratio goes, and its reserve-ratio price closes (it has no price until traded). */
+async function dropPrice(tx: Tx, currency: Currency) {
+  await tx.currencyRuleValue.deleteMany({ where: { currencyId: currency.id, ruleId: "R-FIN-01" } });
+  await closeCurrentRates(tx, { currencyId: currency.id, source: "RESERVE_RATIO", at: new Date() });
 }
 
-const sameDecimal = (a: string, b: string) => {
+const sameDecimal = (a: string | null, b: string | null) => {
+  if (a === null || b === null) return a === b;
   const [x, y] = [parseDecimal(a), parseDecimal(b)];
   return x.num * y.den === y.num * x.den;
 };
@@ -374,10 +397,9 @@ const currencyChangeHandler: ProposalHandler = {
 
     if (p.action === "CREATE") {
       const fiat = await primaryFiatOf(tx, issuerId);
-      const { reserveRatio: ratio, policy, ...fields } = p.fields;
+      const { reserveRatio: ratio, ...fields } = p.fields;
       const currency = await tx.currency.create({ data: { ...fields, kind: "COMMUNITY", issuerNodeId: issuerId, reserveCurrencyId: fiat.id } });
-      await writePrice(tx, currency, ratio, personId);
-      await writePolicy(tx, currency.id, policy);
+      if (currency.backing === "FIAT") await writePrice(tx, currency, ratio!, personId);
       await log(tx, proposal, "applied", personId, currency);
       // Chosen when it was proposed; applies now, with the currency.
       if (p.makeHome) await writeHomeCurrency(tx, issuerId, currency, (await tx.node.findUniqueOrThrow({ where: { id: issuerId } })).name);
@@ -386,10 +408,10 @@ const currencyChangeHandler: ProposalHandler = {
 
     const currency = await tx.currency.findUniqueOrThrow({ where: { id: p.currencyId } });
     if (p.action === "EDIT") {
-      const { reserveRatio: ratio, policy, ...fields } = p.fields;
+      const { reserveRatio: ratio, ...fields } = p.fields;
       const updated = await tx.currency.update({ where: { id: currency.id }, data: fields });
-      if (ratio !== undefined && !sameDecimal(ratio, await reserveRatio(tx, currency.id))) await writePrice(tx, updated, ratio, personId);
-      if (policy !== undefined) await writePolicy(tx, currency.id, policy);
+      if (updated.backing === "FREE" && currency.backing === "FIAT") await dropPrice(tx, updated);
+      if (updated.backing === "FIAT" && ratio && !sameDecimal(ratio, await reserveRatio(tx, currency.id))) await writePrice(tx, updated, ratio, personId);
     } else if (p.action === "RETIRE") {
       await tx.currency.update({ where: { id: currency.id }, data: { status: "RETIRED" } });
     } else {
@@ -492,6 +514,12 @@ export async function quoteConvert(db: Db, actor: Actor, input: ConvertInput) {
 async function quoteBetween(db: Db, nodeId: string, a: Currency, b: Currency, amount: number, available: number | null) {
   if (a.id === b.id) throw refuse("same currency", "Pick a different currency to convert into");
   if (a.kind === "FIAT" && b.kind === "FIAT") throw refuse("fiat into fiat", "Fiat is never converted into another fiat", ["R-FIN-14"]);
+  // R-FIN-10: only through reserves; a free currency has none.
+  for (const c of [a, b]) {
+    if (c.kind === "COMMUNITY" && c.backing === "FREE") {
+      throw refuse("trade instead", `${label(c)} is a free currency: it is exchanged by trading, not converted. Propose a trade instead`, ["R-FIN-10"]);
+    }
+  }
   if (b.status === "RETIRED") throw refuse(`${label(b)} is retired`, `${label(b)} is retired: no new units`, ["R-FIN-12"]);
   if (available !== null && available < amount) throw refuse("balance too low", `Not enough ${label(a)} to convert`);
   for (const c of [a, b]) {
@@ -508,7 +536,7 @@ async function quoteBetween(db: Db, nodeId: string, a: Currency, b: Currency, am
   // currency's own reserve (R-FIN-02) and new units are created at its ratio (R-FIN-01).
   if (a.kind === "FIAT" && b.issuerNodeId === nodeId) {
     if (a.id !== b.reserveCurrencyId) throw refuse("different fiat", `Mint ${label(b)} from its reserve fiat`, ["R-FIN-14"]);
-    const rate = mintRate(await reserveRatio(db, b.id));
+    const rate = mintRate(await backedRatio(db, b));
     const receive = applyRate(amount, a.decimals, b.decimals, rate);
     if (receive <= 0) throw refuse("amount too small", "That amount is too small to mint anything");
     return {
@@ -523,59 +551,46 @@ async function quoteBetween(db: Db, nodeId: string, a: Currency, b: Currency, am
     };
   }
 
-  const rate = await getRate(db, a.id, b.id);
+  // Through the reserves: needs one fiat behind both (R-FIN-14).
   const fiatA = a.kind === "FIAT" ? a.id : a.reserveCurrencyId!;
   const fiatB = b.kind === "FIAT" ? b.id : b.reserveCurrencyId!;
-  const base = { currency: b, amount, rate: rate.text };
-
-  // Through the reserves: needs one fiat behind both (R-FIN-14), and enough in A's own reserve (R-FIN-10).
-  let blocked: Refusal;
   if (fiatA !== fiatB) {
-    blocked = refuse("backed by different fiats", `${label(a)} and ${label(b)} are backed by different fiats, so they can't convert through their reserves`, [
+    throw refuse("backed by different fiats", `${label(a)} and ${label(b)} are backed by different fiats, so they can't convert through their reserves`, [
       "R-FIN-14",
     ]);
-  } else {
-    const fiat = await db.currency.findUniqueOrThrow({ where: { id: fiatA } });
-    const priceA = a.kind === "FIAT" ? null : await getRate(db, a.id, fiat.id);
-    const value = priceA ? applyRate(amount, a.decimals, fiat.decimals, priceA) : amount;
-    const intoB = b.kind === "FIAT" ? null : await getRate(db, fiat.id, b.id);
-    const receive = intoB ? applyRate(value, fiat.decimals, b.decimals, intoB) : value;
-    if (value <= 0 || receive <= 0) throw refuse("amount too small", "That amount is too small to convert");
+  }
+  // At the reserve ratios, not the latest published rate: a trade may have
+  // moved that, but a reserve pays out and takes in at its ratio (R-FIN-01).
+  const fiat = await db.currency.findUniqueOrThrow({ where: { id: fiatA } });
+  const priceA = a.kind === "FIAT" ? null : priceRate(await backedRatio(db, a));
+  const value = priceA ? applyRate(amount, a.decimals, fiat.decimals, priceA) : amount;
+  const intoB = b.kind === "FIAT" ? null : mintRate(await backedRatio(db, b));
+  const receive = intoB ? applyRate(value, fiat.decimals, b.decimals, intoB) : value;
+  if (value <= 0 || receive <= 0) throw refuse("amount too small", "That amount is too small to convert");
 
-    const reserveA = a.kind === "FIAT" ? null : await reserveBalance(db, a);
-    if (reserveA === null || reserveA >= value) {
-      return {
-        ...base,
-        mode: "RESERVES" as const,
-        receive,
-        fiat,
-        value, // the fiat that moves between the reserves
-        priceA: priceA?.text ?? null,
-        intoB: intoB?.text ?? null,
-        summary: `${money(amount, a)} → ${money(receive, b)}`,
-      };
-    }
-    blocked = refuse(
+  // As far as A's own reserve covers (R-FIN-10).
+  const reserveA = a.kind === "FIAT" ? null : await reserveBalance(db, a);
+  if (reserveA !== null && reserveA < value) {
+    throw refuse(
       reserveA === 0 ? "reserve empty" : "reserve too low",
       `${label(a)}'s reserve holds ${money(reserveA, fiat)}, not enough to cover ${money(value, fiat)}`,
       ["R-FIN-10"],
     );
   }
-
-  // Beyond the reserve: a straight swap at the price, only if both currencies are open (R-FIN-10).
-  const bothOpen =
-    a.kind === "COMMUNITY" &&
-    b.kind === "COMMUNITY" &&
-    (await conversionPolicy(db, a.id)) === "open" &&
-    (await conversionPolicy(db, b.id)) === "open";
-  if (!bothOpen) {
-    throw refuse(blocked.short, `${blocked.message}; a straight swap beyond the reserve needs both currencies open`, [
-      ...new Set([...blocked.ruleIds, "R-FIN-10"]),
-    ]);
-  }
-  const receive = applyRate(amount, a.decimals, b.decimals, rate);
-  if (receive <= 0) throw refuse("amount too small", "That amount is too small to convert");
-  return { ...base, mode: "SWAP" as const, receive, summary: `${money(amount, a)} → ${money(receive, b)} (straight swap)` };
+  const one = rateOf(1n, 1n);
+  const rate = rateOf((priceA ?? one).num * (intoB ?? one).num, (priceA ?? one).den * (intoB ?? one).den);
+  return {
+    currency: b,
+    amount,
+    rate: rate.text,
+    mode: "RESERVES" as const,
+    receive,
+    fiat,
+    value, // the fiat that moves between the reserves
+    priceA: priceA?.text ?? null,
+    intoB: intoB?.text ?? null,
+    summary: `${money(amount, a)} → ${money(receive, b)}`,
+  };
 }
 
 /** A conversion refusal with a few plain words for the Convert table ("reserve empty"), beside the full message. */
@@ -609,7 +624,7 @@ export async function convertTable(db: Db, nodeId: string, intoCurrencyId: strin
     held.map(async ({ currency, balance }) => {
       const fiatRate =
         currency.kind === "FIAT" && primary && primary.id !== currency.id
-          ? await getRate(db, currency.id, primary.id).then((r) => ({ rate: r.text, primary }), () => null)
+          ? await findRate(db, currency.id, primary.id).then((r) => (r ? { rate: r.text, primary } : null))
           : null;
       let row: ConvertTableRow["into"] = null;
       if (into && into.id !== currency.id) {
@@ -633,7 +648,6 @@ export async function convertTable(db: Db, nodeId: string, intoCurrencyId: strin
  *      reserve (from the person's fiat account when paying with fiat; to it
  *      when converting into fiat),
  *   3. units of B are minted to the person (skipped when converting into fiat).
- * A straight swap is legs 1 and 3 with no fiat moving.
  */
 export async function convert(db: Db, actor: Actor, input: ConvertInput & { comment?: string }) {
   return inTransaction(db, async (tx) => {
@@ -663,26 +677,6 @@ export async function convert(db: Db, actor: Actor, input: ConvertInput & { comm
     };
     const unitsOfB = async () => (await unitsAccount(tx, actor.actingNodeId, b.id)).id;
     const rows = [];
-
-    if (quote.mode === "SWAP") {
-      rows.push(
-        await postTransaction(tx, {
-          ...base,
-          fromAccountId: quote.from.id,
-          amount: quote.amount,
-          rate: quote.rate,
-          summary: `${who} swapped ${money(quote.amount, a)} for ${money(quote.receive, b)}`,
-        }),
-        await postTransaction(tx, {
-          ...base,
-          toAccountId: await unitsOfB(),
-          amount: quote.receive,
-          rate: quote.rate,
-          summary: `${money(quote.receive, b)} minted for ${who} in a straight swap`,
-        }),
-      );
-      return { groupId: base.groupId, mode: quote.mode, receive: quote.receive, rows };
-    }
 
     const fiat = quote.fiat;
     let fiatFrom = quote.from.id; // paying with fiat: straight from the person's account
@@ -769,8 +763,10 @@ export function reserveAccount(tx: Tx, currency: Backed) {
 /**
  * What backs a node currency: its reserve, the units in circulation (every
  * balance in it, the issuer's own included), their value at the price, and
- * the share of that value the reserve covers (null when no units exist).
- * The share is for showing, not for moving money.
+ * the share of that value the reserve covers (null when no units exist, or
+ * the currency has no price yet). The share is for showing, not for moving
+ * money. A free currency's reserve is normally empty; RCC's still holds what
+ * went in before it became free (step 11).
  */
 export async function currencyBacking(db: Db, currencyId: string) {
   const currency = await db.currency.findUniqueOrThrow({ where: { id: currencyId }, include: { reserveCurrency: true } });
@@ -778,7 +774,8 @@ export async function currencyBacking(db: Db, currencyId: string) {
   const fiat = currency.reserveCurrency;
   const reserve = await reserveBalance(db, currency);
   const units = (await db.account.aggregate({ where: { currencyId, isReserve: false }, _sum: { balance: true } }))._sum.balance ?? 0;
-  const value = units > 0 ? applyRate(units, currency.decimals, fiat.decimals, await getRate(db, currency.id, fiat.id)) : 0;
+  const price = units > 0 ? await findRate(db, currency.id, fiat.id) : null;
+  const value = price ? applyRate(units, currency.decimals, fiat.decimals, price) : 0;
   return { currency, fiat, reserve, units, value, shareBacked: value > 0 ? reserve / value : null };
 }
 

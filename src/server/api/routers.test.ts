@@ -56,6 +56,16 @@ async function org() {
 
 const terms = (currencyId: string, amount: number, description = "Thanks") => ({ description, amount, currencyId });
 
+/** RCC issued by `node` and fiat-backed at 1 CHF (it is free since step 11), for the mint and convert tests. Returns the undo. */
+async function rccBackedBy(node: { id: string }) {
+  await t.db.currency.update({ where: { id: t.rcc.id }, data: { issuerNodeId: node.id, backing: "FIAT" } });
+  await t.db.currencyRuleValue.create({ data: { currencyId: t.rcc.id, ruleId: "R-FIN-01", value: "1" } });
+  return async () => {
+    await t.db.currencyRuleValue.delete({ where: { currencyId_ruleId: { currencyId: t.rcc.id, ruleId: "R-FIN-01" } } });
+    await t.db.currency.update({ where: { id: t.rcc.id }, data: { issuerNodeId: null, backing: "FREE" } });
+  };
+}
+
 describe("signing in and acting for a node", () => {
   it("refuses everything to someone not signed in", async () => {
     const { rose } = await org();
@@ -214,7 +224,7 @@ describe("wallet", () => {
 
   it("mints the node's own currency from fiat, against a locked reserve", async () => {
     const { tess, mo, rose } = await org();
-    await t.db.currency.update({ where: { id: t.rcc.id }, data: { issuerNodeId: rose.id } });
+    const undo = await rccBackedBy(rose);
     await as(tess).wallet.addFunds({ actingNodeId: rose.id, amount: 10_000, reference: "r", depositedOn: new Date() });
     const chf = await t.db.account.findFirstOrThrow({ where: { nodeId: rose.id, isPrimaryFiat: true } });
     const rcc = await t.db.account.findFirstOrThrow({ where: { nodeId: rose.id, currencyId: t.rcc.id } });
@@ -224,7 +234,7 @@ describe("wallet", () => {
     expect((await as(tess).wallet.quoteMint(input)).units).toBe(4_000); // rate 1, reserve ratio 1
 
     const { locked, minted } = await as(tess).wallet.mint(input);
-    expect(locked.groupId).toBe(minted.groupId);
+    expect(locked!.groupId).toBe(minted.groupId);
     expect(await t.balanceOf(rose.id, t.chf.id)).toBe(6_000);
     expect(await t.balanceOf(rose.id, t.rcc.id)).toBe(9_000);
     const reserve = await t.db.account.findFirstOrThrow({ where: { nodeId: rose.id, isReserve: true, backsCurrencyId: t.rcc.id } });
@@ -238,12 +248,12 @@ describe("wallet", () => {
     expect(own.mode).toBe("MINT");
     expect(own.rows.map((r) => r.kind)).toEqual(["MINT", "MINT"]);
     expect((await t.db.account.findUniqueOrThrow({ where: { id: reserve.id } })).balance).toBe(4_100);
-    await t.db.currency.update({ where: { id: t.rcc.id }, data: { issuerNodeId: null } });
+    await undo();
   });
 
   it("convert goes through the reserves: fiat into the issuer's reserve, units minted", async () => {
     const { ana, mo, zed, rose } = await org();
-    await t.db.currency.update({ where: { id: t.rcc.id }, data: { issuerNodeId: rose.id } });
+    const undo = await rccBackedBy(rose);
     const chf = await t.account(ana.id, t.chf.id, 3_000);
     const input = { actingNodeId: ana.id, fromAccountId: chf.id, toCurrencyId: t.rcc.id, amount: 1_250 };
 
@@ -267,40 +277,40 @@ describe("wallet", () => {
     expect(out.ruleIds).toEqual(["R-FIN-10"]);
     const eur = await t.db.currency.create({ data: { name: "Euro", code: "EUR", kind: "FIAT", country: "DE" } });
     expect((await refused(as(ana).wallet.convert({ ...input, toCurrencyId: eur.id }))).ruleIds).toEqual(["R-FIN-14"]);
-    const loose = await t.db.currency.create({ data: { name: "No issuer", code: "NOI", kind: "COMMUNITY" } });
+    const loose = await t.db.currency.create({ data: { name: "No issuer", code: "NOI", kind: "COMMUNITY", backing: "FIAT" } });
     expect((await refused(as(ana).wallet.convert({ ...input, toCurrencyId: loose.id }))).message).toMatch(/no issuer/);
 
     // Someone else's account, and a Member buying for the collection.
     expect((await refused(as(zed).wallet.convert({ ...input, actingNodeId: zed.id }))).message).toMatch(/does not belong/);
     const forOrg = await refused(as(mo).wallet.convert({ ...input, actingNodeId: rose.id }));
     expect(forOrg.needsRoles).toEqual(["TREASURER"]);
-    await t.db.currency.update({ where: { id: t.rcc.id }, data: { issuerNodeId: null } });
+    await undo();
   });
 });
 
 describe("currencies (S15, S27)", () => {
-  it("creates an individual's currency at once, and shows its price, policy and backing to its Treasurer only", async () => {
+  it("creates an individual's currency at once, and shows its price, backing and reserve to its Treasurer only", async () => {
     const { ana, zed } = await org();
     const created = await as(ana).currencies.propose({
       actingNodeId: ana.id,
       action: "CREATE",
-      fields: { name: "Harvest shares", code: "HVS", description: null, decimals: 2, reserveRatio: "0.5", policy: "open" },
+      fields: { name: "Harvest shares", code: "HVS", description: null, decimals: 2, backing: "FIAT", reserveRatio: "0.5" },
     });
     expect(created.status).toBe("APPROVED");
 
     const overview = await as(ana).currencies.overview({ actingNodeId: ana.id });
     expect(overview.primaryFiat?.code).toBe("CHF");
-    expect(overview.issued.map((c) => [c.code, c.price?.rate, c.price?.fiat.code, c.policy])).toEqual([["HVS", "0.5", "CHF", "open"]]);
+    expect(overview.issued.map((c) => [c.code, c.price?.rate, c.price?.fiat.code, c.backing])).toEqual([["HVS", "0.5", "CHF", "FIAT"]]);
     expect(overview.held?.map((c) => c.code)).toEqual(["RCC"]);
     const hvs = overview.issued[0]!;
     expect(overview.homeChoices.map((c) => c.id)).toContain(hvs.id);
 
     const mine = await as(ana).currencies.detail({ actingNodeId: ana.id, currencyId: hvs.id });
-    expect(mine).toMatchObject({ actingIsIssuer: true, everHeld: false, backing: { reserve: 0, units: 0, shareBacked: null } });
+    expect(mine).toMatchObject({ actingIsIssuer: true, everHeld: false, backing: "FIAT", reserve: { reserve: 0, units: 0, shareBacked: null } });
     expect(mine.history.map((h) => [h.rate, h.source])).toEqual([["0.5", "RESERVE_RATIO"]]);
     // Anyone sees the currency; only the issuer's Treasurers see what backs it.
     const theirs = await as(zed).currencies.detail({ actingNodeId: zed.id, currencyId: hvs.id });
-    expect(theirs).toMatchObject({ actingIsIssuer: false, backing: null, price: { rate: "0.5" } });
+    expect(theirs).toMatchObject({ actingIsIssuer: false, reserve: null, price: { rate: "0.5" } });
 
     await as(ana).currencies.setHome({ actingNodeId: ana.id, currencyId: hvs.id });
     expect((await as(ana).wallet.accounts({ actingNodeId: ana.id })).total?.currency?.id).toBe(hvs.id);
@@ -308,7 +318,7 @@ describe("currencies (S15, S27)", () => {
 
   it("sends a collection's currency out as a proposal, and refuses a Member", async () => {
     const { tess, mo, rose } = await org();
-    const fields = { name: "Org coin", code: "ORG", description: null, decimals: 2, reserveRatio: "1", policy: "reserve" as const };
+    const fields = { name: "Org coin", code: "ORG", description: null, decimals: 2, backing: "FREE" as const, reserveRatio: null };
     expect((await refused(as(mo).currencies.propose({ actingNodeId: rose.id, action: "CREATE", fields }))).needsRoles).toEqual(["TREASURER"]);
     // Tess is the only Treasurer and the only Owner: R-FIN-11 needs two people.
     const alone = await refused(as(tess).currencies.propose({ actingNodeId: rose.id, action: "CREATE", fields }));
@@ -321,11 +331,11 @@ describe("currencies (S15, S27)", () => {
       { node: olga, roles: ["MEMBER", "OWNER"] },
       { node: tim, roles: ["MEMBER", "TREASURER"] },
     ]);
-    const fields = { name: "Pair coin", code: "PAIR", description: null, decimals: 2, reserveRatio: "2", policy: "reserve" as const };
+    const fields = { name: "Pair coin", code: "PAIR", description: null, decimals: 2, backing: "FIAT" as const, reserveRatio: "2" };
     const { id } = await as(tim).currencies.propose({ actingNodeId: col.id, action: "CREATE", fields });
     const inbox = await as(olga).proposals.inbox({ actingNodeId: olga.id });
     const review = await as(olga).proposals.review({ actingNodeId: olga.id, proposalId: id });
-    expect(review.currencyChange).toMatchObject({ action: "CREATE", fields: { code: "PAIR", reserveRatio: "2" }, fiatCode: "CHF" });
+    expect(review.currencyChange).toMatchObject({ action: "CREATE", fields: { code: "PAIR", backing: "FIAT", reserveRatio: "2" }, fiatCode: "CHF" });
     expect(JSON.stringify(inbox)).toContain(id);
     await as(olga).proposals.decide({ actingNodeId: olga.id, proposalId: id, approve: true });
     expect((await as(tim).currencies.overview({ actingNodeId: col.id })).issued.map((c) => c.code)).toEqual(["PAIR"]);

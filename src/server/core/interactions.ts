@@ -5,13 +5,15 @@
 // they act for (themselves, or a collection). The side of the interaction
 // decides the capability needed (R-REL-07): the paying side needs PAY, the
 // paid side needs INTERACT. For a collection that means any member may accept
-// money coming in, and only a Treasurer may send money out.
+// money coming in, and only a Treasurer may send money out. In a trade both
+// sides give money, so both need PAY.
 //
 // Lifecycle:
 //   propose ─► PROPOSED ─accept─► ACTIVE ⇄ PAUSED ─► COMPLETED / CANCELLED
 //                  └─ decline / withdraw ─► DECLINED / WITHDRAWN
 // A one-off payment or gift goes straight from PROPOSED to COMPLETED when the
-// recipient accepts, because the money moves at that moment.
+// recipient accepts, because the money moves at that moment. So does a trade
+// (UC-FIN-10): both legs move together, and its rate is published (R-FIN-16).
 //
 // The relationship is created PENDING with the pair's first proposal and
 // becomes ACTIVE when the first interaction is approved (R-REL-03). If that
@@ -20,6 +22,7 @@
 //
 // Every event is written to the activity history of both sides (activity.ts).
 
+import { randomUUID } from "crypto";
 import { formatAmount } from "~/lib/money";
 import { rulesVersion } from "~/server/rules";
 import type {
@@ -37,6 +40,7 @@ import { inTransaction, type Db, type Tx } from "./db";
 import { RuleError } from "./errors";
 import { postTransaction, spendable } from "./ledger";
 import { createProposal, decide, readPayload, supersede, withdraw, type ProposalHandler } from "./proposals";
+import { publishRate, rateOf } from "./rates";
 import { assertCan } from "./rules";
 import { updateTrustScore, type TrustEventKind } from "./trust";
 
@@ -46,9 +50,11 @@ export interface Actor {
 }
 
 export interface Terms {
-  description: string; // the work, or the comment for a payment or gift (required)
+  description: string; // the work, or the comment for a payment or gift (required); optional for a trade
   amount: number; // minor units
   currencyId: string;
+  counterAmount?: number | null; // a trade: what the payee gives back, in minor units of counterCurrencyId
+  counterCurrencyId?: string | null;
   frequency?: Frequency; // default ONCE
   paymentMode?: PaymentMode; // default AUTOMATIC; ON_REQUEST is for work only
   startDate?: Date | null;
@@ -142,6 +148,35 @@ export async function requestWorkPayment(
   });
 }
 
+/**
+ * UC-FIN-10: the acting node proposes a trade: it gives `give` and gets
+ * `get` back from the other node (e.g. 1 GAIA for 3 THC). The other side
+ * accepts, counter-proposes or declines; the proposer can withdraw.
+ */
+export async function proposeTrade(
+  db: Db,
+  actor: Actor,
+  input: { toNodeId: string; give: { amount: number; currencyId: string }; get: { amount: number; currencyId: string }; comment?: string },
+) {
+  const terms: Terms = {
+    description: input.comment ?? "",
+    amount: input.give.amount,
+    currencyId: input.give.currencyId,
+    counterAmount: input.get.amount,
+    counterCurrencyId: input.get.currencyId,
+  };
+  validateTerms("TRADE", terms);
+  return inTransaction(db, async (tx) => {
+    await assertCan(tx, actor.personId, actor.actingNodeId, "PAY");
+    // As with a one-off payment, a trade the proposer can't cover right now is refused straight away.
+    const from = await accountOf(tx, actor.actingNodeId, terms.currencyId);
+    if (!from || (await spendable(tx, from.id)) < terms.amount) {
+      throw new RuleError("Not enough funds for this trade (negative-balance limit)", ["R-PAY-02"]);
+    }
+    return createInteraction(tx, actor, { kind: "TRADE", payerNodeId: actor.actingNodeId, payeeNodeId: input.toNodeId, terms });
+  });
+}
+
 /** UC-INT-03: either side proposes work. */
 export async function proposeWork(
   db: Db,
@@ -192,7 +227,7 @@ export const accept = (db: Db, actor: Actor, proposalId: string, comment?: strin
 export const decline = (db: Db, actor: Actor, proposalId: string, reason?: string) =>
   respond(db, actor, { proposalId, approve: false, comment: reason });
 
-/** UC-INT-04 step 4 (work only): answer a proposal with changed terms. The new version waits on the other side. */
+/** UC-INT-04 step 4 (work and trades): answer a proposal with changed terms. The new version waits on the other side. */
 export async function counterPropose(
   db: Db,
   actor: Actor,
@@ -204,7 +239,9 @@ export async function counterPropose(
       throw new RuleError("Only proposed terms can be counter-proposed");
     }
     const interaction = await loadInteraction(tx, old.interactionId!);
-    if (interaction.kind !== "WORK") throw new RuleError("Only work can be counter-proposed; decline instead");
+    if (interaction.kind !== "WORK" && interaction.kind !== "TRADE") {
+      throw new RuleError("Only work and trades can be counter-proposed; decline instead");
+    }
 
     const { termsVersion } = readPayload<TermsPayload>(old);
     const base = await tx.interactionTerms.findUniqueOrThrow({
@@ -249,6 +286,24 @@ export async function amend(
   return inTransaction(db, async (tx) => {
     const interaction = await loadInteraction(tx, input.interactionId);
     assertMayManage(interaction, actor.actingNodeId);
+    if (interaction.kind === "TRADE") {
+      // A trade is done once accepted, so it changes only while it waits:
+      // the new terms replace the open ones and both sides approve again.
+      const open = await tx.proposal.findFirst({
+        where: { interactionId: interaction.id, status: "OPEN", kind: { in: ["INTERACTION", "TERMS_CHANGE"] } },
+      });
+      if (!open) throw new RuleError(`Can't change a ${interaction.status.toLowerCase()} trade`);
+      const mine = await tx.proposalApprover.findUnique({
+        where: { proposalId_approverNodeId: { proposalId: open.id, approverNodeId: actor.actingNodeId } },
+      });
+      if (mine?.decision === null) return counterPropose(tx, actor, { proposalId: open.id, changes: input.changes, comment: input.comment });
+      // The side that proposed them: its open terms give way to the new ones (the trade itself stays open).
+      await tx.proposal.updateMany({ where: { id: open.id, status: "OPEN" }, data: { status: "WITHDRAWN", decidedAt: new Date() } });
+      const base = await tx.interactionTerms.findUniqueOrThrow({
+        where: { interactionId_version: { interactionId: interaction.id, version: readPayload<TermsPayload>(open).termsVersion } },
+      });
+      return proposeTerms(tx, actor, interaction, { ...termsFromRow(base), ...input.changes }, input.comment, "proposed");
+    }
     if (interaction.status !== "ACTIVE" && interaction.status !== "PAUSED") {
       throw new RuleError(`Can't amend a ${interaction.status.toLowerCase()} interaction`);
     }
@@ -488,14 +543,24 @@ function logInteraction(tx: Tx, interaction: Interaction, type: string, summary:
   return recordActivity(tx, { type, refId, nodeIds: [interaction.payerNodeId, interaction.payeeNodeId], summary });
 }
 
-/** `a payment of 25.00 RCC from Ana to Ben`, `work "Bench" for 50.00 RCC (monthly), paid by Ana to Ben` */
+/**
+ * `a payment of 25.00 RCC from Ana to Ben`, `work "Bench" for 50.00 RCC (monthly), paid by Ana to Ben`,
+ * `a trade of 1.00 GAIA for 3.00 THC between Ana and Ben`
+ */
 async function describe(tx: Tx, interaction: Interaction, terms: InteractionTerms) {
   const [payer, payee] = await sideNames(tx, interaction);
   const currency = await tx.currency.findUniqueOrThrow({ where: { id: terms.currencyId } });
   const amount = formatAmount(terms.amount, currency.decimals, currency.code);
+  if (interaction.kind === "TRADE") return `a trade of ${amount} for ${await counterText(tx, terms)} between ${payer} and ${payee}`;
   const often = terms.frequency === "ONCE" ? "" : ` (${terms.frequency.toLowerCase()})`;
   if (interaction.kind === "WORK") return `work "${terms.description}" for ${amount}${often}, paid by ${payer} to ${payee}`;
   return `a ${interaction.kind === "GIFT" ? "gift" : "payment"} of ${amount}${often} from ${payer} to ${payee}`;
+}
+
+/** A trade's other side as text: `3.00 THC`. */
+async function counterText(tx: Tx, terms: Pick<InteractionTerms, "counterAmount" | "counterCurrencyId">) {
+  const currency = await tx.currency.findUniqueOrThrow({ where: { id: terms.counterCurrencyId! } });
+  return formatAmount(terms.counterAmount!, currency.decimals, currency.code);
 }
 
 const capitalise = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
@@ -524,6 +589,7 @@ async function createInteraction(
     });
     if (active !== 2) throw new RuleError("Both nodes must exist and be active");
     await tx.currency.findUniqueOrThrow({ where: { id: input.terms.currencyId } });
+    if (input.terms.counterCurrencyId) await checkTradeCurrencies(tx, input.terms);
 
     const relationship = await relationshipBetween(tx, input.payerNodeId, input.payeeNodeId);
     const interaction = await tx.interaction.create({
@@ -568,6 +634,7 @@ async function proposeTerms(
 ) {
   validateTerms(interaction.kind, terms);
   await tx.currency.findUniqueOrThrow({ where: { id: terms.currencyId } });
+  if (terms.counterCurrencyId) await tx.currency.findUniqueOrThrow({ where: { id: terms.counterCurrencyId } });
   const last = await tx.interactionTerms.findFirstOrThrow({
     where: { interactionId: interaction.id },
     orderBy: { version: "desc" },
@@ -624,7 +691,10 @@ async function agreeTerms(tx: Tx, interactionId: string, version: number, person
     );
   }
 
-  if (interaction.kind !== "WORK" && terms.frequency === "ONCE") {
+  if (interaction.kind === "TRADE") {
+    await trade(tx, interaction, terms, personId);
+    await tx.interaction.update({ where: { id: interactionId }, data: { status: "COMPLETED" } });
+  } else if (interaction.kind !== "WORK" && terms.frequency === "ONCE") {
     // A one-off payment or gift moves now.
     await pay(tx, interaction, { amount: terms.amount, currencyId: terms.currencyId, comment: terms.description ?? "" }, personId);
     await tx.interaction.update({ where: { id: interactionId }, data: { status: "COMPLETED" } });
@@ -669,6 +739,56 @@ async function pay(
 }
 
 /**
+ * UC-FIN-10, on acceptance: both legs through the ledger, in the caller's
+ * database transaction, so both happen or neither does (the negative-balance
+ * limit applies to each side). Then the agreed rate is published as the
+ * pair's current rate (R-FIN-16): counter currency per unit given. The rate
+ * row doesn't name the two sides; it points at the interaction only.
+ */
+async function trade(tx: Tx, interaction: Interaction, terms: InteractionTerms, personId: string) {
+  await checkTradeCurrencies(tx, termsFromRow(terms));
+  const [give, get] = await Promise.all([
+    tx.currency.findUniqueOrThrow({ where: { id: terms.currencyId } }),
+    tx.currency.findUniqueOrThrow({ where: { id: terms.counterCurrencyId! } }),
+  ]);
+  const [payer, payee] = await sideNames(tx, interaction);
+  const gave = formatAmount(terms.amount, give.decimals, give.code);
+  const got = formatAmount(terms.counterAmount!, get.decimals, get.code);
+  // One unit of `give` is worth this many units of `get`.
+  const rate = rateOf(BigInt(terms.counterAmount!) * 10n ** BigInt(give.decimals), BigInt(terms.amount) * 10n ** BigInt(get.decimals));
+  const back = rateOf(rate.den, rate.num);
+  const base = {
+    kind: "EXCHANGE" as const,
+    comment: terms.description ?? `Trade: ${gave} for ${got}`,
+    interactionId: interaction.id,
+    groupId: randomUUID(),
+    actedByPersonId: personId,
+  };
+
+  const leg = async (fromNodeId: string, toNodeId: string, currencyId: string, amount: number, legRate: string, summary: string) => {
+    const from = await accountOf(tx, fromNodeId, currencyId);
+    if (!from) throw new RuleError("Not enough funds for this trade (negative-balance limit)", ["R-PAY-02"]);
+    const to = await tx.account.upsert({
+      where: { nodeId_currencyId_isReserve_backsCurrencyId: { nodeId: toNodeId, currencyId, isReserve: false, backsCurrencyId: "" } },
+      create: { nodeId: toNodeId, currencyId },
+      update: {},
+    });
+    await postTransaction(tx, { ...base, fromAccountId: from.id, toAccountId: to.id, amount, rate: legRate, summary });
+  };
+  await leg(interaction.payerNodeId, interaction.payeeNodeId, give.id, terms.amount, rate.text, `${payer} gave ${payee} ${gave} in a trade for ${got}`);
+  await leg(interaction.payeeNodeId, interaction.payerNodeId, get.id, terms.counterAmount!, back.text, `${payee} gave ${payer} ${got} in a trade for ${gave}`);
+  await publishRate(tx, { fromCurrencyId: give.id, toCurrencyId: get.id, rate: rate.text, source: "TRADE", setBy: `trade:${interaction.id}` });
+}
+
+/** Two different currencies, not both fiat (R-FIN-14: fiat rates come from the feed). */
+async function checkTradeCurrencies(tx: Tx, terms: Terms) {
+  if (terms.currencyId === terms.counterCurrencyId) throw new RuleError("A trade swaps two different currencies");
+  const kinds = await tx.currency.findMany({ where: { id: { in: [terms.currencyId, terms.counterCurrencyId!] } }, select: { kind: true } });
+  if (kinds.length !== 2) throw new RuleError("Pick two currencies that exist");
+  if (kinds.every((c) => c.kind === "FIAT")) throw new RuleError("Fiat isn't traded for another fiat", ["R-FIN-14"]);
+}
+
+/**
  * The only place that calls the trust score stub. Remove this function, its
  * calls and trust.ts to remove the trust score (PRD 2.6).
  */
@@ -685,17 +805,18 @@ export async function capabilityOnInteraction(db: Db, interactionId: string, nod
   return sideCapability(await db.interaction.findUniqueOrThrow({ where: { id: interactionId } }), nodeId);
 }
 
-/** PAY for the paying side, INTERACT for the paid side (R-REL-07). */
+/** PAY for the paying side, INTERACT for the paid side (R-REL-07). Both sides of a trade pay. */
 function sideCapability(interaction: Interaction, nodeId: string): "PAY" | "INTERACT" {
   if (nodeId === interaction.payerNodeId) return "PAY";
+  if (nodeId === interaction.payeeNodeId && interaction.kind === "TRADE") return "PAY";
   if (nodeId === interaction.payeeNodeId) return "INTERACT";
   throw new RuleError("This node is not a side of this interaction");
 }
 
-/** Work: either side. A recurring payment or gift: only the paying side. */
+/** Work or a trade: either side. A recurring payment or gift: only the paying side. */
 function assertMayManage(interaction: Interaction, nodeId: string) {
   sideCapability(interaction, nodeId); // throws if not a side at all
-  if (interaction.kind !== "WORK" && nodeId !== interaction.payerNodeId) {
+  if (interaction.kind !== "WORK" && interaction.kind !== "TRADE" && nodeId !== interaction.payerNodeId) {
     throw new RuleError("Only the paying side can change a recurring payment or gift");
   }
 }
@@ -704,7 +825,18 @@ function validateTerms(kind: InteractionKind, terms: Terms) {
   if (!Number.isSafeInteger(terms.amount) || terms.amount <= 0) {
     throw new RuleError(`Amount must be a whole number of minor units above 0 (got ${terms.amount})`);
   }
-  if (!terms.description.trim()) {
+  if (kind === "TRADE") {
+    // The comment is optional: the ledger rows get "Trade: 1.00 GAIA for 3.00 THC".
+    if (!Number.isSafeInteger(terms.counterAmount) || terms.counterAmount! <= 0) {
+      throw new RuleError(`The amount you get must be a whole number of minor units above 0 (got ${terms.counterAmount})`);
+    }
+    if (!terms.counterCurrencyId) throw new RuleError("Pick the currency you get");
+    if (terms.currencyId === terms.counterCurrencyId) throw new RuleError("A trade swaps two different currencies");
+    if ((terms.frequency ?? "ONCE") !== "ONCE") throw new RuleError("A trade happens once");
+  } else if (terms.counterAmount != null || terms.counterCurrencyId != null) {
+    throw new RuleError("Only a trade has an amount coming back");
+  }
+  if (kind !== "TRADE" && !terms.description.trim()) {
     throw kind === "WORK"
       ? new RuleError("Describe the work")
       : new RuleError("A payment or gift needs a comment", ["R-PAY-03"]);
@@ -723,9 +855,11 @@ function validateTerms(kind: InteractionKind, terms: Terms) {
 function termsRow(version: number, terms: Terms) {
   return {
     version,
-    description: terms.description.trim(),
+    description: terms.description.trim() || null,
     amount: terms.amount,
     currencyId: terms.currencyId,
+    counterAmount: terms.counterAmount ?? null,
+    counterCurrencyId: terms.counterCurrencyId ?? null,
     frequency: terms.frequency ?? "ONCE",
     paymentMode: terms.paymentMode ?? "AUTOMATIC",
     startDate: terms.startDate ?? null,
@@ -740,6 +874,8 @@ function termsFromRow(row: InteractionTerms): Terms {
     description: row.description ?? "",
     amount: row.amount,
     currencyId: row.currencyId,
+    counterAmount: row.counterAmount,
+    counterCurrencyId: row.counterCurrencyId,
     frequency: row.frequency,
     paymentMode: row.paymentMode,
     startDate: row.startDate,

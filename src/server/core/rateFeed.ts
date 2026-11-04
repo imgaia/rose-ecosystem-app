@@ -14,7 +14,7 @@
 // (scripts/fetch-rates.ts).
 
 import type { Db } from "./db";
-import { getRate, parseDecimal, rateOf, sameRate, setRate } from "./rates";
+import { findRate, parseDecimal, rateOf, sameRate, setRate } from "./rates";
 
 export interface RateSourceAdapter {
   name: string;
@@ -74,7 +74,7 @@ export async function runRateFeed(db: Db, source: RateSourceAdapter = frankfurte
       result.missing.push(fiat.code!);
       continue;
     }
-    const current = await getRate(db, base.id, fiat.id, now).catch(() => null);
+    const current = await findRate(db, base.id, fiat.id, now, { maxSteps: 1 }); // the pair's own row, not a chain
     if (current && sameRate(current, fetched)) {
       result.unchanged.push(fiat.code!);
       continue;

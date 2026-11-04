@@ -32,11 +32,22 @@ export interface PostTransactionInput {
   summary?: string;
 }
 
+/**
+ * The largest amount or balance the database can hold for now: amounts are
+ * 32-bit whole numbers. At 2 decimals that is 21,474,836.47; at 8 decimals
+ * only 21.47483647 (R-FIN-18). Moving amounts to 64-bit BigInt lifts it.
+ */
+export const MAX_MINOR_UNITS = 2_147_483_647;
+
 function assertWholePositive(value: number, what: string) {
   if (!Number.isSafeInteger(value) || value <= 0) {
     throw new RuleError(`${what} must be a whole number of minor units above 0 (got ${value})`);
   }
+  if (value > MAX_MINOR_UNITS) throw tooLarge(what);
 }
+
+const tooLarge = (what: string) =>
+  new RuleError(`${what} is above ${MAX_MINOR_UNITS.toLocaleString("en")} minor units, the most the app can store for now`, ["R-FIN-18"]);
 
 /**
  * R-PAY-02: how far below zero this node's balances may go, in minor units.
@@ -103,10 +114,13 @@ export async function postTransaction(db: Db, input: PostTransactionInput) {
     }
 
     if (to) {
-      await tx.account.update({
-        where: { id: to.id },
-        data: { balance: { increment: changesCurrency ? input.toAmount! : input.amount } },
+      const received = changesCurrency ? input.toAmount! : input.amount;
+      // Same idea as above: add only if the balance stays storable.
+      const { count } = await tx.account.updateMany({
+        where: { id: to.id, balance: { lte: MAX_MINOR_UNITS - received } },
+        data: { balance: { increment: received } },
       });
+      if (count === 0) throw tooLarge("The receiving balance");
     }
 
     const row = await tx.transaction.create({

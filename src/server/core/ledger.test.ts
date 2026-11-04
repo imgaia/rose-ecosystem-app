@@ -1,6 +1,6 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { RuleError } from "./errors";
-import { ledgerBalance, postTransaction, recomputeBalance, spendable } from "./ledger";
+import { ledgerBalance, MAX_MINOR_UNITS, postTransaction, recomputeBalance, spendable } from "./ledger";
 import { createTestDb, type TestDb } from "./test-helpers";
 
 let t: TestDb;
@@ -81,6 +81,15 @@ describe("postTransaction", () => {
     await expect(pay(aAcc.id, bAcc.id, 0)).rejects.toThrow(/whole number/);
     await expect(pay(aAcc.id, bAcc.id, -5)).rejects.toThrow(/whole number/);
     await expect(pay(aAcc.id, bAcc.id, 12.5)).rejects.toThrow(/whole number/);
+  });
+
+  it("refuses amounts and balances the database can't store yet, and changes nothing", async () => {
+    const { aAcc, bAcc } = await twoFundedPeople(MAX_MINOR_UNITS, MAX_MINOR_UNITS - 10);
+    await expect(pay(aAcc.id, bAcc.id, MAX_MINOR_UNITS + 1)).rejects.toThrow(/most the app can store/);
+    await expect(pay(aAcc.id, bAcc.id, 11)).rejects.toThrow(/receiving balance/);
+    expect((await t.db.account.findUniqueOrThrow({ where: { id: aAcc.id } })).balance).toBe(MAX_MINOR_UNITS);
+    await pay(aAcc.id, bAcc.id, 10);
+    expect((await t.db.account.findUniqueOrThrow({ where: { id: bAcc.id } })).balance).toBe(MAX_MINOR_UNITS);
   });
 
   it("records a deposit (no from-account) and a withdrawal (no to-account)", async () => {

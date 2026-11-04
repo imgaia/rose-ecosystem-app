@@ -1,7 +1,7 @@
 // src/server/core/test-helpers.ts
 // For tests only. Builds a throwaway SQLite database in the system temp
-// folder from scripts/migrations/v08-schema.sql plus the v10 files (so
-// the step 10 migration is exercised too), so tests never touch the
+// folder from scripts/migrations/v08-schema.sql plus the v10 and v11 files
+// (so those migrations are exercised too), so tests never touch the
 // local, dev or production databases. Plus small helpers to make people,
 // collections and funded accounts.
 
@@ -19,15 +19,15 @@ export async function createTestDb() {
   const url = `file:${path.join(dir, "test.db")}`;
 
   const client = createClient({ url });
-  for (const file of ["v08-schema.sql", "v10-currencies.sql", "v10-reserves.sql"]) {
+  for (const file of ["v08-schema.sql", "v10-currencies.sql", "v10-reserves.sql", "v11-free-currencies.sql"]) {
     await client.executeMultiple(readFileSync(path.join(process.cwd(), "scripts/migrations", file), "utf-8"));
   }
   client.close();
 
   const db = new PrismaClient({ datasourceUrl: url });
 
-  // Reference data the core needs: the roles, CHF on the fiat list, and RCC
-  // backed by CHF at a price of 1 (R-FIN-01) since the start of 2026.
+  // Reference data the core needs: the roles, CHF on the fiat list, and RCC,
+  // free (R-FIN-17) with a starting rate of 1 CHF since the start of 2026.
   for (const key of [...roles.native, ...roles.optional]) {
     await db.role.create({ data: { key, label: key, native: roles.native.includes(key) } });
   }
@@ -40,7 +40,7 @@ export async function createTestDb() {
     toCurrencyId: chf.id,
     rate: "1",
     validFrom: new Date("2026-01-01"),
-    source: "RESERVE_RATIO",
+    source: "INITIAL",
     setBy: "test",
   });
 
@@ -110,3 +110,54 @@ export async function createTestDb() {
 }
 
 export type TestDb = Awaited<ReturnType<typeof createTestDb>>;
+
+/**
+ * A throwaway SQLite copy of a format 2 backup (a seed candidate, say), built
+ * the way scripts/restore.ts does it: the backup's own tables and indexes,
+ * then its rows (dates turned back into dates). Then each extra SQL file from
+ * scripts/migrations, in order, as a migration would run on that database.
+ */
+export async function createDbFromBackup(backupFile: string, migrations: string[] = []) {
+  const dir = mkdtempSync(path.join(tmpdir(), "rose-backup-test-"));
+  const url = `file:${path.join(dir, "test.db")}`;
+  const backup = JSON.parse(readFileSync(backupFile, "utf-8")) as {
+    schema: Record<string, string>;
+    indexes?: Record<string, string>;
+    tables: Record<string, Record<string, unknown>[]>;
+  };
+  const client = createClient({ url });
+  await client.executeMultiple([...Object.values(backup.schema), ...Object.values(backup.indexes ?? {})].map((sql) => `${sql};`).join("\n"));
+  client.close();
+
+  const db = new PrismaClient({ datasourceUrl: url });
+  const quote = (name: string) => `"${name.replace(/"/g, '""')}"`;
+  await db.$transaction(async (tx) => {
+    await tx.$executeRawUnsafe("PRAGMA defer_foreign_keys = ON");
+    for (const [table, rows] of Object.entries(backup.tables)) {
+      const info = await tx.$queryRawUnsafe<{ name: string; type: string }[]>(`PRAGMA table_info(${quote(table)})`);
+      const dates = new Set(info.filter((c) => /DATE|TIME/i.test(c.type)).map((c) => c.name));
+      const columns = info.map((c) => c.name);
+      for (const row of rows) {
+        const values = columns.map((c) => {
+          const v = row[c] ?? null;
+          return dates.has(c) && typeof v === "string" ? new Date(v) : v;
+        });
+        await tx.$executeRawUnsafe(
+          `INSERT INTO ${quote(table)} (${columns.map(quote).join(", ")}) VALUES (${columns.map(() => "?").join(", ")})`,
+          ...values,
+        );
+      }
+    }
+  });
+  for (const file of migrations) {
+    const migrate = createClient({ url }); // as scripts/apply-sql.mjs does it
+    await migrate.executeMultiple(readFileSync(path.join(process.cwd(), "scripts/migrations", file), "utf-8"));
+    migrate.close();
+  }
+
+  async function cleanup() {
+    await db.$disconnect();
+    rmSync(dir, { recursive: true, force: true });
+  }
+  return { db, cleanup };
+}

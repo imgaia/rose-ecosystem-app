@@ -3,12 +3,21 @@
 // minor units (cents); a currency's `decimals` says where the point goes.
 // Works on the server and in screens (no server-only imports).
 
-/** formatAmount(2550, 2, "RCC") -> "25.50 RCC" */
+/**
+ * R-FIN-18: 2 decimals (fewer only if the currency has fewer), plus any
+ * further ones that are not zero.
+ *   formatAmount(2550, 2, "RCC")          -> "25.50 RCC"
+ *   formatAmount(5000000, 6, "JCN")       -> "5.00 JCN"
+ *   formatAmount(12345678, 8, "BTC")      -> "0.12345678 BTC"
+ */
 export function formatAmount(minorUnits: number, decimals: number, code?: string | null): string {
   const sign = minorUnits < 0 ? "-" : "";
   const digits = String(Math.abs(minorUnits)).padStart(decimals + 1, "0");
   const whole = digits.slice(0, digits.length - decimals);
-  const text = decimals > 0 ? `${whole}.${digits.slice(-decimals)}` : whole;
+  const shown = Math.min(decimals, 2);
+  const fraction = decimals > 0 ? digits.slice(-decimals) : "";
+  const kept = fraction.slice(0, shown) + fraction.slice(shown).replace(/0+$/, "");
+  const text = kept ? `${whole}.${kept}` : whole;
   return code ? `${sign}${text} ${code}` : `${sign}${text}`;
 }
 

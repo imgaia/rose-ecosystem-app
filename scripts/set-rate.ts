@@ -2,7 +2,7 @@
 // Sets a fiat-to-fiat rate by hand (source MANUAL), for when the feed is
 // down. The current rate for the pair is closed and the new one starts now
 // (or at the time given); nothing is changed or deleted (R-FIN-15).
-// Node currency prices are not set here: they follow their reserve ratio.
+// Node currency prices are not set here: they come from reserve ratios and trades.
 //
 // Refuses DB_TARGET=production for now.
 //

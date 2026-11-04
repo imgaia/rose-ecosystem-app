@@ -26,7 +26,7 @@ async function proposalView(ctx: Ctx, proposal: Proposal) {
     reason?: string;
     // CURRENCY_CHANGE (currencyId above is the currency changed)
     action?: "CREATE" | "EDIT" | "RETIRE" | "DELETE";
-    fields?: { name?: string; code?: string; description?: string | null; decimals?: number; reserveRatio?: string; policy?: string };
+    fields?: { name?: string; code?: string; description?: string | null; decimals?: number; backing?: string; reserveRatio?: string | null };
     makeHome?: boolean;
   };
   const approval = core.approvalOf(proposal);

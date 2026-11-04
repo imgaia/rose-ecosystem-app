@@ -5,15 +5,15 @@
 //
 // - The fiat list (R-FIN-13): CHF (Switzerland) and EUR (the euro-area
 //   countries), each with the ISO 3166 codes it is the currency of.
-// - RCC: backed by CHF, priced at its reserve ratio (1.0 CHF) from the day
-//   of the v0.8 migration, i.e. when ROSE Org (RCC's issuer) was created.
+// - RCC: a free currency (R-FIN-17) whose reserve fiat is CHF, with a starting
+//   (INITIAL) rate of 1 CHF from the day of the v0.8 migration, i.e. when
+//   ROSE Org (RCC's issuer) was created. Trades move it from there (R-FIN-16).
 // - Today's CHF/EUR rate from the feed, once. If the feed can't be reached,
 //   a clearly labelled MANUAL placeholder instead; the daily feed replaces it.
 
 import type { PrismaClient } from "../generated/prisma";
 import { runRateFeed } from "../src/server/core/rateFeed";
 import { getRate, rateHistory, setRate } from "../src/server/core/rates";
-import { getRule } from "../src/server/rules/index";
 
 // The euro area in 2026: the countries whose currency is the euro.
 const EURO_AREA = "AT,BE,BG,CY,DE,EE,ES,FI,FR,GR,HR,IE,IT,LT,LU,LV,MT,NL,PT,SI,SK";
@@ -40,7 +40,7 @@ export async function seedCurrencies(prisma: PrismaClient) {
   const chf = await prisma.currency.findFirstOrThrow({ where: { code: "CHF", kind: "FIAT" } });
   const eur = await prisma.currency.findFirstOrThrow({ where: { code: "EUR", kind: "FIAT" } });
 
-  // RCC, backed by CHF. Its issuer (ROSE Org) is set by scripts/migrate-v08.ts.
+  // RCC, free, its reserve fiat CHF. Its issuer (ROSE Org) is set by scripts/migrate-v08.ts.
   let rcc = await prisma.currency.findFirst({ where: { code: "RCC", kind: "COMMUNITY" } });
   if (!rcc) {
     rcc = await prisma.currency.create({
@@ -52,15 +52,12 @@ export async function seedCurrencies(prisma: PrismaClient) {
     console.log("RCC's reserve fiat is now CHF.");
   }
 
-  // RCC's price row (R-FIN-01): the reserve ratio, valid from the v0.8 migration.
+  // RCC's starting rate: its Phase 1 value of 1 CHF, valid from the v0.8 migration.
   if ((await rateHistory(prisma, rcc.id, chf.id)).length === 0) {
     const issuer = rcc.issuerNodeId ? await prisma.node.findUnique({ where: { id: rcc.issuerNodeId } }) : null;
-    const ratio = (await prisma.currencyRuleValue.findUnique({ where: { currencyId_ruleId: { currencyId: rcc.id, ruleId: "R-FIN-01" } } }))
-      ?.value;
-    const rate = ratio ?? String(getRule("R-FIN-01")?.default ?? "1");
     const validFrom = issuer?.createdAt ?? new Date();
-    await setRate(prisma, { fromCurrencyId: rcc.id, toCurrencyId: chf.id, rate, validFrom, source: "RESERVE_RATIO", setBy: "seed" });
-    console.log(`RCC price: ${rate} CHF, valid from ${validFrom.toISOString()}.`);
+    await setRate(prisma, { fromCurrencyId: rcc.id, toCurrencyId: chf.id, rate: "1", validFrom, source: "INITIAL", setBy: "seed" });
+    console.log(`RCC starting rate: 1 CHF, valid from ${validFrom.toISOString()}.`);
   }
 
   // Today's CHF/EUR rate, once.

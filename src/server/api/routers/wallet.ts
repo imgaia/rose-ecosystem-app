@@ -40,19 +40,9 @@ export const walletRouter = createTRPCRouter({
         select: { id: true, code: true, name: true },
       });
 
-      let total: { currency: typeof totalCurrency; amount: number; missingRates: string[] } | null = null;
-      if (totalCurrency) {
-        total = { currency: totalCurrency, amount: 0, missingRates: [] };
-        for (const a of accounts.filter((a) => !a.isReserve)) {
-          const sign = a.balance < 0 ? -1 : 1;
-          try {
-            const rate = await core.getRate(ctx.db, a.currencyId, totalCurrency.id);
-            total.amount += sign * core.applyRate(Math.abs(a.balance), a.currency.decimals, totalCurrency.decimals, rate);
-          } catch {
-            total.missingRates.push(a.currency.code ?? a.currency.name);
-          }
-        }
-      }
+      // Currencies with no price yet are left out of the total and named (R-FIN-17).
+      const sum = totalCurrency ? await core.walletTotal(ctx.db, ctx.actor.actingNodeId, totalCurrency) : null;
+      const total = sum && { currency: sum.currency, amount: sum.amount, missingRates: sum.unpriced };
       return { accounts: accounts.map((a) => ({ ...a, backs: backed.find((c) => c.id === a.backsCurrencyId) ?? null })), total };
     }),
 
@@ -170,19 +160,19 @@ export const walletRouter = createTRPCRouter({
       return core.addFunds(ctx.db, ctx.actor, input);
     }),
 
-  /** UC-FIN-05: how many units minting would create, before confirming. */
+  /** UC-FIN-05: how many units minting would create, before confirming. A free currency needs no source. */
   quoteMint: actingProcedure
-    .input(z.object({ sourceAccountId: z.string().min(1), amount: minorUnits, currencyId: z.string().optional() }))
+    .input(z.object({ sourceAccountId: z.string().min(1).optional(), amount: minorUnits, currencyId: z.string().optional() }))
     .query(async ({ ctx, input }) => {
       await requireCan(ctx, "MINT");
       return core.quoteMint(ctx.db, ctx.actor, input);
     }),
 
-  /** UC-FIN-05: lock the source amount in the reserve and mint the node's own currency. */
+  /** UC-FIN-05: mint the node's own currency (from fiat locked in its reserve, if it is fiat-backed). */
   mint: actingProcedure
     .input(
       z.object({
-        sourceAccountId: z.string().min(1),
+        sourceAccountId: z.string().min(1).optional(),
         amount: minorUnits,
         currencyId: z.string().optional(),
         comment: z.string().optional(),

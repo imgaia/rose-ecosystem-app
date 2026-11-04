@@ -65,9 +65,9 @@ const RuleSchema = z
     comment_open_ended: z.string().min(1).optional(),
     missed: z.enum(["pay_each", "skip"]).optional(),
     default: z.union([z.string(), z.number()]).optional(),
-    values: z.array(z.string().min(1)).min(2).optional(), // the only values allowed (R-FIN-10's reserve, open)
+    values: z.array(z.string().min(1)).min(2).optional(), // the only values a parameter may take
     node_level: z.boolean().optional(),
-    currency_level: z.boolean().optional(), // one value per currency, set by its issuer (R-FIN-01, R-FIN-10)
+    currency_level: z.boolean().optional(), // one value per currency, set by its issuer (R-FIN-01)
     changed_by: z.union([z.literal("proposal"), z.array(Key).min(1)]).optional(),
   })
   // .strict() rejects unknown fields, so a typo like `defualt:` is caught.

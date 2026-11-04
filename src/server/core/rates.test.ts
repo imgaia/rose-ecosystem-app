@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { RuleError } from "./errors";
-import { applyRate, getRate, parseDecimal, rateHistory, rateOf, setRate } from "./rates";
+import { applyRate, findRate, getRate, parseDecimal, parseRate, publishRate, rateHistory, rateOf, setRate } from "./rates";
 import { createTestDb, type TestDb } from "./test-helpers";
 
 let t: TestDb;
@@ -13,6 +13,7 @@ afterAll(async () => {
 
 const day = (iso: string) => new Date(`${iso}T00:00:00Z`);
 const fiat = (code: string, country: string) => t.db.currency.create({ data: { name: code, code, kind: "FIAT", country } });
+const coin = (code: string) => t.db.currency.create({ data: { name: code, code, kind: "COMMUNITY" } });
 
 describe("rates", () => {
   it("parses decimals exactly and writes fractions as decimals when it can", () => {
@@ -22,6 +23,10 @@ describe("rates", () => {
     expect(rateOf(125n, 100n).text).toBe("1.25");
     expect(rateOf(1n, 4n).text).toBe("0.25");
     expect(rateOf(100n, 107n).text).toBe("100/107");
+    // A trade's rate with no exact decimal is stored as a fraction and read back exactly.
+    expect(parseRate("100/107")).toMatchObject({ num: 100n, den: 107n });
+    expect(parseRate("0.25")).toMatchObject({ num: 1n, den: 4n });
+    expect(() => parseRate("0/3")).toThrow();
   });
 
   it("converts in whole minor units, rounding down", () => {
@@ -68,10 +73,41 @@ describe("rates", () => {
     expect((await getRate(t.db, t.rcc.id, t.chf.id)).text).toBe("1"); // RCC's price row from the test setup
   });
 
-  it("refuses a pair it can't work out (R-FIN-05)", async () => {
+  it("has no price yet for a pair it can't work out: null from findRate, R-FIN-05 from getRate", async () => {
     const lone = await fiat("LON", "LO");
+    expect(await findRate(t.db, t.chf.id, lone.id)).toBeNull();
     const error = await getRate(t.db, t.chf.id, lone.id).catch((e: unknown) => e);
     expect(error).toBeInstanceOf(RuleError);
     expect((error as RuleError).ruleIds).toEqual(["R-FIN-05"]);
+  });
+
+  it("the most recent rate for a pair counts, whatever its source and direction (R-FIN-16)", async () => {
+    const [p, q] = [await coin("P1"), await coin("Q1")];
+    await setRate(t.db, { fromCurrencyId: p.id, toCurrencyId: q.id, rate: "3", validFrom: day("2026-01-01"), source: "MANUAL", setBy: "t" });
+    await publishRate(t.db, { fromCurrencyId: q.id, toCurrencyId: p.id, rate: "1/2", source: "TRADE", setBy: "t" });
+    expect((await findRate(t.db, p.id, q.id))?.text).toBe("2");
+    await publishRate(t.db, { fromCurrencyId: p.id, toCurrencyId: q.id, rate: "2.5", source: "TRADE", setBy: "t" });
+    await publishRate(t.db, { fromCurrencyId: p.id, toCurrencyId: q.id, rate: "4", source: "TRADE", setBy: "t" }); // same millisecond is fine
+    expect((await findRate(t.db, p.id, q.id))?.text).toBe("4");
+    expect((await rateHistory(t.db, p.id, q.id)).filter((r) => r.validTo === null)).toHaveLength(1);
+    expect((await findRate(t.db, p.id, q.id, day("2026-06-01")))?.text).toBe("3"); // the rate valid then
+  });
+
+  it("chains current rates, shortest first, at most 3 steps; beyond that no price yet", async () => {
+    const [a, b, c, d, e] = await Promise.all(["CA", "CB", "CC", "CD", "CE"].map(coin));
+    const link = (x: { id: string }, y: { id: string }, rate: string) =>
+      setRate(t.db, { fromCurrencyId: x.id, toCurrencyId: y.id, rate, validFrom: day("2026-01-01"), source: "TRADE", setBy: "t" });
+    await link(a!, b!, "2");
+    await link(b!, c!, "3");
+    await link(c!, d!, "5");
+    await link(d!, e!, "7");
+    expect((await findRate(t.db, a!.id, c!.id))?.text).toBe("6");
+    expect((await findRate(t.db, d!.id, a!.id))?.text).toBe("1/30");
+    expect((await findRate(t.db, a!.id, d!.id))?.text).toBe("30"); // 3 steps
+    expect(await findRate(t.db, a!.id, e!.id)).toBeNull(); // 4 steps: too far
+    expect(await findRate(t.db, a!.id, c!.id, new Date(), { maxSteps: 1 })).toBeNull();
+    // A shorter chain wins over a longer one.
+    await link(a!, d!, "29");
+    expect((await findRate(t.db, a!.id, d!.id))?.text).toBe("29");
   });
 });

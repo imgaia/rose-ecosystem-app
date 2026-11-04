@@ -157,7 +157,8 @@ export type RelationshipStatus = (typeof RelationshipStatus)[keyof typeof Relati
 export const InteractionKind: {
   PAYMENT: 'PAYMENT',
   GIFT: 'GIFT',
-  WORK: 'WORK'
+  WORK: 'WORK',
+  TRADE: 'TRADE'
 };
 
 export type InteractionKind = (typeof InteractionKind)[keyof typeof InteractionKind]
@@ -226,6 +227,14 @@ export const CurrencyKind: {
 export type CurrencyKind = (typeof CurrencyKind)[keyof typeof CurrencyKind]
 
 
+export const CurrencyBacking: {
+  FREE: 'FREE',
+  FIAT: 'FIAT'
+};
+
+export type CurrencyBacking = (typeof CurrencyBacking)[keyof typeof CurrencyBacking]
+
+
 export const CurrencyStatus: {
   ACTIVE: 'ACTIVE',
   RETIRED: 'RETIRED'
@@ -237,7 +246,9 @@ export type CurrencyStatus = (typeof CurrencyStatus)[keyof typeof CurrencyStatus
 export const RateSource: {
   FEED: 'FEED',
   RESERVE_RATIO: 'RESERVE_RATIO',
-  MANUAL: 'MANUAL'
+  MANUAL: 'MANUAL',
+  TRADE: 'TRADE',
+  INITIAL: 'INITIAL'
 };
 
 export type RateSource = (typeof RateSource)[keyof typeof RateSource]
@@ -306,6 +317,10 @@ export const ProposalStatus: typeof $Enums.ProposalStatus
 export type CurrencyKind = $Enums.CurrencyKind
 
 export const CurrencyKind: typeof $Enums.CurrencyKind
+
+export type CurrencyBacking = $Enums.CurrencyBacking
+
+export const CurrencyBacking: typeof $Enums.CurrencyBacking
 
 export type CurrencyStatus = $Enums.CurrencyStatus
 
@@ -3278,6 +3293,7 @@ export namespace Prisma {
     homeOf: number
     accounts: number
     terms: number
+    counterTerms: number
     ratesFrom: number
     ratesTo: number
     ruleValues: number
@@ -3288,6 +3304,7 @@ export namespace Prisma {
     homeOf?: boolean | CurrencyCountOutputTypeCountHomeOfArgs
     accounts?: boolean | CurrencyCountOutputTypeCountAccountsArgs
     terms?: boolean | CurrencyCountOutputTypeCountTermsArgs
+    counterTerms?: boolean | CurrencyCountOutputTypeCountCounterTermsArgs
     ratesFrom?: boolean | CurrencyCountOutputTypeCountRatesFromArgs
     ratesTo?: boolean | CurrencyCountOutputTypeCountRatesToArgs
     ruleValues?: boolean | CurrencyCountOutputTypeCountRuleValuesArgs
@@ -3329,6 +3346,13 @@ export namespace Prisma {
    * CurrencyCountOutputType without action
    */
   export type CurrencyCountOutputTypeCountTermsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: InteractionTermsWhereInput
+  }
+
+  /**
+   * CurrencyCountOutputType without action
+   */
+  export type CurrencyCountOutputTypeCountCounterTermsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: InteractionTermsWhereInput
   }
 
@@ -14598,12 +14622,14 @@ export namespace Prisma {
   export type InteractionTermsAvgAggregateOutputType = {
     version: number | null
     amount: number | null
+    counterAmount: number | null
     maxPayments: number | null
   }
 
   export type InteractionTermsSumAggregateOutputType = {
     version: number | null
     amount: number | null
+    counterAmount: number | null
     maxPayments: number | null
   }
 
@@ -14614,6 +14640,8 @@ export namespace Prisma {
     description: string | null
     amount: number | null
     currencyId: string | null
+    counterAmount: number | null
+    counterCurrencyId: string | null
     frequency: $Enums.Frequency | null
     paymentMode: $Enums.PaymentMode | null
     startDate: Date | null
@@ -14631,6 +14659,8 @@ export namespace Prisma {
     description: string | null
     amount: number | null
     currencyId: string | null
+    counterAmount: number | null
+    counterCurrencyId: string | null
     frequency: $Enums.Frequency | null
     paymentMode: $Enums.PaymentMode | null
     startDate: Date | null
@@ -14648,6 +14678,8 @@ export namespace Prisma {
     description: number
     amount: number
     currencyId: number
+    counterAmount: number
+    counterCurrencyId: number
     frequency: number
     paymentMode: number
     startDate: number
@@ -14663,12 +14695,14 @@ export namespace Prisma {
   export type InteractionTermsAvgAggregateInputType = {
     version?: true
     amount?: true
+    counterAmount?: true
     maxPayments?: true
   }
 
   export type InteractionTermsSumAggregateInputType = {
     version?: true
     amount?: true
+    counterAmount?: true
     maxPayments?: true
   }
 
@@ -14679,6 +14713,8 @@ export namespace Prisma {
     description?: true
     amount?: true
     currencyId?: true
+    counterAmount?: true
+    counterCurrencyId?: true
     frequency?: true
     paymentMode?: true
     startDate?: true
@@ -14696,6 +14732,8 @@ export namespace Prisma {
     description?: true
     amount?: true
     currencyId?: true
+    counterAmount?: true
+    counterCurrencyId?: true
     frequency?: true
     paymentMode?: true
     startDate?: true
@@ -14713,6 +14751,8 @@ export namespace Prisma {
     description?: true
     amount?: true
     currencyId?: true
+    counterAmount?: true
+    counterCurrencyId?: true
     frequency?: true
     paymentMode?: true
     startDate?: true
@@ -14817,6 +14857,8 @@ export namespace Prisma {
     description: string | null
     amount: number
     currencyId: string
+    counterAmount: number | null
+    counterCurrencyId: string | null
     frequency: $Enums.Frequency
     paymentMode: $Enums.PaymentMode
     startDate: Date | null
@@ -14853,6 +14895,8 @@ export namespace Prisma {
     description?: boolean
     amount?: boolean
     currencyId?: boolean
+    counterAmount?: boolean
+    counterCurrencyId?: boolean
     frequency?: boolean
     paymentMode?: boolean
     startDate?: boolean
@@ -14863,6 +14907,7 @@ export namespace Prisma {
     createdAt?: boolean
     interaction?: boolean | InteractionDefaultArgs<ExtArgs>
     currency?: boolean | CurrencyDefaultArgs<ExtArgs>
+    counterCurrency?: boolean | InteractionTerms$counterCurrencyArgs<ExtArgs>
   }, ExtArgs["result"]["interactionTerms"]>
 
   export type InteractionTermsSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
@@ -14872,6 +14917,8 @@ export namespace Prisma {
     description?: boolean
     amount?: boolean
     currencyId?: boolean
+    counterAmount?: boolean
+    counterCurrencyId?: boolean
     frequency?: boolean
     paymentMode?: boolean
     startDate?: boolean
@@ -14882,6 +14929,7 @@ export namespace Prisma {
     createdAt?: boolean
     interaction?: boolean | InteractionDefaultArgs<ExtArgs>
     currency?: boolean | CurrencyDefaultArgs<ExtArgs>
+    counterCurrency?: boolean | InteractionTerms$counterCurrencyArgs<ExtArgs>
   }, ExtArgs["result"]["interactionTerms"]>
 
   export type InteractionTermsSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
@@ -14891,6 +14939,8 @@ export namespace Prisma {
     description?: boolean
     amount?: boolean
     currencyId?: boolean
+    counterAmount?: boolean
+    counterCurrencyId?: boolean
     frequency?: boolean
     paymentMode?: boolean
     startDate?: boolean
@@ -14901,6 +14951,7 @@ export namespace Prisma {
     createdAt?: boolean
     interaction?: boolean | InteractionDefaultArgs<ExtArgs>
     currency?: boolean | CurrencyDefaultArgs<ExtArgs>
+    counterCurrency?: boolean | InteractionTerms$counterCurrencyArgs<ExtArgs>
   }, ExtArgs["result"]["interactionTerms"]>
 
   export type InteractionTermsSelectScalar = {
@@ -14910,6 +14961,8 @@ export namespace Prisma {
     description?: boolean
     amount?: boolean
     currencyId?: boolean
+    counterAmount?: boolean
+    counterCurrencyId?: boolean
     frequency?: boolean
     paymentMode?: boolean
     startDate?: boolean
@@ -14920,18 +14973,21 @@ export namespace Prisma {
     createdAt?: boolean
   }
 
-  export type InteractionTermsOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "interactionId" | "version" | "description" | "amount" | "currencyId" | "frequency" | "paymentMode" | "startDate" | "endDate" | "maxPayments" | "rulesVersion" | "approved" | "createdAt", ExtArgs["result"]["interactionTerms"]>
+  export type InteractionTermsOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "interactionId" | "version" | "description" | "amount" | "currencyId" | "counterAmount" | "counterCurrencyId" | "frequency" | "paymentMode" | "startDate" | "endDate" | "maxPayments" | "rulesVersion" | "approved" | "createdAt", ExtArgs["result"]["interactionTerms"]>
   export type InteractionTermsInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     interaction?: boolean | InteractionDefaultArgs<ExtArgs>
     currency?: boolean | CurrencyDefaultArgs<ExtArgs>
+    counterCurrency?: boolean | InteractionTerms$counterCurrencyArgs<ExtArgs>
   }
   export type InteractionTermsIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     interaction?: boolean | InteractionDefaultArgs<ExtArgs>
     currency?: boolean | CurrencyDefaultArgs<ExtArgs>
+    counterCurrency?: boolean | InteractionTerms$counterCurrencyArgs<ExtArgs>
   }
   export type InteractionTermsIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     interaction?: boolean | InteractionDefaultArgs<ExtArgs>
     currency?: boolean | CurrencyDefaultArgs<ExtArgs>
+    counterCurrency?: boolean | InteractionTerms$counterCurrencyArgs<ExtArgs>
   }
 
   export type $InteractionTermsPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -14939,6 +14995,7 @@ export namespace Prisma {
     objects: {
       interaction: Prisma.$InteractionPayload<ExtArgs>
       currency: Prisma.$CurrencyPayload<ExtArgs>
+      counterCurrency: Prisma.$CurrencyPayload<ExtArgs> | null
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
@@ -14947,6 +15004,8 @@ export namespace Prisma {
       description: string | null
       amount: number
       currencyId: string
+      counterAmount: number | null
+      counterCurrencyId: string | null
       frequency: $Enums.Frequency
       paymentMode: $Enums.PaymentMode
       startDate: Date | null
@@ -15351,6 +15410,7 @@ export namespace Prisma {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     interaction<T extends InteractionDefaultArgs<ExtArgs> = {}>(args?: Subset<T, InteractionDefaultArgs<ExtArgs>>): Prisma__InteractionClient<$Result.GetResult<Prisma.$InteractionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
     currency<T extends CurrencyDefaultArgs<ExtArgs> = {}>(args?: Subset<T, CurrencyDefaultArgs<ExtArgs>>): Prisma__CurrencyClient<$Result.GetResult<Prisma.$CurrencyPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    counterCurrency<T extends InteractionTerms$counterCurrencyArgs<ExtArgs> = {}>(args?: Subset<T, InteractionTerms$counterCurrencyArgs<ExtArgs>>): Prisma__CurrencyClient<$Result.GetResult<Prisma.$CurrencyPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -15386,6 +15446,8 @@ export namespace Prisma {
     readonly description: FieldRef<"InteractionTerms", 'String'>
     readonly amount: FieldRef<"InteractionTerms", 'Int'>
     readonly currencyId: FieldRef<"InteractionTerms", 'String'>
+    readonly counterAmount: FieldRef<"InteractionTerms", 'Int'>
+    readonly counterCurrencyId: FieldRef<"InteractionTerms", 'String'>
     readonly frequency: FieldRef<"InteractionTerms", 'Frequency'>
     readonly paymentMode: FieldRef<"InteractionTerms", 'PaymentMode'>
     readonly startDate: FieldRef<"InteractionTerms", 'DateTime'>
@@ -15785,6 +15847,25 @@ export namespace Prisma {
      * Limit how many InteractionTerms to delete.
      */
     limit?: number
+  }
+
+  /**
+   * InteractionTerms.counterCurrency
+   */
+  export type InteractionTerms$counterCurrencyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Currency
+     */
+    select?: CurrencySelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Currency
+     */
+    omit?: CurrencyOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CurrencyInclude<ExtArgs> | null
+    where?: CurrencyWhereInput
   }
 
   /**
@@ -20171,6 +20252,7 @@ export namespace Prisma {
     description: string | null
     kind: $Enums.CurrencyKind | null
     status: $Enums.CurrencyStatus | null
+    backing: $Enums.CurrencyBacking | null
     decimals: number | null
     issuerNodeId: string | null
     reserveCurrencyId: string | null
@@ -20185,6 +20267,7 @@ export namespace Prisma {
     description: string | null
     kind: $Enums.CurrencyKind | null
     status: $Enums.CurrencyStatus | null
+    backing: $Enums.CurrencyBacking | null
     decimals: number | null
     issuerNodeId: string | null
     reserveCurrencyId: string | null
@@ -20199,6 +20282,7 @@ export namespace Prisma {
     description: number
     kind: number
     status: number
+    backing: number
     decimals: number
     issuerNodeId: number
     reserveCurrencyId: number
@@ -20223,6 +20307,7 @@ export namespace Prisma {
     description?: true
     kind?: true
     status?: true
+    backing?: true
     decimals?: true
     issuerNodeId?: true
     reserveCurrencyId?: true
@@ -20237,6 +20322,7 @@ export namespace Prisma {
     description?: true
     kind?: true
     status?: true
+    backing?: true
     decimals?: true
     issuerNodeId?: true
     reserveCurrencyId?: true
@@ -20251,6 +20337,7 @@ export namespace Prisma {
     description?: true
     kind?: true
     status?: true
+    backing?: true
     decimals?: true
     issuerNodeId?: true
     reserveCurrencyId?: true
@@ -20352,6 +20439,7 @@ export namespace Prisma {
     description: string | null
     kind: $Enums.CurrencyKind
     status: $Enums.CurrencyStatus
+    backing: $Enums.CurrencyBacking
     decimals: number
     issuerNodeId: string | null
     reserveCurrencyId: string | null
@@ -20385,6 +20473,7 @@ export namespace Prisma {
     description?: boolean
     kind?: boolean
     status?: boolean
+    backing?: boolean
     decimals?: boolean
     issuerNodeId?: boolean
     reserveCurrencyId?: boolean
@@ -20396,6 +20485,7 @@ export namespace Prisma {
     homeOf?: boolean | Currency$homeOfArgs<ExtArgs>
     accounts?: boolean | Currency$accountsArgs<ExtArgs>
     terms?: boolean | Currency$termsArgs<ExtArgs>
+    counterTerms?: boolean | Currency$counterTermsArgs<ExtArgs>
     ratesFrom?: boolean | Currency$ratesFromArgs<ExtArgs>
     ratesTo?: boolean | Currency$ratesToArgs<ExtArgs>
     ruleValues?: boolean | Currency$ruleValuesArgs<ExtArgs>
@@ -20409,6 +20499,7 @@ export namespace Prisma {
     description?: boolean
     kind?: boolean
     status?: boolean
+    backing?: boolean
     decimals?: boolean
     issuerNodeId?: boolean
     reserveCurrencyId?: boolean
@@ -20425,6 +20516,7 @@ export namespace Prisma {
     description?: boolean
     kind?: boolean
     status?: boolean
+    backing?: boolean
     decimals?: boolean
     issuerNodeId?: boolean
     reserveCurrencyId?: boolean
@@ -20441,6 +20533,7 @@ export namespace Prisma {
     description?: boolean
     kind?: boolean
     status?: boolean
+    backing?: boolean
     decimals?: boolean
     issuerNodeId?: boolean
     reserveCurrencyId?: boolean
@@ -20448,7 +20541,7 @@ export namespace Prisma {
     createdAt?: boolean
   }
 
-  export type CurrencyOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "code" | "description" | "kind" | "status" | "decimals" | "issuerNodeId" | "reserveCurrencyId" | "country" | "createdAt", ExtArgs["result"]["currency"]>
+  export type CurrencyOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "code" | "description" | "kind" | "status" | "backing" | "decimals" | "issuerNodeId" | "reserveCurrencyId" | "country" | "createdAt", ExtArgs["result"]["currency"]>
   export type CurrencyInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     issuer?: boolean | Currency$issuerArgs<ExtArgs>
     reserveCurrency?: boolean | Currency$reserveCurrencyArgs<ExtArgs>
@@ -20456,6 +20549,7 @@ export namespace Prisma {
     homeOf?: boolean | Currency$homeOfArgs<ExtArgs>
     accounts?: boolean | Currency$accountsArgs<ExtArgs>
     terms?: boolean | Currency$termsArgs<ExtArgs>
+    counterTerms?: boolean | Currency$counterTermsArgs<ExtArgs>
     ratesFrom?: boolean | Currency$ratesFromArgs<ExtArgs>
     ratesTo?: boolean | Currency$ratesToArgs<ExtArgs>
     ruleValues?: boolean | Currency$ruleValuesArgs<ExtArgs>
@@ -20479,6 +20573,7 @@ export namespace Prisma {
       homeOf: Prisma.$NodePayload<ExtArgs>[]
       accounts: Prisma.$AccountPayload<ExtArgs>[]
       terms: Prisma.$InteractionTermsPayload<ExtArgs>[]
+      counterTerms: Prisma.$InteractionTermsPayload<ExtArgs>[]
       ratesFrom: Prisma.$ExchangeRatePayload<ExtArgs>[]
       ratesTo: Prisma.$ExchangeRatePayload<ExtArgs>[]
       ruleValues: Prisma.$CurrencyRuleValuePayload<ExtArgs>[]
@@ -20490,6 +20585,7 @@ export namespace Prisma {
       description: string | null
       kind: $Enums.CurrencyKind
       status: $Enums.CurrencyStatus
+      backing: $Enums.CurrencyBacking
       decimals: number
       issuerNodeId: string | null
       reserveCurrencyId: string | null
@@ -20895,6 +20991,7 @@ export namespace Prisma {
     homeOf<T extends Currency$homeOfArgs<ExtArgs> = {}>(args?: Subset<T, Currency$homeOfArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$NodePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     accounts<T extends Currency$accountsArgs<ExtArgs> = {}>(args?: Subset<T, Currency$accountsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$AccountPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     terms<T extends Currency$termsArgs<ExtArgs> = {}>(args?: Subset<T, Currency$termsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$InteractionTermsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    counterTerms<T extends Currency$counterTermsArgs<ExtArgs> = {}>(args?: Subset<T, Currency$counterTermsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$InteractionTermsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     ratesFrom<T extends Currency$ratesFromArgs<ExtArgs> = {}>(args?: Subset<T, Currency$ratesFromArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ExchangeRatePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     ratesTo<T extends Currency$ratesToArgs<ExtArgs> = {}>(args?: Subset<T, Currency$ratesToArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ExchangeRatePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     ruleValues<T extends Currency$ruleValuesArgs<ExtArgs> = {}>(args?: Subset<T, Currency$ruleValuesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CurrencyRuleValuePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -20933,6 +21030,7 @@ export namespace Prisma {
     readonly description: FieldRef<"Currency", 'String'>
     readonly kind: FieldRef<"Currency", 'CurrencyKind'>
     readonly status: FieldRef<"Currency", 'CurrencyStatus'>
+    readonly backing: FieldRef<"Currency", 'CurrencyBacking'>
     readonly decimals: FieldRef<"Currency", 'Int'>
     readonly issuerNodeId: FieldRef<"Currency", 'String'>
     readonly reserveCurrencyId: FieldRef<"Currency", 'String'>
@@ -21445,6 +21543,30 @@ export namespace Prisma {
    * Currency.terms
    */
   export type Currency$termsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the InteractionTerms
+     */
+    select?: InteractionTermsSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the InteractionTerms
+     */
+    omit?: InteractionTermsOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: InteractionTermsInclude<ExtArgs> | null
+    where?: InteractionTermsWhereInput
+    orderBy?: InteractionTermsOrderByWithRelationInput | InteractionTermsOrderByWithRelationInput[]
+    cursor?: InteractionTermsWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: InteractionTermsScalarFieldEnum | InteractionTermsScalarFieldEnum[]
+  }
+
+  /**
+   * Currency.counterTerms
+   */
+  export type Currency$counterTermsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
      * Select specific fields to fetch from the InteractionTerms
      */
@@ -28478,6 +28600,8 @@ export namespace Prisma {
     description: 'description',
     amount: 'amount',
     currencyId: 'currencyId',
+    counterAmount: 'counterAmount',
+    counterCurrencyId: 'counterCurrencyId',
     frequency: 'frequency',
     paymentMode: 'paymentMode',
     startDate: 'startDate',
@@ -28547,6 +28671,7 @@ export namespace Prisma {
     description: 'description',
     kind: 'kind',
     status: 'status',
+    backing: 'backing',
     decimals: 'decimals',
     issuerNodeId: 'issuerNodeId',
     reserveCurrencyId: 'reserveCurrencyId',
@@ -28776,6 +28901,13 @@ export namespace Prisma {
    * Reference to a field of type 'CurrencyStatus'
    */
   export type EnumCurrencyStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'CurrencyStatus'>
+    
+
+
+  /**
+   * Reference to a field of type 'CurrencyBacking'
+   */
+  export type EnumCurrencyBackingFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'CurrencyBacking'>
     
 
 
@@ -29447,6 +29579,8 @@ export namespace Prisma {
     description?: StringNullableFilter<"InteractionTerms"> | string | null
     amount?: IntFilter<"InteractionTerms"> | number
     currencyId?: StringFilter<"InteractionTerms"> | string
+    counterAmount?: IntNullableFilter<"InteractionTerms"> | number | null
+    counterCurrencyId?: StringNullableFilter<"InteractionTerms"> | string | null
     frequency?: EnumFrequencyFilter<"InteractionTerms"> | $Enums.Frequency
     paymentMode?: EnumPaymentModeFilter<"InteractionTerms"> | $Enums.PaymentMode
     startDate?: DateTimeNullableFilter<"InteractionTerms"> | Date | string | null
@@ -29457,6 +29591,7 @@ export namespace Prisma {
     createdAt?: DateTimeFilter<"InteractionTerms"> | Date | string
     interaction?: XOR<InteractionScalarRelationFilter, InteractionWhereInput>
     currency?: XOR<CurrencyScalarRelationFilter, CurrencyWhereInput>
+    counterCurrency?: XOR<CurrencyNullableScalarRelationFilter, CurrencyWhereInput> | null
   }
 
   export type InteractionTermsOrderByWithRelationInput = {
@@ -29466,6 +29601,8 @@ export namespace Prisma {
     description?: SortOrderInput | SortOrder
     amount?: SortOrder
     currencyId?: SortOrder
+    counterAmount?: SortOrderInput | SortOrder
+    counterCurrencyId?: SortOrderInput | SortOrder
     frequency?: SortOrder
     paymentMode?: SortOrder
     startDate?: SortOrderInput | SortOrder
@@ -29476,6 +29613,7 @@ export namespace Prisma {
     createdAt?: SortOrder
     interaction?: InteractionOrderByWithRelationInput
     currency?: CurrencyOrderByWithRelationInput
+    counterCurrency?: CurrencyOrderByWithRelationInput
   }
 
   export type InteractionTermsWhereUniqueInput = Prisma.AtLeast<{
@@ -29489,6 +29627,8 @@ export namespace Prisma {
     description?: StringNullableFilter<"InteractionTerms"> | string | null
     amount?: IntFilter<"InteractionTerms"> | number
     currencyId?: StringFilter<"InteractionTerms"> | string
+    counterAmount?: IntNullableFilter<"InteractionTerms"> | number | null
+    counterCurrencyId?: StringNullableFilter<"InteractionTerms"> | string | null
     frequency?: EnumFrequencyFilter<"InteractionTerms"> | $Enums.Frequency
     paymentMode?: EnumPaymentModeFilter<"InteractionTerms"> | $Enums.PaymentMode
     startDate?: DateTimeNullableFilter<"InteractionTerms"> | Date | string | null
@@ -29499,6 +29639,7 @@ export namespace Prisma {
     createdAt?: DateTimeFilter<"InteractionTerms"> | Date | string
     interaction?: XOR<InteractionScalarRelationFilter, InteractionWhereInput>
     currency?: XOR<CurrencyScalarRelationFilter, CurrencyWhereInput>
+    counterCurrency?: XOR<CurrencyNullableScalarRelationFilter, CurrencyWhereInput> | null
   }, "id" | "interactionId_version">
 
   export type InteractionTermsOrderByWithAggregationInput = {
@@ -29508,6 +29649,8 @@ export namespace Prisma {
     description?: SortOrderInput | SortOrder
     amount?: SortOrder
     currencyId?: SortOrder
+    counterAmount?: SortOrderInput | SortOrder
+    counterCurrencyId?: SortOrderInput | SortOrder
     frequency?: SortOrder
     paymentMode?: SortOrder
     startDate?: SortOrderInput | SortOrder
@@ -29533,6 +29676,8 @@ export namespace Prisma {
     description?: StringNullableWithAggregatesFilter<"InteractionTerms"> | string | null
     amount?: IntWithAggregatesFilter<"InteractionTerms"> | number
     currencyId?: StringWithAggregatesFilter<"InteractionTerms"> | string
+    counterAmount?: IntNullableWithAggregatesFilter<"InteractionTerms"> | number | null
+    counterCurrencyId?: StringNullableWithAggregatesFilter<"InteractionTerms"> | string | null
     frequency?: EnumFrequencyWithAggregatesFilter<"InteractionTerms"> | $Enums.Frequency
     paymentMode?: EnumPaymentModeWithAggregatesFilter<"InteractionTerms"> | $Enums.PaymentMode
     startDate?: DateTimeNullableWithAggregatesFilter<"InteractionTerms"> | Date | string | null
@@ -29803,6 +29948,7 @@ export namespace Prisma {
     description?: StringNullableFilter<"Currency"> | string | null
     kind?: EnumCurrencyKindFilter<"Currency"> | $Enums.CurrencyKind
     status?: EnumCurrencyStatusFilter<"Currency"> | $Enums.CurrencyStatus
+    backing?: EnumCurrencyBackingFilter<"Currency"> | $Enums.CurrencyBacking
     decimals?: IntFilter<"Currency"> | number
     issuerNodeId?: StringNullableFilter<"Currency"> | string | null
     reserveCurrencyId?: StringNullableFilter<"Currency"> | string | null
@@ -29814,6 +29960,7 @@ export namespace Prisma {
     homeOf?: NodeListRelationFilter
     accounts?: AccountListRelationFilter
     terms?: InteractionTermsListRelationFilter
+    counterTerms?: InteractionTermsListRelationFilter
     ratesFrom?: ExchangeRateListRelationFilter
     ratesTo?: ExchangeRateListRelationFilter
     ruleValues?: CurrencyRuleValueListRelationFilter
@@ -29826,6 +29973,7 @@ export namespace Prisma {
     description?: SortOrderInput | SortOrder
     kind?: SortOrder
     status?: SortOrder
+    backing?: SortOrder
     decimals?: SortOrder
     issuerNodeId?: SortOrderInput | SortOrder
     reserveCurrencyId?: SortOrderInput | SortOrder
@@ -29837,6 +29985,7 @@ export namespace Prisma {
     homeOf?: NodeOrderByRelationAggregateInput
     accounts?: AccountOrderByRelationAggregateInput
     terms?: InteractionTermsOrderByRelationAggregateInput
+    counterTerms?: InteractionTermsOrderByRelationAggregateInput
     ratesFrom?: ExchangeRateOrderByRelationAggregateInput
     ratesTo?: ExchangeRateOrderByRelationAggregateInput
     ruleValues?: CurrencyRuleValueOrderByRelationAggregateInput
@@ -29852,6 +30001,7 @@ export namespace Prisma {
     description?: StringNullableFilter<"Currency"> | string | null
     kind?: EnumCurrencyKindFilter<"Currency"> | $Enums.CurrencyKind
     status?: EnumCurrencyStatusFilter<"Currency"> | $Enums.CurrencyStatus
+    backing?: EnumCurrencyBackingFilter<"Currency"> | $Enums.CurrencyBacking
     decimals?: IntFilter<"Currency"> | number
     issuerNodeId?: StringNullableFilter<"Currency"> | string | null
     reserveCurrencyId?: StringNullableFilter<"Currency"> | string | null
@@ -29863,6 +30013,7 @@ export namespace Prisma {
     homeOf?: NodeListRelationFilter
     accounts?: AccountListRelationFilter
     terms?: InteractionTermsListRelationFilter
+    counterTerms?: InteractionTermsListRelationFilter
     ratesFrom?: ExchangeRateListRelationFilter
     ratesTo?: ExchangeRateListRelationFilter
     ruleValues?: CurrencyRuleValueListRelationFilter
@@ -29875,6 +30026,7 @@ export namespace Prisma {
     description?: SortOrderInput | SortOrder
     kind?: SortOrder
     status?: SortOrder
+    backing?: SortOrder
     decimals?: SortOrder
     issuerNodeId?: SortOrderInput | SortOrder
     reserveCurrencyId?: SortOrderInput | SortOrder
@@ -29897,6 +30049,7 @@ export namespace Prisma {
     description?: StringNullableWithAggregatesFilter<"Currency"> | string | null
     kind?: EnumCurrencyKindWithAggregatesFilter<"Currency"> | $Enums.CurrencyKind
     status?: EnumCurrencyStatusWithAggregatesFilter<"Currency"> | $Enums.CurrencyStatus
+    backing?: EnumCurrencyBackingWithAggregatesFilter<"Currency"> | $Enums.CurrencyBacking
     decimals?: IntWithAggregatesFilter<"Currency"> | number
     issuerNodeId?: StringNullableWithAggregatesFilter<"Currency"> | string | null
     reserveCurrencyId?: StringNullableWithAggregatesFilter<"Currency"> | string | null
@@ -31020,6 +31173,7 @@ export namespace Prisma {
     version: number
     description?: string | null
     amount: number
+    counterAmount?: number | null
     frequency?: $Enums.Frequency
     paymentMode?: $Enums.PaymentMode
     startDate?: Date | string | null
@@ -31030,6 +31184,7 @@ export namespace Prisma {
     createdAt?: Date | string
     interaction: InteractionCreateNestedOneWithoutTermsInput
     currency: CurrencyCreateNestedOneWithoutTermsInput
+    counterCurrency?: CurrencyCreateNestedOneWithoutCounterTermsInput
   }
 
   export type InteractionTermsUncheckedCreateInput = {
@@ -31039,6 +31194,8 @@ export namespace Prisma {
     description?: string | null
     amount: number
     currencyId: string
+    counterAmount?: number | null
+    counterCurrencyId?: string | null
     frequency?: $Enums.Frequency
     paymentMode?: $Enums.PaymentMode
     startDate?: Date | string | null
@@ -31054,6 +31211,7 @@ export namespace Prisma {
     version?: IntFieldUpdateOperationsInput | number
     description?: NullableStringFieldUpdateOperationsInput | string | null
     amount?: IntFieldUpdateOperationsInput | number
+    counterAmount?: NullableIntFieldUpdateOperationsInput | number | null
     frequency?: EnumFrequencyFieldUpdateOperationsInput | $Enums.Frequency
     paymentMode?: EnumPaymentModeFieldUpdateOperationsInput | $Enums.PaymentMode
     startDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -31064,6 +31222,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     interaction?: InteractionUpdateOneRequiredWithoutTermsNestedInput
     currency?: CurrencyUpdateOneRequiredWithoutTermsNestedInput
+    counterCurrency?: CurrencyUpdateOneWithoutCounterTermsNestedInput
   }
 
   export type InteractionTermsUncheckedUpdateInput = {
@@ -31073,6 +31232,8 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     amount?: IntFieldUpdateOperationsInput | number
     currencyId?: StringFieldUpdateOperationsInput | string
+    counterAmount?: NullableIntFieldUpdateOperationsInput | number | null
+    counterCurrencyId?: NullableStringFieldUpdateOperationsInput | string | null
     frequency?: EnumFrequencyFieldUpdateOperationsInput | $Enums.Frequency
     paymentMode?: EnumPaymentModeFieldUpdateOperationsInput | $Enums.PaymentMode
     startDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -31090,6 +31251,8 @@ export namespace Prisma {
     description?: string | null
     amount: number
     currencyId: string
+    counterAmount?: number | null
+    counterCurrencyId?: string | null
     frequency?: $Enums.Frequency
     paymentMode?: $Enums.PaymentMode
     startDate?: Date | string | null
@@ -31105,6 +31268,7 @@ export namespace Prisma {
     version?: IntFieldUpdateOperationsInput | number
     description?: NullableStringFieldUpdateOperationsInput | string | null
     amount?: IntFieldUpdateOperationsInput | number
+    counterAmount?: NullableIntFieldUpdateOperationsInput | number | null
     frequency?: EnumFrequencyFieldUpdateOperationsInput | $Enums.Frequency
     paymentMode?: EnumPaymentModeFieldUpdateOperationsInput | $Enums.PaymentMode
     startDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -31122,6 +31286,8 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     amount?: IntFieldUpdateOperationsInput | number
     currencyId?: StringFieldUpdateOperationsInput | string
+    counterAmount?: NullableIntFieldUpdateOperationsInput | number | null
+    counterCurrencyId?: NullableStringFieldUpdateOperationsInput | string | null
     frequency?: EnumFrequencyFieldUpdateOperationsInput | $Enums.Frequency
     paymentMode?: EnumPaymentModeFieldUpdateOperationsInput | $Enums.PaymentMode
     startDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -31398,6 +31564,7 @@ export namespace Prisma {
     description?: string | null
     kind: $Enums.CurrencyKind
     status?: $Enums.CurrencyStatus
+    backing?: $Enums.CurrencyBacking
     decimals?: number
     country?: string | null
     createdAt?: Date | string
@@ -31407,6 +31574,7 @@ export namespace Prisma {
     homeOf?: NodeCreateNestedManyWithoutHomeCurrencyInput
     accounts?: AccountCreateNestedManyWithoutCurrencyInput
     terms?: InteractionTermsCreateNestedManyWithoutCurrencyInput
+    counterTerms?: InteractionTermsCreateNestedManyWithoutCounterCurrencyInput
     ratesFrom?: ExchangeRateCreateNestedManyWithoutFromInput
     ratesTo?: ExchangeRateCreateNestedManyWithoutToInput
     ruleValues?: CurrencyRuleValueCreateNestedManyWithoutCurrencyInput
@@ -31419,6 +31587,7 @@ export namespace Prisma {
     description?: string | null
     kind: $Enums.CurrencyKind
     status?: $Enums.CurrencyStatus
+    backing?: $Enums.CurrencyBacking
     decimals?: number
     issuerNodeId?: string | null
     reserveCurrencyId?: string | null
@@ -31428,6 +31597,7 @@ export namespace Prisma {
     homeOf?: NodeUncheckedCreateNestedManyWithoutHomeCurrencyInput
     accounts?: AccountUncheckedCreateNestedManyWithoutCurrencyInput
     terms?: InteractionTermsUncheckedCreateNestedManyWithoutCurrencyInput
+    counterTerms?: InteractionTermsUncheckedCreateNestedManyWithoutCounterCurrencyInput
     ratesFrom?: ExchangeRateUncheckedCreateNestedManyWithoutFromInput
     ratesTo?: ExchangeRateUncheckedCreateNestedManyWithoutToInput
     ruleValues?: CurrencyRuleValueUncheckedCreateNestedManyWithoutCurrencyInput
@@ -31440,6 +31610,7 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     kind?: EnumCurrencyKindFieldUpdateOperationsInput | $Enums.CurrencyKind
     status?: EnumCurrencyStatusFieldUpdateOperationsInput | $Enums.CurrencyStatus
+    backing?: EnumCurrencyBackingFieldUpdateOperationsInput | $Enums.CurrencyBacking
     decimals?: IntFieldUpdateOperationsInput | number
     country?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -31449,6 +31620,7 @@ export namespace Prisma {
     homeOf?: NodeUpdateManyWithoutHomeCurrencyNestedInput
     accounts?: AccountUpdateManyWithoutCurrencyNestedInput
     terms?: InteractionTermsUpdateManyWithoutCurrencyNestedInput
+    counterTerms?: InteractionTermsUpdateManyWithoutCounterCurrencyNestedInput
     ratesFrom?: ExchangeRateUpdateManyWithoutFromNestedInput
     ratesTo?: ExchangeRateUpdateManyWithoutToNestedInput
     ruleValues?: CurrencyRuleValueUpdateManyWithoutCurrencyNestedInput
@@ -31461,6 +31633,7 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     kind?: EnumCurrencyKindFieldUpdateOperationsInput | $Enums.CurrencyKind
     status?: EnumCurrencyStatusFieldUpdateOperationsInput | $Enums.CurrencyStatus
+    backing?: EnumCurrencyBackingFieldUpdateOperationsInput | $Enums.CurrencyBacking
     decimals?: IntFieldUpdateOperationsInput | number
     issuerNodeId?: NullableStringFieldUpdateOperationsInput | string | null
     reserveCurrencyId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -31470,6 +31643,7 @@ export namespace Prisma {
     homeOf?: NodeUncheckedUpdateManyWithoutHomeCurrencyNestedInput
     accounts?: AccountUncheckedUpdateManyWithoutCurrencyNestedInput
     terms?: InteractionTermsUncheckedUpdateManyWithoutCurrencyNestedInput
+    counterTerms?: InteractionTermsUncheckedUpdateManyWithoutCounterCurrencyNestedInput
     ratesFrom?: ExchangeRateUncheckedUpdateManyWithoutFromNestedInput
     ratesTo?: ExchangeRateUncheckedUpdateManyWithoutToNestedInput
     ruleValues?: CurrencyRuleValueUncheckedUpdateManyWithoutCurrencyNestedInput
@@ -31482,6 +31656,7 @@ export namespace Prisma {
     description?: string | null
     kind: $Enums.CurrencyKind
     status?: $Enums.CurrencyStatus
+    backing?: $Enums.CurrencyBacking
     decimals?: number
     issuerNodeId?: string | null
     reserveCurrencyId?: string | null
@@ -31496,6 +31671,7 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     kind?: EnumCurrencyKindFieldUpdateOperationsInput | $Enums.CurrencyKind
     status?: EnumCurrencyStatusFieldUpdateOperationsInput | $Enums.CurrencyStatus
+    backing?: EnumCurrencyBackingFieldUpdateOperationsInput | $Enums.CurrencyBacking
     decimals?: IntFieldUpdateOperationsInput | number
     country?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -31508,6 +31684,7 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     kind?: EnumCurrencyKindFieldUpdateOperationsInput | $Enums.CurrencyKind
     status?: EnumCurrencyStatusFieldUpdateOperationsInput | $Enums.CurrencyStatus
+    backing?: EnumCurrencyBackingFieldUpdateOperationsInput | $Enums.CurrencyBacking
     decimals?: IntFieldUpdateOperationsInput | number
     issuerNodeId?: NullableStringFieldUpdateOperationsInput | string | null
     reserveCurrencyId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -32716,6 +32893,17 @@ export namespace Prisma {
     not?: NestedIntFilter<$PrismaModel> | number
   }
 
+  export type IntNullableFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel> | null
+    in?: number[] | null
+    notIn?: number[] | null
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntNullableFilter<$PrismaModel> | number | null
+  }
+
   export type EnumFrequencyFilter<$PrismaModel = never> = {
     equals?: $Enums.Frequency | EnumFrequencyFieldRefInput<$PrismaModel>
     in?: $Enums.Frequency[]
@@ -32728,17 +32916,6 @@ export namespace Prisma {
     in?: $Enums.PaymentMode[]
     notIn?: $Enums.PaymentMode[]
     not?: NestedEnumPaymentModeFilter<$PrismaModel> | $Enums.PaymentMode
-  }
-
-  export type IntNullableFilter<$PrismaModel = never> = {
-    equals?: number | IntFieldRefInput<$PrismaModel> | null
-    in?: number[] | null
-    notIn?: number[] | null
-    lt?: number | IntFieldRefInput<$PrismaModel>
-    lte?: number | IntFieldRefInput<$PrismaModel>
-    gt?: number | IntFieldRefInput<$PrismaModel>
-    gte?: number | IntFieldRefInput<$PrismaModel>
-    not?: NestedIntNullableFilter<$PrismaModel> | number | null
   }
 
   export type InteractionScalarRelationFilter = {
@@ -32758,6 +32935,8 @@ export namespace Prisma {
     description?: SortOrder
     amount?: SortOrder
     currencyId?: SortOrder
+    counterAmount?: SortOrder
+    counterCurrencyId?: SortOrder
     frequency?: SortOrder
     paymentMode?: SortOrder
     startDate?: SortOrder
@@ -32771,6 +32950,7 @@ export namespace Prisma {
   export type InteractionTermsAvgOrderByAggregateInput = {
     version?: SortOrder
     amount?: SortOrder
+    counterAmount?: SortOrder
     maxPayments?: SortOrder
   }
 
@@ -32781,6 +32961,8 @@ export namespace Prisma {
     description?: SortOrder
     amount?: SortOrder
     currencyId?: SortOrder
+    counterAmount?: SortOrder
+    counterCurrencyId?: SortOrder
     frequency?: SortOrder
     paymentMode?: SortOrder
     startDate?: SortOrder
@@ -32798,6 +32980,8 @@ export namespace Prisma {
     description?: SortOrder
     amount?: SortOrder
     currencyId?: SortOrder
+    counterAmount?: SortOrder
+    counterCurrencyId?: SortOrder
     frequency?: SortOrder
     paymentMode?: SortOrder
     startDate?: SortOrder
@@ -32811,6 +32995,7 @@ export namespace Prisma {
   export type InteractionTermsSumOrderByAggregateInput = {
     version?: SortOrder
     amount?: SortOrder
+    counterAmount?: SortOrder
     maxPayments?: SortOrder
   }
 
@@ -32828,6 +33013,22 @@ export namespace Prisma {
     _sum?: NestedIntFilter<$PrismaModel>
     _min?: NestedIntFilter<$PrismaModel>
     _max?: NestedIntFilter<$PrismaModel>
+  }
+
+  export type IntNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel> | null
+    in?: number[] | null
+    notIn?: number[] | null
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntNullableWithAggregatesFilter<$PrismaModel> | number | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _avg?: NestedFloatNullableFilter<$PrismaModel>
+    _sum?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedIntNullableFilter<$PrismaModel>
+    _max?: NestedIntNullableFilter<$PrismaModel>
   }
 
   export type EnumFrequencyWithAggregatesFilter<$PrismaModel = never> = {
@@ -32848,22 +33049,6 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumPaymentModeFilter<$PrismaModel>
     _max?: NestedEnumPaymentModeFilter<$PrismaModel>
-  }
-
-  export type IntNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: number | IntFieldRefInput<$PrismaModel> | null
-    in?: number[] | null
-    notIn?: number[] | null
-    lt?: number | IntFieldRefInput<$PrismaModel>
-    lte?: number | IntFieldRefInput<$PrismaModel>
-    gt?: number | IntFieldRefInput<$PrismaModel>
-    gte?: number | IntFieldRefInput<$PrismaModel>
-    not?: NestedIntNullableWithAggregatesFilter<$PrismaModel> | number | null
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _avg?: NestedFloatNullableFilter<$PrismaModel>
-    _sum?: NestedIntNullableFilter<$PrismaModel>
-    _min?: NestedIntNullableFilter<$PrismaModel>
-    _max?: NestedIntNullableFilter<$PrismaModel>
   }
 
   export type InteractionCuratorInteractionIdCuratorNodeIdCompoundUniqueInput = {
@@ -33068,6 +33253,13 @@ export namespace Prisma {
     not?: NestedEnumCurrencyStatusFilter<$PrismaModel> | $Enums.CurrencyStatus
   }
 
+  export type EnumCurrencyBackingFilter<$PrismaModel = never> = {
+    equals?: $Enums.CurrencyBacking | EnumCurrencyBackingFieldRefInput<$PrismaModel>
+    in?: $Enums.CurrencyBacking[]
+    notIn?: $Enums.CurrencyBacking[]
+    not?: NestedEnumCurrencyBackingFilter<$PrismaModel> | $Enums.CurrencyBacking
+  }
+
   export type NodeNullableScalarRelationFilter = {
     is?: NodeWhereInput | null
     isNot?: NodeWhereInput | null
@@ -33110,6 +33302,7 @@ export namespace Prisma {
     description?: SortOrder
     kind?: SortOrder
     status?: SortOrder
+    backing?: SortOrder
     decimals?: SortOrder
     issuerNodeId?: SortOrder
     reserveCurrencyId?: SortOrder
@@ -33128,6 +33321,7 @@ export namespace Prisma {
     description?: SortOrder
     kind?: SortOrder
     status?: SortOrder
+    backing?: SortOrder
     decimals?: SortOrder
     issuerNodeId?: SortOrder
     reserveCurrencyId?: SortOrder
@@ -33142,6 +33336,7 @@ export namespace Prisma {
     description?: SortOrder
     kind?: SortOrder
     status?: SortOrder
+    backing?: SortOrder
     decimals?: SortOrder
     issuerNodeId?: SortOrder
     reserveCurrencyId?: SortOrder
@@ -33171,6 +33366,16 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumCurrencyStatusFilter<$PrismaModel>
     _max?: NestedEnumCurrencyStatusFilter<$PrismaModel>
+  }
+
+  export type EnumCurrencyBackingWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.CurrencyBacking | EnumCurrencyBackingFieldRefInput<$PrismaModel>
+    in?: $Enums.CurrencyBacking[]
+    notIn?: $Enums.CurrencyBacking[]
+    not?: NestedEnumCurrencyBackingWithAggregatesFilter<$PrismaModel> | $Enums.CurrencyBacking
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumCurrencyBackingFilter<$PrismaModel>
+    _max?: NestedEnumCurrencyBackingFilter<$PrismaModel>
   }
 
   export type EnumRateSourceFilter<$PrismaModel = never> = {
@@ -34485,8 +34690,22 @@ export namespace Prisma {
     connect?: CurrencyWhereUniqueInput
   }
 
+  export type CurrencyCreateNestedOneWithoutCounterTermsInput = {
+    create?: XOR<CurrencyCreateWithoutCounterTermsInput, CurrencyUncheckedCreateWithoutCounterTermsInput>
+    connectOrCreate?: CurrencyCreateOrConnectWithoutCounterTermsInput
+    connect?: CurrencyWhereUniqueInput
+  }
+
   export type IntFieldUpdateOperationsInput = {
     set?: number
+    increment?: number
+    decrement?: number
+    multiply?: number
+    divide?: number
+  }
+
+  export type NullableIntFieldUpdateOperationsInput = {
+    set?: number | null
     increment?: number
     decrement?: number
     multiply?: number
@@ -34499,14 +34718,6 @@ export namespace Prisma {
 
   export type EnumPaymentModeFieldUpdateOperationsInput = {
     set?: $Enums.PaymentMode
-  }
-
-  export type NullableIntFieldUpdateOperationsInput = {
-    set?: number | null
-    increment?: number
-    decrement?: number
-    multiply?: number
-    divide?: number
   }
 
   export type InteractionUpdateOneRequiredWithoutTermsNestedInput = {
@@ -34523,6 +34734,16 @@ export namespace Prisma {
     upsert?: CurrencyUpsertWithoutTermsInput
     connect?: CurrencyWhereUniqueInput
     update?: XOR<XOR<CurrencyUpdateToOneWithWhereWithoutTermsInput, CurrencyUpdateWithoutTermsInput>, CurrencyUncheckedUpdateWithoutTermsInput>
+  }
+
+  export type CurrencyUpdateOneWithoutCounterTermsNestedInput = {
+    create?: XOR<CurrencyCreateWithoutCounterTermsInput, CurrencyUncheckedCreateWithoutCounterTermsInput>
+    connectOrCreate?: CurrencyCreateOrConnectWithoutCounterTermsInput
+    upsert?: CurrencyUpsertWithoutCounterTermsInput
+    disconnect?: CurrencyWhereInput | boolean
+    delete?: CurrencyWhereInput | boolean
+    connect?: CurrencyWhereUniqueInput
+    update?: XOR<XOR<CurrencyUpdateToOneWithWhereWithoutCounterTermsInput, CurrencyUpdateWithoutCounterTermsInput>, CurrencyUncheckedUpdateWithoutCounterTermsInput>
   }
 
   export type InteractionCreateNestedOneWithoutCuratorsInput = {
@@ -34677,6 +34898,13 @@ export namespace Prisma {
     connect?: InteractionTermsWhereUniqueInput | InteractionTermsWhereUniqueInput[]
   }
 
+  export type InteractionTermsCreateNestedManyWithoutCounterCurrencyInput = {
+    create?: XOR<InteractionTermsCreateWithoutCounterCurrencyInput, InteractionTermsUncheckedCreateWithoutCounterCurrencyInput> | InteractionTermsCreateWithoutCounterCurrencyInput[] | InteractionTermsUncheckedCreateWithoutCounterCurrencyInput[]
+    connectOrCreate?: InteractionTermsCreateOrConnectWithoutCounterCurrencyInput | InteractionTermsCreateOrConnectWithoutCounterCurrencyInput[]
+    createMany?: InteractionTermsCreateManyCounterCurrencyInputEnvelope
+    connect?: InteractionTermsWhereUniqueInput | InteractionTermsWhereUniqueInput[]
+  }
+
   export type ExchangeRateCreateNestedManyWithoutFromInput = {
     create?: XOR<ExchangeRateCreateWithoutFromInput, ExchangeRateUncheckedCreateWithoutFromInput> | ExchangeRateCreateWithoutFromInput[] | ExchangeRateUncheckedCreateWithoutFromInput[]
     connectOrCreate?: ExchangeRateCreateOrConnectWithoutFromInput | ExchangeRateCreateOrConnectWithoutFromInput[]
@@ -34726,6 +34954,13 @@ export namespace Prisma {
     connect?: InteractionTermsWhereUniqueInput | InteractionTermsWhereUniqueInput[]
   }
 
+  export type InteractionTermsUncheckedCreateNestedManyWithoutCounterCurrencyInput = {
+    create?: XOR<InteractionTermsCreateWithoutCounterCurrencyInput, InteractionTermsUncheckedCreateWithoutCounterCurrencyInput> | InteractionTermsCreateWithoutCounterCurrencyInput[] | InteractionTermsUncheckedCreateWithoutCounterCurrencyInput[]
+    connectOrCreate?: InteractionTermsCreateOrConnectWithoutCounterCurrencyInput | InteractionTermsCreateOrConnectWithoutCounterCurrencyInput[]
+    createMany?: InteractionTermsCreateManyCounterCurrencyInputEnvelope
+    connect?: InteractionTermsWhereUniqueInput | InteractionTermsWhereUniqueInput[]
+  }
+
   export type ExchangeRateUncheckedCreateNestedManyWithoutFromInput = {
     create?: XOR<ExchangeRateCreateWithoutFromInput, ExchangeRateUncheckedCreateWithoutFromInput> | ExchangeRateCreateWithoutFromInput[] | ExchangeRateUncheckedCreateWithoutFromInput[]
     connectOrCreate?: ExchangeRateCreateOrConnectWithoutFromInput | ExchangeRateCreateOrConnectWithoutFromInput[]
@@ -34753,6 +34988,10 @@ export namespace Prisma {
 
   export type EnumCurrencyStatusFieldUpdateOperationsInput = {
     set?: $Enums.CurrencyStatus
+  }
+
+  export type EnumCurrencyBackingFieldUpdateOperationsInput = {
+    set?: $Enums.CurrencyBacking
   }
 
   export type NodeUpdateOneWithoutIssuedCurrenciesNestedInput = {
@@ -34828,6 +35067,20 @@ export namespace Prisma {
     connect?: InteractionTermsWhereUniqueInput | InteractionTermsWhereUniqueInput[]
     update?: InteractionTermsUpdateWithWhereUniqueWithoutCurrencyInput | InteractionTermsUpdateWithWhereUniqueWithoutCurrencyInput[]
     updateMany?: InteractionTermsUpdateManyWithWhereWithoutCurrencyInput | InteractionTermsUpdateManyWithWhereWithoutCurrencyInput[]
+    deleteMany?: InteractionTermsScalarWhereInput | InteractionTermsScalarWhereInput[]
+  }
+
+  export type InteractionTermsUpdateManyWithoutCounterCurrencyNestedInput = {
+    create?: XOR<InteractionTermsCreateWithoutCounterCurrencyInput, InteractionTermsUncheckedCreateWithoutCounterCurrencyInput> | InteractionTermsCreateWithoutCounterCurrencyInput[] | InteractionTermsUncheckedCreateWithoutCounterCurrencyInput[]
+    connectOrCreate?: InteractionTermsCreateOrConnectWithoutCounterCurrencyInput | InteractionTermsCreateOrConnectWithoutCounterCurrencyInput[]
+    upsert?: InteractionTermsUpsertWithWhereUniqueWithoutCounterCurrencyInput | InteractionTermsUpsertWithWhereUniqueWithoutCounterCurrencyInput[]
+    createMany?: InteractionTermsCreateManyCounterCurrencyInputEnvelope
+    set?: InteractionTermsWhereUniqueInput | InteractionTermsWhereUniqueInput[]
+    disconnect?: InteractionTermsWhereUniqueInput | InteractionTermsWhereUniqueInput[]
+    delete?: InteractionTermsWhereUniqueInput | InteractionTermsWhereUniqueInput[]
+    connect?: InteractionTermsWhereUniqueInput | InteractionTermsWhereUniqueInput[]
+    update?: InteractionTermsUpdateWithWhereUniqueWithoutCounterCurrencyInput | InteractionTermsUpdateWithWhereUniqueWithoutCounterCurrencyInput[]
+    updateMany?: InteractionTermsUpdateManyWithWhereWithoutCounterCurrencyInput | InteractionTermsUpdateManyWithWhereWithoutCounterCurrencyInput[]
     deleteMany?: InteractionTermsScalarWhereInput | InteractionTermsScalarWhereInput[]
   }
 
@@ -34926,6 +35179,20 @@ export namespace Prisma {
     connect?: InteractionTermsWhereUniqueInput | InteractionTermsWhereUniqueInput[]
     update?: InteractionTermsUpdateWithWhereUniqueWithoutCurrencyInput | InteractionTermsUpdateWithWhereUniqueWithoutCurrencyInput[]
     updateMany?: InteractionTermsUpdateManyWithWhereWithoutCurrencyInput | InteractionTermsUpdateManyWithWhereWithoutCurrencyInput[]
+    deleteMany?: InteractionTermsScalarWhereInput | InteractionTermsScalarWhereInput[]
+  }
+
+  export type InteractionTermsUncheckedUpdateManyWithoutCounterCurrencyNestedInput = {
+    create?: XOR<InteractionTermsCreateWithoutCounterCurrencyInput, InteractionTermsUncheckedCreateWithoutCounterCurrencyInput> | InteractionTermsCreateWithoutCounterCurrencyInput[] | InteractionTermsUncheckedCreateWithoutCounterCurrencyInput[]
+    connectOrCreate?: InteractionTermsCreateOrConnectWithoutCounterCurrencyInput | InteractionTermsCreateOrConnectWithoutCounterCurrencyInput[]
+    upsert?: InteractionTermsUpsertWithWhereUniqueWithoutCounterCurrencyInput | InteractionTermsUpsertWithWhereUniqueWithoutCounterCurrencyInput[]
+    createMany?: InteractionTermsCreateManyCounterCurrencyInputEnvelope
+    set?: InteractionTermsWhereUniqueInput | InteractionTermsWhereUniqueInput[]
+    disconnect?: InteractionTermsWhereUniqueInput | InteractionTermsWhereUniqueInput[]
+    delete?: InteractionTermsWhereUniqueInput | InteractionTermsWhereUniqueInput[]
+    connect?: InteractionTermsWhereUniqueInput | InteractionTermsWhereUniqueInput[]
+    update?: InteractionTermsUpdateWithWhereUniqueWithoutCounterCurrencyInput | InteractionTermsUpdateWithWhereUniqueWithoutCounterCurrencyInput[]
+    updateMany?: InteractionTermsUpdateManyWithWhereWithoutCounterCurrencyInput | InteractionTermsUpdateManyWithWhereWithoutCounterCurrencyInput[]
     deleteMany?: InteractionTermsScalarWhereInput | InteractionTermsScalarWhereInput[]
   }
 
@@ -35488,26 +35755,6 @@ export namespace Prisma {
     _max?: NestedIntFilter<$PrismaModel>
   }
 
-  export type NestedEnumFrequencyWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: $Enums.Frequency | EnumFrequencyFieldRefInput<$PrismaModel>
-    in?: $Enums.Frequency[]
-    notIn?: $Enums.Frequency[]
-    not?: NestedEnumFrequencyWithAggregatesFilter<$PrismaModel> | $Enums.Frequency
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedEnumFrequencyFilter<$PrismaModel>
-    _max?: NestedEnumFrequencyFilter<$PrismaModel>
-  }
-
-  export type NestedEnumPaymentModeWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: $Enums.PaymentMode | EnumPaymentModeFieldRefInput<$PrismaModel>
-    in?: $Enums.PaymentMode[]
-    notIn?: $Enums.PaymentMode[]
-    not?: NestedEnumPaymentModeWithAggregatesFilter<$PrismaModel> | $Enums.PaymentMode
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedEnumPaymentModeFilter<$PrismaModel>
-    _max?: NestedEnumPaymentModeFilter<$PrismaModel>
-  }
-
   export type NestedIntNullableWithAggregatesFilter<$PrismaModel = never> = {
     equals?: number | IntFieldRefInput<$PrismaModel> | null
     in?: number[] | null
@@ -35533,6 +35780,26 @@ export namespace Prisma {
     gt?: number | FloatFieldRefInput<$PrismaModel>
     gte?: number | FloatFieldRefInput<$PrismaModel>
     not?: NestedFloatNullableFilter<$PrismaModel> | number | null
+  }
+
+  export type NestedEnumFrequencyWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.Frequency | EnumFrequencyFieldRefInput<$PrismaModel>
+    in?: $Enums.Frequency[]
+    notIn?: $Enums.Frequency[]
+    not?: NestedEnumFrequencyWithAggregatesFilter<$PrismaModel> | $Enums.Frequency
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumFrequencyFilter<$PrismaModel>
+    _max?: NestedEnumFrequencyFilter<$PrismaModel>
+  }
+
+  export type NestedEnumPaymentModeWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.PaymentMode | EnumPaymentModeFieldRefInput<$PrismaModel>
+    in?: $Enums.PaymentMode[]
+    notIn?: $Enums.PaymentMode[]
+    not?: NestedEnumPaymentModeWithAggregatesFilter<$PrismaModel> | $Enums.PaymentMode
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumPaymentModeFilter<$PrismaModel>
+    _max?: NestedEnumPaymentModeFilter<$PrismaModel>
   }
 
   export type NestedEnumProposalKindFilter<$PrismaModel = never> = {
@@ -35596,6 +35863,13 @@ export namespace Prisma {
     not?: NestedEnumCurrencyStatusFilter<$PrismaModel> | $Enums.CurrencyStatus
   }
 
+  export type NestedEnumCurrencyBackingFilter<$PrismaModel = never> = {
+    equals?: $Enums.CurrencyBacking | EnumCurrencyBackingFieldRefInput<$PrismaModel>
+    in?: $Enums.CurrencyBacking[]
+    notIn?: $Enums.CurrencyBacking[]
+    not?: NestedEnumCurrencyBackingFilter<$PrismaModel> | $Enums.CurrencyBacking
+  }
+
   export type NestedEnumCurrencyKindWithAggregatesFilter<$PrismaModel = never> = {
     equals?: $Enums.CurrencyKind | EnumCurrencyKindFieldRefInput<$PrismaModel>
     in?: $Enums.CurrencyKind[]
@@ -35614,6 +35888,16 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumCurrencyStatusFilter<$PrismaModel>
     _max?: NestedEnumCurrencyStatusFilter<$PrismaModel>
+  }
+
+  export type NestedEnumCurrencyBackingWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.CurrencyBacking | EnumCurrencyBackingFieldRefInput<$PrismaModel>
+    in?: $Enums.CurrencyBacking[]
+    notIn?: $Enums.CurrencyBacking[]
+    not?: NestedEnumCurrencyBackingWithAggregatesFilter<$PrismaModel> | $Enums.CurrencyBacking
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumCurrencyBackingFilter<$PrismaModel>
+    _max?: NestedEnumCurrencyBackingFilter<$PrismaModel>
   }
 
   export type NestedEnumRateSourceFilter<$PrismaModel = never> = {
@@ -35674,6 +35958,7 @@ export namespace Prisma {
     description?: string | null
     kind: $Enums.CurrencyKind
     status?: $Enums.CurrencyStatus
+    backing?: $Enums.CurrencyBacking
     decimals?: number
     country?: string | null
     createdAt?: Date | string
@@ -35682,6 +35967,7 @@ export namespace Prisma {
     backs?: CurrencyCreateNestedManyWithoutReserveCurrencyInput
     accounts?: AccountCreateNestedManyWithoutCurrencyInput
     terms?: InteractionTermsCreateNestedManyWithoutCurrencyInput
+    counterTerms?: InteractionTermsCreateNestedManyWithoutCounterCurrencyInput
     ratesFrom?: ExchangeRateCreateNestedManyWithoutFromInput
     ratesTo?: ExchangeRateCreateNestedManyWithoutToInput
     ruleValues?: CurrencyRuleValueCreateNestedManyWithoutCurrencyInput
@@ -35694,6 +35980,7 @@ export namespace Prisma {
     description?: string | null
     kind: $Enums.CurrencyKind
     status?: $Enums.CurrencyStatus
+    backing?: $Enums.CurrencyBacking
     decimals?: number
     issuerNodeId?: string | null
     reserveCurrencyId?: string | null
@@ -35702,6 +35989,7 @@ export namespace Prisma {
     backs?: CurrencyUncheckedCreateNestedManyWithoutReserveCurrencyInput
     accounts?: AccountUncheckedCreateNestedManyWithoutCurrencyInput
     terms?: InteractionTermsUncheckedCreateNestedManyWithoutCurrencyInput
+    counterTerms?: InteractionTermsUncheckedCreateNestedManyWithoutCounterCurrencyInput
     ratesFrom?: ExchangeRateUncheckedCreateNestedManyWithoutFromInput
     ratesTo?: ExchangeRateUncheckedCreateNestedManyWithoutToInput
     ruleValues?: CurrencyRuleValueUncheckedCreateNestedManyWithoutCurrencyInput
@@ -35879,6 +36167,7 @@ export namespace Prisma {
     description?: string | null
     kind: $Enums.CurrencyKind
     status?: $Enums.CurrencyStatus
+    backing?: $Enums.CurrencyBacking
     decimals?: number
     country?: string | null
     createdAt?: Date | string
@@ -35887,6 +36176,7 @@ export namespace Prisma {
     homeOf?: NodeCreateNestedManyWithoutHomeCurrencyInput
     accounts?: AccountCreateNestedManyWithoutCurrencyInput
     terms?: InteractionTermsCreateNestedManyWithoutCurrencyInput
+    counterTerms?: InteractionTermsCreateNestedManyWithoutCounterCurrencyInput
     ratesFrom?: ExchangeRateCreateNestedManyWithoutFromInput
     ratesTo?: ExchangeRateCreateNestedManyWithoutToInput
     ruleValues?: CurrencyRuleValueCreateNestedManyWithoutCurrencyInput
@@ -35899,6 +36189,7 @@ export namespace Prisma {
     description?: string | null
     kind: $Enums.CurrencyKind
     status?: $Enums.CurrencyStatus
+    backing?: $Enums.CurrencyBacking
     decimals?: number
     reserveCurrencyId?: string | null
     country?: string | null
@@ -35907,6 +36198,7 @@ export namespace Prisma {
     homeOf?: NodeUncheckedCreateNestedManyWithoutHomeCurrencyInput
     accounts?: AccountUncheckedCreateNestedManyWithoutCurrencyInput
     terms?: InteractionTermsUncheckedCreateNestedManyWithoutCurrencyInput
+    counterTerms?: InteractionTermsUncheckedCreateNestedManyWithoutCounterCurrencyInput
     ratesFrom?: ExchangeRateUncheckedCreateNestedManyWithoutFromInput
     ratesTo?: ExchangeRateUncheckedCreateNestedManyWithoutToInput
     ruleValues?: CurrencyRuleValueUncheckedCreateNestedManyWithoutCurrencyInput
@@ -35999,6 +36291,7 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     kind?: EnumCurrencyKindFieldUpdateOperationsInput | $Enums.CurrencyKind
     status?: EnumCurrencyStatusFieldUpdateOperationsInput | $Enums.CurrencyStatus
+    backing?: EnumCurrencyBackingFieldUpdateOperationsInput | $Enums.CurrencyBacking
     decimals?: IntFieldUpdateOperationsInput | number
     country?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -36007,6 +36300,7 @@ export namespace Prisma {
     backs?: CurrencyUpdateManyWithoutReserveCurrencyNestedInput
     accounts?: AccountUpdateManyWithoutCurrencyNestedInput
     terms?: InteractionTermsUpdateManyWithoutCurrencyNestedInput
+    counterTerms?: InteractionTermsUpdateManyWithoutCounterCurrencyNestedInput
     ratesFrom?: ExchangeRateUpdateManyWithoutFromNestedInput
     ratesTo?: ExchangeRateUpdateManyWithoutToNestedInput
     ruleValues?: CurrencyRuleValueUpdateManyWithoutCurrencyNestedInput
@@ -36019,6 +36313,7 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     kind?: EnumCurrencyKindFieldUpdateOperationsInput | $Enums.CurrencyKind
     status?: EnumCurrencyStatusFieldUpdateOperationsInput | $Enums.CurrencyStatus
+    backing?: EnumCurrencyBackingFieldUpdateOperationsInput | $Enums.CurrencyBacking
     decimals?: IntFieldUpdateOperationsInput | number
     issuerNodeId?: NullableStringFieldUpdateOperationsInput | string | null
     reserveCurrencyId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -36027,6 +36322,7 @@ export namespace Prisma {
     backs?: CurrencyUncheckedUpdateManyWithoutReserveCurrencyNestedInput
     accounts?: AccountUncheckedUpdateManyWithoutCurrencyNestedInput
     terms?: InteractionTermsUncheckedUpdateManyWithoutCurrencyNestedInput
+    counterTerms?: InteractionTermsUncheckedUpdateManyWithoutCounterCurrencyNestedInput
     ratesFrom?: ExchangeRateUncheckedUpdateManyWithoutFromNestedInput
     ratesTo?: ExchangeRateUncheckedUpdateManyWithoutToNestedInput
     ruleValues?: CurrencyRuleValueUncheckedUpdateManyWithoutCurrencyNestedInput
@@ -36201,6 +36497,7 @@ export namespace Prisma {
     description?: StringNullableFilter<"Currency"> | string | null
     kind?: EnumCurrencyKindFilter<"Currency"> | $Enums.CurrencyKind
     status?: EnumCurrencyStatusFilter<"Currency"> | $Enums.CurrencyStatus
+    backing?: EnumCurrencyBackingFilter<"Currency"> | $Enums.CurrencyBacking
     decimals?: IntFilter<"Currency"> | number
     issuerNodeId?: StringNullableFilter<"Currency"> | string | null
     reserveCurrencyId?: StringNullableFilter<"Currency"> | string | null
@@ -36879,6 +37176,7 @@ export namespace Prisma {
     description?: string | null
     kind: $Enums.CurrencyKind
     status?: $Enums.CurrencyStatus
+    backing?: $Enums.CurrencyBacking
     decimals?: number
     country?: string | null
     createdAt?: Date | string
@@ -36888,6 +37186,7 @@ export namespace Prisma {
     homeOf?: NodeCreateNestedManyWithoutHomeCurrencyInput
     accounts?: AccountCreateNestedManyWithoutCurrencyInput
     terms?: InteractionTermsCreateNestedManyWithoutCurrencyInput
+    counterTerms?: InteractionTermsCreateNestedManyWithoutCounterCurrencyInput
     ratesFrom?: ExchangeRateCreateNestedManyWithoutFromInput
     ratesTo?: ExchangeRateCreateNestedManyWithoutToInput
   }
@@ -36899,6 +37198,7 @@ export namespace Prisma {
     description?: string | null
     kind: $Enums.CurrencyKind
     status?: $Enums.CurrencyStatus
+    backing?: $Enums.CurrencyBacking
     decimals?: number
     issuerNodeId?: string | null
     reserveCurrencyId?: string | null
@@ -36908,6 +37208,7 @@ export namespace Prisma {
     homeOf?: NodeUncheckedCreateNestedManyWithoutHomeCurrencyInput
     accounts?: AccountUncheckedCreateNestedManyWithoutCurrencyInput
     terms?: InteractionTermsUncheckedCreateNestedManyWithoutCurrencyInput
+    counterTerms?: InteractionTermsUncheckedCreateNestedManyWithoutCounterCurrencyInput
     ratesFrom?: ExchangeRateUncheckedCreateNestedManyWithoutFromInput
     ratesTo?: ExchangeRateUncheckedCreateNestedManyWithoutToInput
   }
@@ -36935,6 +37236,7 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     kind?: EnumCurrencyKindFieldUpdateOperationsInput | $Enums.CurrencyKind
     status?: EnumCurrencyStatusFieldUpdateOperationsInput | $Enums.CurrencyStatus
+    backing?: EnumCurrencyBackingFieldUpdateOperationsInput | $Enums.CurrencyBacking
     decimals?: IntFieldUpdateOperationsInput | number
     country?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -36944,6 +37246,7 @@ export namespace Prisma {
     homeOf?: NodeUpdateManyWithoutHomeCurrencyNestedInput
     accounts?: AccountUpdateManyWithoutCurrencyNestedInput
     terms?: InteractionTermsUpdateManyWithoutCurrencyNestedInput
+    counterTerms?: InteractionTermsUpdateManyWithoutCounterCurrencyNestedInput
     ratesFrom?: ExchangeRateUpdateManyWithoutFromNestedInput
     ratesTo?: ExchangeRateUpdateManyWithoutToNestedInput
   }
@@ -36955,6 +37258,7 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     kind?: EnumCurrencyKindFieldUpdateOperationsInput | $Enums.CurrencyKind
     status?: EnumCurrencyStatusFieldUpdateOperationsInput | $Enums.CurrencyStatus
+    backing?: EnumCurrencyBackingFieldUpdateOperationsInput | $Enums.CurrencyBacking
     decimals?: IntFieldUpdateOperationsInput | number
     issuerNodeId?: NullableStringFieldUpdateOperationsInput | string | null
     reserveCurrencyId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -36964,6 +37268,7 @@ export namespace Prisma {
     homeOf?: NodeUncheckedUpdateManyWithoutHomeCurrencyNestedInput
     accounts?: AccountUncheckedUpdateManyWithoutCurrencyNestedInput
     terms?: InteractionTermsUncheckedUpdateManyWithoutCurrencyNestedInput
+    counterTerms?: InteractionTermsUncheckedUpdateManyWithoutCounterCurrencyNestedInput
     ratesFrom?: ExchangeRateUncheckedUpdateManyWithoutFromNestedInput
     ratesTo?: ExchangeRateUncheckedUpdateManyWithoutToNestedInput
   }
@@ -37402,6 +37707,7 @@ export namespace Prisma {
     version: number
     description?: string | null
     amount: number
+    counterAmount?: number | null
     frequency?: $Enums.Frequency
     paymentMode?: $Enums.PaymentMode
     startDate?: Date | string | null
@@ -37411,6 +37717,7 @@ export namespace Prisma {
     approved?: boolean
     createdAt?: Date | string
     currency: CurrencyCreateNestedOneWithoutTermsInput
+    counterCurrency?: CurrencyCreateNestedOneWithoutCounterTermsInput
   }
 
   export type InteractionTermsUncheckedCreateWithoutInteractionInput = {
@@ -37419,6 +37726,8 @@ export namespace Prisma {
     description?: string | null
     amount: number
     currencyId: string
+    counterAmount?: number | null
+    counterCurrencyId?: string | null
     frequency?: $Enums.Frequency
     paymentMode?: $Enums.PaymentMode
     startDate?: Date | string | null
@@ -37613,6 +37922,8 @@ export namespace Prisma {
     description?: StringNullableFilter<"InteractionTerms"> | string | null
     amount?: IntFilter<"InteractionTerms"> | number
     currencyId?: StringFilter<"InteractionTerms"> | string
+    counterAmount?: IntNullableFilter<"InteractionTerms"> | number | null
+    counterCurrencyId?: StringNullableFilter<"InteractionTerms"> | string | null
     frequency?: EnumFrequencyFilter<"InteractionTerms"> | $Enums.Frequency
     paymentMode?: EnumPaymentModeFilter<"InteractionTerms"> | $Enums.PaymentMode
     startDate?: DateTimeNullableFilter<"InteractionTerms"> | Date | string | null
@@ -37787,6 +38098,7 @@ export namespace Prisma {
     description?: string | null
     kind: $Enums.CurrencyKind
     status?: $Enums.CurrencyStatus
+    backing?: $Enums.CurrencyBacking
     decimals?: number
     country?: string | null
     createdAt?: Date | string
@@ -37795,6 +38107,7 @@ export namespace Prisma {
     backs?: CurrencyCreateNestedManyWithoutReserveCurrencyInput
     homeOf?: NodeCreateNestedManyWithoutHomeCurrencyInput
     accounts?: AccountCreateNestedManyWithoutCurrencyInput
+    counterTerms?: InteractionTermsCreateNestedManyWithoutCounterCurrencyInput
     ratesFrom?: ExchangeRateCreateNestedManyWithoutFromInput
     ratesTo?: ExchangeRateCreateNestedManyWithoutToInput
     ruleValues?: CurrencyRuleValueCreateNestedManyWithoutCurrencyInput
@@ -37807,6 +38120,7 @@ export namespace Prisma {
     description?: string | null
     kind: $Enums.CurrencyKind
     status?: $Enums.CurrencyStatus
+    backing?: $Enums.CurrencyBacking
     decimals?: number
     issuerNodeId?: string | null
     reserveCurrencyId?: string | null
@@ -37815,6 +38129,7 @@ export namespace Prisma {
     backs?: CurrencyUncheckedCreateNestedManyWithoutReserveCurrencyInput
     homeOf?: NodeUncheckedCreateNestedManyWithoutHomeCurrencyInput
     accounts?: AccountUncheckedCreateNestedManyWithoutCurrencyInput
+    counterTerms?: InteractionTermsUncheckedCreateNestedManyWithoutCounterCurrencyInput
     ratesFrom?: ExchangeRateUncheckedCreateNestedManyWithoutFromInput
     ratesTo?: ExchangeRateUncheckedCreateNestedManyWithoutToInput
     ruleValues?: CurrencyRuleValueUncheckedCreateNestedManyWithoutCurrencyInput
@@ -37823,6 +38138,55 @@ export namespace Prisma {
   export type CurrencyCreateOrConnectWithoutTermsInput = {
     where: CurrencyWhereUniqueInput
     create: XOR<CurrencyCreateWithoutTermsInput, CurrencyUncheckedCreateWithoutTermsInput>
+  }
+
+  export type CurrencyCreateWithoutCounterTermsInput = {
+    id?: string
+    name: string
+    code?: string | null
+    description?: string | null
+    kind: $Enums.CurrencyKind
+    status?: $Enums.CurrencyStatus
+    backing?: $Enums.CurrencyBacking
+    decimals?: number
+    country?: string | null
+    createdAt?: Date | string
+    issuer?: NodeCreateNestedOneWithoutIssuedCurrenciesInput
+    reserveCurrency?: CurrencyCreateNestedOneWithoutBacksInput
+    backs?: CurrencyCreateNestedManyWithoutReserveCurrencyInput
+    homeOf?: NodeCreateNestedManyWithoutHomeCurrencyInput
+    accounts?: AccountCreateNestedManyWithoutCurrencyInput
+    terms?: InteractionTermsCreateNestedManyWithoutCurrencyInput
+    ratesFrom?: ExchangeRateCreateNestedManyWithoutFromInput
+    ratesTo?: ExchangeRateCreateNestedManyWithoutToInput
+    ruleValues?: CurrencyRuleValueCreateNestedManyWithoutCurrencyInput
+  }
+
+  export type CurrencyUncheckedCreateWithoutCounterTermsInput = {
+    id?: string
+    name: string
+    code?: string | null
+    description?: string | null
+    kind: $Enums.CurrencyKind
+    status?: $Enums.CurrencyStatus
+    backing?: $Enums.CurrencyBacking
+    decimals?: number
+    issuerNodeId?: string | null
+    reserveCurrencyId?: string | null
+    country?: string | null
+    createdAt?: Date | string
+    backs?: CurrencyUncheckedCreateNestedManyWithoutReserveCurrencyInput
+    homeOf?: NodeUncheckedCreateNestedManyWithoutHomeCurrencyInput
+    accounts?: AccountUncheckedCreateNestedManyWithoutCurrencyInput
+    terms?: InteractionTermsUncheckedCreateNestedManyWithoutCurrencyInput
+    ratesFrom?: ExchangeRateUncheckedCreateNestedManyWithoutFromInput
+    ratesTo?: ExchangeRateUncheckedCreateNestedManyWithoutToInput
+    ruleValues?: CurrencyRuleValueUncheckedCreateNestedManyWithoutCurrencyInput
+  }
+
+  export type CurrencyCreateOrConnectWithoutCounterTermsInput = {
+    where: CurrencyWhereUniqueInput
+    create: XOR<CurrencyCreateWithoutCounterTermsInput, CurrencyUncheckedCreateWithoutCounterTermsInput>
   }
 
   export type InteractionUpsertWithoutTermsInput = {
@@ -37886,6 +38250,7 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     kind?: EnumCurrencyKindFieldUpdateOperationsInput | $Enums.CurrencyKind
     status?: EnumCurrencyStatusFieldUpdateOperationsInput | $Enums.CurrencyStatus
+    backing?: EnumCurrencyBackingFieldUpdateOperationsInput | $Enums.CurrencyBacking
     decimals?: IntFieldUpdateOperationsInput | number
     country?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -37894,6 +38259,7 @@ export namespace Prisma {
     backs?: CurrencyUpdateManyWithoutReserveCurrencyNestedInput
     homeOf?: NodeUpdateManyWithoutHomeCurrencyNestedInput
     accounts?: AccountUpdateManyWithoutCurrencyNestedInput
+    counterTerms?: InteractionTermsUpdateManyWithoutCounterCurrencyNestedInput
     ratesFrom?: ExchangeRateUpdateManyWithoutFromNestedInput
     ratesTo?: ExchangeRateUpdateManyWithoutToNestedInput
     ruleValues?: CurrencyRuleValueUpdateManyWithoutCurrencyNestedInput
@@ -37906,6 +38272,7 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     kind?: EnumCurrencyKindFieldUpdateOperationsInput | $Enums.CurrencyKind
     status?: EnumCurrencyStatusFieldUpdateOperationsInput | $Enums.CurrencyStatus
+    backing?: EnumCurrencyBackingFieldUpdateOperationsInput | $Enums.CurrencyBacking
     decimals?: IntFieldUpdateOperationsInput | number
     issuerNodeId?: NullableStringFieldUpdateOperationsInput | string | null
     reserveCurrencyId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -37914,6 +38281,62 @@ export namespace Prisma {
     backs?: CurrencyUncheckedUpdateManyWithoutReserveCurrencyNestedInput
     homeOf?: NodeUncheckedUpdateManyWithoutHomeCurrencyNestedInput
     accounts?: AccountUncheckedUpdateManyWithoutCurrencyNestedInput
+    counterTerms?: InteractionTermsUncheckedUpdateManyWithoutCounterCurrencyNestedInput
+    ratesFrom?: ExchangeRateUncheckedUpdateManyWithoutFromNestedInput
+    ratesTo?: ExchangeRateUncheckedUpdateManyWithoutToNestedInput
+    ruleValues?: CurrencyRuleValueUncheckedUpdateManyWithoutCurrencyNestedInput
+  }
+
+  export type CurrencyUpsertWithoutCounterTermsInput = {
+    update: XOR<CurrencyUpdateWithoutCounterTermsInput, CurrencyUncheckedUpdateWithoutCounterTermsInput>
+    create: XOR<CurrencyCreateWithoutCounterTermsInput, CurrencyUncheckedCreateWithoutCounterTermsInput>
+    where?: CurrencyWhereInput
+  }
+
+  export type CurrencyUpdateToOneWithWhereWithoutCounterTermsInput = {
+    where?: CurrencyWhereInput
+    data: XOR<CurrencyUpdateWithoutCounterTermsInput, CurrencyUncheckedUpdateWithoutCounterTermsInput>
+  }
+
+  export type CurrencyUpdateWithoutCounterTermsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    code?: NullableStringFieldUpdateOperationsInput | string | null
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    kind?: EnumCurrencyKindFieldUpdateOperationsInput | $Enums.CurrencyKind
+    status?: EnumCurrencyStatusFieldUpdateOperationsInput | $Enums.CurrencyStatus
+    backing?: EnumCurrencyBackingFieldUpdateOperationsInput | $Enums.CurrencyBacking
+    decimals?: IntFieldUpdateOperationsInput | number
+    country?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    issuer?: NodeUpdateOneWithoutIssuedCurrenciesNestedInput
+    reserveCurrency?: CurrencyUpdateOneWithoutBacksNestedInput
+    backs?: CurrencyUpdateManyWithoutReserveCurrencyNestedInput
+    homeOf?: NodeUpdateManyWithoutHomeCurrencyNestedInput
+    accounts?: AccountUpdateManyWithoutCurrencyNestedInput
+    terms?: InteractionTermsUpdateManyWithoutCurrencyNestedInput
+    ratesFrom?: ExchangeRateUpdateManyWithoutFromNestedInput
+    ratesTo?: ExchangeRateUpdateManyWithoutToNestedInput
+    ruleValues?: CurrencyRuleValueUpdateManyWithoutCurrencyNestedInput
+  }
+
+  export type CurrencyUncheckedUpdateWithoutCounterTermsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    code?: NullableStringFieldUpdateOperationsInput | string | null
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    kind?: EnumCurrencyKindFieldUpdateOperationsInput | $Enums.CurrencyKind
+    status?: EnumCurrencyStatusFieldUpdateOperationsInput | $Enums.CurrencyStatus
+    backing?: EnumCurrencyBackingFieldUpdateOperationsInput | $Enums.CurrencyBacking
+    decimals?: IntFieldUpdateOperationsInput | number
+    issuerNodeId?: NullableStringFieldUpdateOperationsInput | string | null
+    reserveCurrencyId?: NullableStringFieldUpdateOperationsInput | string | null
+    country?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    backs?: CurrencyUncheckedUpdateManyWithoutReserveCurrencyNestedInput
+    homeOf?: NodeUncheckedUpdateManyWithoutHomeCurrencyNestedInput
+    accounts?: AccountUncheckedUpdateManyWithoutCurrencyNestedInput
+    terms?: InteractionTermsUncheckedUpdateManyWithoutCurrencyNestedInput
     ratesFrom?: ExchangeRateUncheckedUpdateManyWithoutFromNestedInput
     ratesTo?: ExchangeRateUncheckedUpdateManyWithoutToNestedInput
     ruleValues?: CurrencyRuleValueUncheckedUpdateManyWithoutCurrencyNestedInput
@@ -38348,6 +38771,7 @@ export namespace Prisma {
     description?: string | null
     kind: $Enums.CurrencyKind
     status?: $Enums.CurrencyStatus
+    backing?: $Enums.CurrencyBacking
     decimals?: number
     country?: string | null
     createdAt?: Date | string
@@ -38356,6 +38780,7 @@ export namespace Prisma {
     homeOf?: NodeCreateNestedManyWithoutHomeCurrencyInput
     accounts?: AccountCreateNestedManyWithoutCurrencyInput
     terms?: InteractionTermsCreateNestedManyWithoutCurrencyInput
+    counterTerms?: InteractionTermsCreateNestedManyWithoutCounterCurrencyInput
     ratesFrom?: ExchangeRateCreateNestedManyWithoutFromInput
     ratesTo?: ExchangeRateCreateNestedManyWithoutToInput
     ruleValues?: CurrencyRuleValueCreateNestedManyWithoutCurrencyInput
@@ -38368,6 +38793,7 @@ export namespace Prisma {
     description?: string | null
     kind: $Enums.CurrencyKind
     status?: $Enums.CurrencyStatus
+    backing?: $Enums.CurrencyBacking
     decimals?: number
     issuerNodeId?: string | null
     reserveCurrencyId?: string | null
@@ -38376,6 +38802,7 @@ export namespace Prisma {
     homeOf?: NodeUncheckedCreateNestedManyWithoutHomeCurrencyInput
     accounts?: AccountUncheckedCreateNestedManyWithoutCurrencyInput
     terms?: InteractionTermsUncheckedCreateNestedManyWithoutCurrencyInput
+    counterTerms?: InteractionTermsUncheckedCreateNestedManyWithoutCounterCurrencyInput
     ratesFrom?: ExchangeRateUncheckedCreateNestedManyWithoutFromInput
     ratesTo?: ExchangeRateUncheckedCreateNestedManyWithoutToInput
     ruleValues?: CurrencyRuleValueUncheckedCreateNestedManyWithoutCurrencyInput
@@ -38393,6 +38820,7 @@ export namespace Prisma {
     description?: string | null
     kind: $Enums.CurrencyKind
     status?: $Enums.CurrencyStatus
+    backing?: $Enums.CurrencyBacking
     decimals?: number
     country?: string | null
     createdAt?: Date | string
@@ -38401,6 +38829,7 @@ export namespace Prisma {
     homeOf?: NodeCreateNestedManyWithoutHomeCurrencyInput
     accounts?: AccountCreateNestedManyWithoutCurrencyInput
     terms?: InteractionTermsCreateNestedManyWithoutCurrencyInput
+    counterTerms?: InteractionTermsCreateNestedManyWithoutCounterCurrencyInput
     ratesFrom?: ExchangeRateCreateNestedManyWithoutFromInput
     ratesTo?: ExchangeRateCreateNestedManyWithoutToInput
     ruleValues?: CurrencyRuleValueCreateNestedManyWithoutCurrencyInput
@@ -38413,6 +38842,7 @@ export namespace Prisma {
     description?: string | null
     kind: $Enums.CurrencyKind
     status?: $Enums.CurrencyStatus
+    backing?: $Enums.CurrencyBacking
     decimals?: number
     issuerNodeId?: string | null
     country?: string | null
@@ -38421,6 +38851,7 @@ export namespace Prisma {
     homeOf?: NodeUncheckedCreateNestedManyWithoutHomeCurrencyInput
     accounts?: AccountUncheckedCreateNestedManyWithoutCurrencyInput
     terms?: InteractionTermsUncheckedCreateNestedManyWithoutCurrencyInput
+    counterTerms?: InteractionTermsUncheckedCreateNestedManyWithoutCounterCurrencyInput
     ratesFrom?: ExchangeRateUncheckedCreateNestedManyWithoutFromInput
     ratesTo?: ExchangeRateUncheckedCreateNestedManyWithoutToInput
     ruleValues?: CurrencyRuleValueUncheckedCreateNestedManyWithoutCurrencyInput
@@ -38534,6 +38965,7 @@ export namespace Prisma {
     version: number
     description?: string | null
     amount: number
+    counterAmount?: number | null
     frequency?: $Enums.Frequency
     paymentMode?: $Enums.PaymentMode
     startDate?: Date | string | null
@@ -38543,6 +38975,7 @@ export namespace Prisma {
     approved?: boolean
     createdAt?: Date | string
     interaction: InteractionCreateNestedOneWithoutTermsInput
+    counterCurrency?: CurrencyCreateNestedOneWithoutCounterTermsInput
   }
 
   export type InteractionTermsUncheckedCreateWithoutCurrencyInput = {
@@ -38551,6 +38984,8 @@ export namespace Prisma {
     version: number
     description?: string | null
     amount: number
+    counterAmount?: number | null
+    counterCurrencyId?: string | null
     frequency?: $Enums.Frequency
     paymentMode?: $Enums.PaymentMode
     startDate?: Date | string | null
@@ -38568,6 +39003,51 @@ export namespace Prisma {
 
   export type InteractionTermsCreateManyCurrencyInputEnvelope = {
     data: InteractionTermsCreateManyCurrencyInput | InteractionTermsCreateManyCurrencyInput[]
+  }
+
+  export type InteractionTermsCreateWithoutCounterCurrencyInput = {
+    id?: string
+    version: number
+    description?: string | null
+    amount: number
+    counterAmount?: number | null
+    frequency?: $Enums.Frequency
+    paymentMode?: $Enums.PaymentMode
+    startDate?: Date | string | null
+    endDate?: Date | string | null
+    maxPayments?: number | null
+    rulesVersion: string
+    approved?: boolean
+    createdAt?: Date | string
+    interaction: InteractionCreateNestedOneWithoutTermsInput
+    currency: CurrencyCreateNestedOneWithoutTermsInput
+  }
+
+  export type InteractionTermsUncheckedCreateWithoutCounterCurrencyInput = {
+    id?: string
+    interactionId: string
+    version: number
+    description?: string | null
+    amount: number
+    currencyId: string
+    counterAmount?: number | null
+    frequency?: $Enums.Frequency
+    paymentMode?: $Enums.PaymentMode
+    startDate?: Date | string | null
+    endDate?: Date | string | null
+    maxPayments?: number | null
+    rulesVersion: string
+    approved?: boolean
+    createdAt?: Date | string
+  }
+
+  export type InteractionTermsCreateOrConnectWithoutCounterCurrencyInput = {
+    where: InteractionTermsWhereUniqueInput
+    create: XOR<InteractionTermsCreateWithoutCounterCurrencyInput, InteractionTermsUncheckedCreateWithoutCounterCurrencyInput>
+  }
+
+  export type InteractionTermsCreateManyCounterCurrencyInputEnvelope = {
+    data: InteractionTermsCreateManyCounterCurrencyInput | InteractionTermsCreateManyCounterCurrencyInput[]
   }
 
   export type ExchangeRateCreateWithoutFromInput = {
@@ -38732,6 +39212,7 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     kind?: EnumCurrencyKindFieldUpdateOperationsInput | $Enums.CurrencyKind
     status?: EnumCurrencyStatusFieldUpdateOperationsInput | $Enums.CurrencyStatus
+    backing?: EnumCurrencyBackingFieldUpdateOperationsInput | $Enums.CurrencyBacking
     decimals?: IntFieldUpdateOperationsInput | number
     country?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -38740,6 +39221,7 @@ export namespace Prisma {
     homeOf?: NodeUpdateManyWithoutHomeCurrencyNestedInput
     accounts?: AccountUpdateManyWithoutCurrencyNestedInput
     terms?: InteractionTermsUpdateManyWithoutCurrencyNestedInput
+    counterTerms?: InteractionTermsUpdateManyWithoutCounterCurrencyNestedInput
     ratesFrom?: ExchangeRateUpdateManyWithoutFromNestedInput
     ratesTo?: ExchangeRateUpdateManyWithoutToNestedInput
     ruleValues?: CurrencyRuleValueUpdateManyWithoutCurrencyNestedInput
@@ -38752,6 +39234,7 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     kind?: EnumCurrencyKindFieldUpdateOperationsInput | $Enums.CurrencyKind
     status?: EnumCurrencyStatusFieldUpdateOperationsInput | $Enums.CurrencyStatus
+    backing?: EnumCurrencyBackingFieldUpdateOperationsInput | $Enums.CurrencyBacking
     decimals?: IntFieldUpdateOperationsInput | number
     issuerNodeId?: NullableStringFieldUpdateOperationsInput | string | null
     reserveCurrencyId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -38760,6 +39243,7 @@ export namespace Prisma {
     homeOf?: NodeUncheckedUpdateManyWithoutHomeCurrencyNestedInput
     accounts?: AccountUncheckedUpdateManyWithoutCurrencyNestedInput
     terms?: InteractionTermsUncheckedUpdateManyWithoutCurrencyNestedInput
+    counterTerms?: InteractionTermsUncheckedUpdateManyWithoutCounterCurrencyNestedInput
     ratesFrom?: ExchangeRateUncheckedUpdateManyWithoutFromNestedInput
     ratesTo?: ExchangeRateUncheckedUpdateManyWithoutToNestedInput
     ruleValues?: CurrencyRuleValueUncheckedUpdateManyWithoutCurrencyNestedInput
@@ -38850,6 +39334,22 @@ export namespace Prisma {
     data: XOR<InteractionTermsUpdateManyMutationInput, InteractionTermsUncheckedUpdateManyWithoutCurrencyInput>
   }
 
+  export type InteractionTermsUpsertWithWhereUniqueWithoutCounterCurrencyInput = {
+    where: InteractionTermsWhereUniqueInput
+    update: XOR<InteractionTermsUpdateWithoutCounterCurrencyInput, InteractionTermsUncheckedUpdateWithoutCounterCurrencyInput>
+    create: XOR<InteractionTermsCreateWithoutCounterCurrencyInput, InteractionTermsUncheckedCreateWithoutCounterCurrencyInput>
+  }
+
+  export type InteractionTermsUpdateWithWhereUniqueWithoutCounterCurrencyInput = {
+    where: InteractionTermsWhereUniqueInput
+    data: XOR<InteractionTermsUpdateWithoutCounterCurrencyInput, InteractionTermsUncheckedUpdateWithoutCounterCurrencyInput>
+  }
+
+  export type InteractionTermsUpdateManyWithWhereWithoutCounterCurrencyInput = {
+    where: InteractionTermsScalarWhereInput
+    data: XOR<InteractionTermsUpdateManyMutationInput, InteractionTermsUncheckedUpdateManyWithoutCounterCurrencyInput>
+  }
+
   export type ExchangeRateUpsertWithWhereUniqueWithoutFromInput = {
     where: ExchangeRateWhereUniqueInput
     update: XOR<ExchangeRateUpdateWithoutFromInput, ExchangeRateUncheckedUpdateWithoutFromInput>
@@ -38929,6 +39429,7 @@ export namespace Prisma {
     description?: string | null
     kind: $Enums.CurrencyKind
     status?: $Enums.CurrencyStatus
+    backing?: $Enums.CurrencyBacking
     decimals?: number
     country?: string | null
     createdAt?: Date | string
@@ -38938,6 +39439,7 @@ export namespace Prisma {
     homeOf?: NodeCreateNestedManyWithoutHomeCurrencyInput
     accounts?: AccountCreateNestedManyWithoutCurrencyInput
     terms?: InteractionTermsCreateNestedManyWithoutCurrencyInput
+    counterTerms?: InteractionTermsCreateNestedManyWithoutCounterCurrencyInput
     ratesTo?: ExchangeRateCreateNestedManyWithoutToInput
     ruleValues?: CurrencyRuleValueCreateNestedManyWithoutCurrencyInput
   }
@@ -38949,6 +39451,7 @@ export namespace Prisma {
     description?: string | null
     kind: $Enums.CurrencyKind
     status?: $Enums.CurrencyStatus
+    backing?: $Enums.CurrencyBacking
     decimals?: number
     issuerNodeId?: string | null
     reserveCurrencyId?: string | null
@@ -38958,6 +39461,7 @@ export namespace Prisma {
     homeOf?: NodeUncheckedCreateNestedManyWithoutHomeCurrencyInput
     accounts?: AccountUncheckedCreateNestedManyWithoutCurrencyInput
     terms?: InteractionTermsUncheckedCreateNestedManyWithoutCurrencyInput
+    counterTerms?: InteractionTermsUncheckedCreateNestedManyWithoutCounterCurrencyInput
     ratesTo?: ExchangeRateUncheckedCreateNestedManyWithoutToInput
     ruleValues?: CurrencyRuleValueUncheckedCreateNestedManyWithoutCurrencyInput
   }
@@ -38974,6 +39478,7 @@ export namespace Prisma {
     description?: string | null
     kind: $Enums.CurrencyKind
     status?: $Enums.CurrencyStatus
+    backing?: $Enums.CurrencyBacking
     decimals?: number
     country?: string | null
     createdAt?: Date | string
@@ -38983,6 +39488,7 @@ export namespace Prisma {
     homeOf?: NodeCreateNestedManyWithoutHomeCurrencyInput
     accounts?: AccountCreateNestedManyWithoutCurrencyInput
     terms?: InteractionTermsCreateNestedManyWithoutCurrencyInput
+    counterTerms?: InteractionTermsCreateNestedManyWithoutCounterCurrencyInput
     ratesFrom?: ExchangeRateCreateNestedManyWithoutFromInput
     ruleValues?: CurrencyRuleValueCreateNestedManyWithoutCurrencyInput
   }
@@ -38994,6 +39500,7 @@ export namespace Prisma {
     description?: string | null
     kind: $Enums.CurrencyKind
     status?: $Enums.CurrencyStatus
+    backing?: $Enums.CurrencyBacking
     decimals?: number
     issuerNodeId?: string | null
     reserveCurrencyId?: string | null
@@ -39003,6 +39510,7 @@ export namespace Prisma {
     homeOf?: NodeUncheckedCreateNestedManyWithoutHomeCurrencyInput
     accounts?: AccountUncheckedCreateNestedManyWithoutCurrencyInput
     terms?: InteractionTermsUncheckedCreateNestedManyWithoutCurrencyInput
+    counterTerms?: InteractionTermsUncheckedCreateNestedManyWithoutCounterCurrencyInput
     ratesFrom?: ExchangeRateUncheckedCreateNestedManyWithoutFromInput
     ruleValues?: CurrencyRuleValueUncheckedCreateNestedManyWithoutCurrencyInput
   }
@@ -39030,6 +39538,7 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     kind?: EnumCurrencyKindFieldUpdateOperationsInput | $Enums.CurrencyKind
     status?: EnumCurrencyStatusFieldUpdateOperationsInput | $Enums.CurrencyStatus
+    backing?: EnumCurrencyBackingFieldUpdateOperationsInput | $Enums.CurrencyBacking
     decimals?: IntFieldUpdateOperationsInput | number
     country?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -39039,6 +39548,7 @@ export namespace Prisma {
     homeOf?: NodeUpdateManyWithoutHomeCurrencyNestedInput
     accounts?: AccountUpdateManyWithoutCurrencyNestedInput
     terms?: InteractionTermsUpdateManyWithoutCurrencyNestedInput
+    counterTerms?: InteractionTermsUpdateManyWithoutCounterCurrencyNestedInput
     ratesTo?: ExchangeRateUpdateManyWithoutToNestedInput
     ruleValues?: CurrencyRuleValueUpdateManyWithoutCurrencyNestedInput
   }
@@ -39050,6 +39560,7 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     kind?: EnumCurrencyKindFieldUpdateOperationsInput | $Enums.CurrencyKind
     status?: EnumCurrencyStatusFieldUpdateOperationsInput | $Enums.CurrencyStatus
+    backing?: EnumCurrencyBackingFieldUpdateOperationsInput | $Enums.CurrencyBacking
     decimals?: IntFieldUpdateOperationsInput | number
     issuerNodeId?: NullableStringFieldUpdateOperationsInput | string | null
     reserveCurrencyId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -39059,6 +39570,7 @@ export namespace Prisma {
     homeOf?: NodeUncheckedUpdateManyWithoutHomeCurrencyNestedInput
     accounts?: AccountUncheckedUpdateManyWithoutCurrencyNestedInput
     terms?: InteractionTermsUncheckedUpdateManyWithoutCurrencyNestedInput
+    counterTerms?: InteractionTermsUncheckedUpdateManyWithoutCounterCurrencyNestedInput
     ratesTo?: ExchangeRateUncheckedUpdateManyWithoutToNestedInput
     ruleValues?: CurrencyRuleValueUncheckedUpdateManyWithoutCurrencyNestedInput
   }
@@ -39081,6 +39593,7 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     kind?: EnumCurrencyKindFieldUpdateOperationsInput | $Enums.CurrencyKind
     status?: EnumCurrencyStatusFieldUpdateOperationsInput | $Enums.CurrencyStatus
+    backing?: EnumCurrencyBackingFieldUpdateOperationsInput | $Enums.CurrencyBacking
     decimals?: IntFieldUpdateOperationsInput | number
     country?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -39090,6 +39603,7 @@ export namespace Prisma {
     homeOf?: NodeUpdateManyWithoutHomeCurrencyNestedInput
     accounts?: AccountUpdateManyWithoutCurrencyNestedInput
     terms?: InteractionTermsUpdateManyWithoutCurrencyNestedInput
+    counterTerms?: InteractionTermsUpdateManyWithoutCounterCurrencyNestedInput
     ratesFrom?: ExchangeRateUpdateManyWithoutFromNestedInput
     ruleValues?: CurrencyRuleValueUpdateManyWithoutCurrencyNestedInput
   }
@@ -39101,6 +39615,7 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     kind?: EnumCurrencyKindFieldUpdateOperationsInput | $Enums.CurrencyKind
     status?: EnumCurrencyStatusFieldUpdateOperationsInput | $Enums.CurrencyStatus
+    backing?: EnumCurrencyBackingFieldUpdateOperationsInput | $Enums.CurrencyBacking
     decimals?: IntFieldUpdateOperationsInput | number
     issuerNodeId?: NullableStringFieldUpdateOperationsInput | string | null
     reserveCurrencyId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -39110,6 +39625,7 @@ export namespace Prisma {
     homeOf?: NodeUncheckedUpdateManyWithoutHomeCurrencyNestedInput
     accounts?: AccountUncheckedUpdateManyWithoutCurrencyNestedInput
     terms?: InteractionTermsUncheckedUpdateManyWithoutCurrencyNestedInput
+    counterTerms?: InteractionTermsUncheckedUpdateManyWithoutCounterCurrencyNestedInput
     ratesFrom?: ExchangeRateUncheckedUpdateManyWithoutFromNestedInput
     ruleValues?: CurrencyRuleValueUncheckedUpdateManyWithoutCurrencyNestedInput
   }
@@ -39178,6 +39694,7 @@ export namespace Prisma {
     description?: string | null
     kind: $Enums.CurrencyKind
     status?: $Enums.CurrencyStatus
+    backing?: $Enums.CurrencyBacking
     decimals?: number
     country?: string | null
     createdAt?: Date | string
@@ -39186,6 +39703,7 @@ export namespace Prisma {
     backs?: CurrencyCreateNestedManyWithoutReserveCurrencyInput
     homeOf?: NodeCreateNestedManyWithoutHomeCurrencyInput
     terms?: InteractionTermsCreateNestedManyWithoutCurrencyInput
+    counterTerms?: InteractionTermsCreateNestedManyWithoutCounterCurrencyInput
     ratesFrom?: ExchangeRateCreateNestedManyWithoutFromInput
     ratesTo?: ExchangeRateCreateNestedManyWithoutToInput
     ruleValues?: CurrencyRuleValueCreateNestedManyWithoutCurrencyInput
@@ -39198,6 +39716,7 @@ export namespace Prisma {
     description?: string | null
     kind: $Enums.CurrencyKind
     status?: $Enums.CurrencyStatus
+    backing?: $Enums.CurrencyBacking
     decimals?: number
     issuerNodeId?: string | null
     reserveCurrencyId?: string | null
@@ -39206,6 +39725,7 @@ export namespace Prisma {
     backs?: CurrencyUncheckedCreateNestedManyWithoutReserveCurrencyInput
     homeOf?: NodeUncheckedCreateNestedManyWithoutHomeCurrencyInput
     terms?: InteractionTermsUncheckedCreateNestedManyWithoutCurrencyInput
+    counterTerms?: InteractionTermsUncheckedCreateNestedManyWithoutCounterCurrencyInput
     ratesFrom?: ExchangeRateUncheckedCreateNestedManyWithoutFromInput
     ratesTo?: ExchangeRateUncheckedCreateNestedManyWithoutToInput
     ruleValues?: CurrencyRuleValueUncheckedCreateNestedManyWithoutCurrencyInput
@@ -39375,6 +39895,7 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     kind?: EnumCurrencyKindFieldUpdateOperationsInput | $Enums.CurrencyKind
     status?: EnumCurrencyStatusFieldUpdateOperationsInput | $Enums.CurrencyStatus
+    backing?: EnumCurrencyBackingFieldUpdateOperationsInput | $Enums.CurrencyBacking
     decimals?: IntFieldUpdateOperationsInput | number
     country?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -39383,6 +39904,7 @@ export namespace Prisma {
     backs?: CurrencyUpdateManyWithoutReserveCurrencyNestedInput
     homeOf?: NodeUpdateManyWithoutHomeCurrencyNestedInput
     terms?: InteractionTermsUpdateManyWithoutCurrencyNestedInput
+    counterTerms?: InteractionTermsUpdateManyWithoutCounterCurrencyNestedInput
     ratesFrom?: ExchangeRateUpdateManyWithoutFromNestedInput
     ratesTo?: ExchangeRateUpdateManyWithoutToNestedInput
     ruleValues?: CurrencyRuleValueUpdateManyWithoutCurrencyNestedInput
@@ -39395,6 +39917,7 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     kind?: EnumCurrencyKindFieldUpdateOperationsInput | $Enums.CurrencyKind
     status?: EnumCurrencyStatusFieldUpdateOperationsInput | $Enums.CurrencyStatus
+    backing?: EnumCurrencyBackingFieldUpdateOperationsInput | $Enums.CurrencyBacking
     decimals?: IntFieldUpdateOperationsInput | number
     issuerNodeId?: NullableStringFieldUpdateOperationsInput | string | null
     reserveCurrencyId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -39403,6 +39926,7 @@ export namespace Prisma {
     backs?: CurrencyUncheckedUpdateManyWithoutReserveCurrencyNestedInput
     homeOf?: NodeUncheckedUpdateManyWithoutHomeCurrencyNestedInput
     terms?: InteractionTermsUncheckedUpdateManyWithoutCurrencyNestedInput
+    counterTerms?: InteractionTermsUncheckedUpdateManyWithoutCounterCurrencyNestedInput
     ratesFrom?: ExchangeRateUncheckedUpdateManyWithoutFromNestedInput
     ratesTo?: ExchangeRateUncheckedUpdateManyWithoutToNestedInput
     ruleValues?: CurrencyRuleValueUncheckedUpdateManyWithoutCurrencyNestedInput
@@ -39942,6 +40466,7 @@ export namespace Prisma {
     description?: string | null
     kind: $Enums.CurrencyKind
     status?: $Enums.CurrencyStatus
+    backing?: $Enums.CurrencyBacking
     decimals?: number
     reserveCurrencyId?: string | null
     country?: string | null
@@ -40129,6 +40654,7 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     kind?: EnumCurrencyKindFieldUpdateOperationsInput | $Enums.CurrencyKind
     status?: EnumCurrencyStatusFieldUpdateOperationsInput | $Enums.CurrencyStatus
+    backing?: EnumCurrencyBackingFieldUpdateOperationsInput | $Enums.CurrencyBacking
     decimals?: IntFieldUpdateOperationsInput | number
     country?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -40137,6 +40663,7 @@ export namespace Prisma {
     homeOf?: NodeUpdateManyWithoutHomeCurrencyNestedInput
     accounts?: AccountUpdateManyWithoutCurrencyNestedInput
     terms?: InteractionTermsUpdateManyWithoutCurrencyNestedInput
+    counterTerms?: InteractionTermsUpdateManyWithoutCounterCurrencyNestedInput
     ratesFrom?: ExchangeRateUpdateManyWithoutFromNestedInput
     ratesTo?: ExchangeRateUpdateManyWithoutToNestedInput
     ruleValues?: CurrencyRuleValueUpdateManyWithoutCurrencyNestedInput
@@ -40149,6 +40676,7 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     kind?: EnumCurrencyKindFieldUpdateOperationsInput | $Enums.CurrencyKind
     status?: EnumCurrencyStatusFieldUpdateOperationsInput | $Enums.CurrencyStatus
+    backing?: EnumCurrencyBackingFieldUpdateOperationsInput | $Enums.CurrencyBacking
     decimals?: IntFieldUpdateOperationsInput | number
     reserveCurrencyId?: NullableStringFieldUpdateOperationsInput | string | null
     country?: NullableStringFieldUpdateOperationsInput | string | null
@@ -40157,6 +40685,7 @@ export namespace Prisma {
     homeOf?: NodeUncheckedUpdateManyWithoutHomeCurrencyNestedInput
     accounts?: AccountUncheckedUpdateManyWithoutCurrencyNestedInput
     terms?: InteractionTermsUncheckedUpdateManyWithoutCurrencyNestedInput
+    counterTerms?: InteractionTermsUncheckedUpdateManyWithoutCounterCurrencyNestedInput
     ratesFrom?: ExchangeRateUncheckedUpdateManyWithoutFromNestedInput
     ratesTo?: ExchangeRateUncheckedUpdateManyWithoutToNestedInput
     ruleValues?: CurrencyRuleValueUncheckedUpdateManyWithoutCurrencyNestedInput
@@ -40169,6 +40698,7 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     kind?: EnumCurrencyKindFieldUpdateOperationsInput | $Enums.CurrencyKind
     status?: EnumCurrencyStatusFieldUpdateOperationsInput | $Enums.CurrencyStatus
+    backing?: EnumCurrencyBackingFieldUpdateOperationsInput | $Enums.CurrencyBacking
     decimals?: IntFieldUpdateOperationsInput | number
     reserveCurrencyId?: NullableStringFieldUpdateOperationsInput | string | null
     country?: NullableStringFieldUpdateOperationsInput | string | null
@@ -40362,6 +40892,8 @@ export namespace Prisma {
     description?: string | null
     amount: number
     currencyId: string
+    counterAmount?: number | null
+    counterCurrencyId?: string | null
     frequency?: $Enums.Frequency
     paymentMode?: $Enums.PaymentMode
     startDate?: Date | string | null
@@ -40417,6 +40949,7 @@ export namespace Prisma {
     version?: IntFieldUpdateOperationsInput | number
     description?: NullableStringFieldUpdateOperationsInput | string | null
     amount?: IntFieldUpdateOperationsInput | number
+    counterAmount?: NullableIntFieldUpdateOperationsInput | number | null
     frequency?: EnumFrequencyFieldUpdateOperationsInput | $Enums.Frequency
     paymentMode?: EnumPaymentModeFieldUpdateOperationsInput | $Enums.PaymentMode
     startDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -40426,6 +40959,7 @@ export namespace Prisma {
     approved?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     currency?: CurrencyUpdateOneRequiredWithoutTermsNestedInput
+    counterCurrency?: CurrencyUpdateOneWithoutCounterTermsNestedInput
   }
 
   export type InteractionTermsUncheckedUpdateWithoutInteractionInput = {
@@ -40434,6 +40968,8 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     amount?: IntFieldUpdateOperationsInput | number
     currencyId?: StringFieldUpdateOperationsInput | string
+    counterAmount?: NullableIntFieldUpdateOperationsInput | number | null
+    counterCurrencyId?: NullableStringFieldUpdateOperationsInput | string | null
     frequency?: EnumFrequencyFieldUpdateOperationsInput | $Enums.Frequency
     paymentMode?: EnumPaymentModeFieldUpdateOperationsInput | $Enums.PaymentMode
     startDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -40450,6 +40986,8 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     amount?: IntFieldUpdateOperationsInput | number
     currencyId?: StringFieldUpdateOperationsInput | string
+    counterAmount?: NullableIntFieldUpdateOperationsInput | number | null
+    counterCurrencyId?: NullableStringFieldUpdateOperationsInput | string | null
     frequency?: EnumFrequencyFieldUpdateOperationsInput | $Enums.Frequency
     paymentMode?: EnumPaymentModeFieldUpdateOperationsInput | $Enums.PaymentMode
     startDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -40621,6 +41159,7 @@ export namespace Prisma {
     description?: string | null
     kind: $Enums.CurrencyKind
     status?: $Enums.CurrencyStatus
+    backing?: $Enums.CurrencyBacking
     decimals?: number
     issuerNodeId?: string | null
     country?: string | null
@@ -40660,6 +41199,26 @@ export namespace Prisma {
     version: number
     description?: string | null
     amount: number
+    counterAmount?: number | null
+    counterCurrencyId?: string | null
+    frequency?: $Enums.Frequency
+    paymentMode?: $Enums.PaymentMode
+    startDate?: Date | string | null
+    endDate?: Date | string | null
+    maxPayments?: number | null
+    rulesVersion: string
+    approved?: boolean
+    createdAt?: Date | string
+  }
+
+  export type InteractionTermsCreateManyCounterCurrencyInput = {
+    id?: string
+    interactionId: string
+    version: number
+    description?: string | null
+    amount: number
+    currencyId: string
+    counterAmount?: number | null
     frequency?: $Enums.Frequency
     paymentMode?: $Enums.PaymentMode
     startDate?: Date | string | null
@@ -40704,6 +41263,7 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     kind?: EnumCurrencyKindFieldUpdateOperationsInput | $Enums.CurrencyKind
     status?: EnumCurrencyStatusFieldUpdateOperationsInput | $Enums.CurrencyStatus
+    backing?: EnumCurrencyBackingFieldUpdateOperationsInput | $Enums.CurrencyBacking
     decimals?: IntFieldUpdateOperationsInput | number
     country?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -40712,6 +41272,7 @@ export namespace Prisma {
     homeOf?: NodeUpdateManyWithoutHomeCurrencyNestedInput
     accounts?: AccountUpdateManyWithoutCurrencyNestedInput
     terms?: InteractionTermsUpdateManyWithoutCurrencyNestedInput
+    counterTerms?: InteractionTermsUpdateManyWithoutCounterCurrencyNestedInput
     ratesFrom?: ExchangeRateUpdateManyWithoutFromNestedInput
     ratesTo?: ExchangeRateUpdateManyWithoutToNestedInput
     ruleValues?: CurrencyRuleValueUpdateManyWithoutCurrencyNestedInput
@@ -40724,6 +41285,7 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     kind?: EnumCurrencyKindFieldUpdateOperationsInput | $Enums.CurrencyKind
     status?: EnumCurrencyStatusFieldUpdateOperationsInput | $Enums.CurrencyStatus
+    backing?: EnumCurrencyBackingFieldUpdateOperationsInput | $Enums.CurrencyBacking
     decimals?: IntFieldUpdateOperationsInput | number
     issuerNodeId?: NullableStringFieldUpdateOperationsInput | string | null
     country?: NullableStringFieldUpdateOperationsInput | string | null
@@ -40732,6 +41294,7 @@ export namespace Prisma {
     homeOf?: NodeUncheckedUpdateManyWithoutHomeCurrencyNestedInput
     accounts?: AccountUncheckedUpdateManyWithoutCurrencyNestedInput
     terms?: InteractionTermsUncheckedUpdateManyWithoutCurrencyNestedInput
+    counterTerms?: InteractionTermsUncheckedUpdateManyWithoutCounterCurrencyNestedInput
     ratesFrom?: ExchangeRateUncheckedUpdateManyWithoutFromNestedInput
     ratesTo?: ExchangeRateUncheckedUpdateManyWithoutToNestedInput
     ruleValues?: CurrencyRuleValueUncheckedUpdateManyWithoutCurrencyNestedInput
@@ -40744,6 +41307,7 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     kind?: EnumCurrencyKindFieldUpdateOperationsInput | $Enums.CurrencyKind
     status?: EnumCurrencyStatusFieldUpdateOperationsInput | $Enums.CurrencyStatus
+    backing?: EnumCurrencyBackingFieldUpdateOperationsInput | $Enums.CurrencyBacking
     decimals?: IntFieldUpdateOperationsInput | number
     issuerNodeId?: NullableStringFieldUpdateOperationsInput | string | null
     country?: NullableStringFieldUpdateOperationsInput | string | null
@@ -40858,6 +41422,7 @@ export namespace Prisma {
     version?: IntFieldUpdateOperationsInput | number
     description?: NullableStringFieldUpdateOperationsInput | string | null
     amount?: IntFieldUpdateOperationsInput | number
+    counterAmount?: NullableIntFieldUpdateOperationsInput | number | null
     frequency?: EnumFrequencyFieldUpdateOperationsInput | $Enums.Frequency
     paymentMode?: EnumPaymentModeFieldUpdateOperationsInput | $Enums.PaymentMode
     startDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -40867,6 +41432,7 @@ export namespace Prisma {
     approved?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     interaction?: InteractionUpdateOneRequiredWithoutTermsNestedInput
+    counterCurrency?: CurrencyUpdateOneWithoutCounterTermsNestedInput
   }
 
   export type InteractionTermsUncheckedUpdateWithoutCurrencyInput = {
@@ -40875,6 +41441,8 @@ export namespace Prisma {
     version?: IntFieldUpdateOperationsInput | number
     description?: NullableStringFieldUpdateOperationsInput | string | null
     amount?: IntFieldUpdateOperationsInput | number
+    counterAmount?: NullableIntFieldUpdateOperationsInput | number | null
+    counterCurrencyId?: NullableStringFieldUpdateOperationsInput | string | null
     frequency?: EnumFrequencyFieldUpdateOperationsInput | $Enums.Frequency
     paymentMode?: EnumPaymentModeFieldUpdateOperationsInput | $Enums.PaymentMode
     startDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -40891,6 +41459,62 @@ export namespace Prisma {
     version?: IntFieldUpdateOperationsInput | number
     description?: NullableStringFieldUpdateOperationsInput | string | null
     amount?: IntFieldUpdateOperationsInput | number
+    counterAmount?: NullableIntFieldUpdateOperationsInput | number | null
+    counterCurrencyId?: NullableStringFieldUpdateOperationsInput | string | null
+    frequency?: EnumFrequencyFieldUpdateOperationsInput | $Enums.Frequency
+    paymentMode?: EnumPaymentModeFieldUpdateOperationsInput | $Enums.PaymentMode
+    startDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    endDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    maxPayments?: NullableIntFieldUpdateOperationsInput | number | null
+    rulesVersion?: StringFieldUpdateOperationsInput | string
+    approved?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type InteractionTermsUpdateWithoutCounterCurrencyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    version?: IntFieldUpdateOperationsInput | number
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    amount?: IntFieldUpdateOperationsInput | number
+    counterAmount?: NullableIntFieldUpdateOperationsInput | number | null
+    frequency?: EnumFrequencyFieldUpdateOperationsInput | $Enums.Frequency
+    paymentMode?: EnumPaymentModeFieldUpdateOperationsInput | $Enums.PaymentMode
+    startDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    endDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    maxPayments?: NullableIntFieldUpdateOperationsInput | number | null
+    rulesVersion?: StringFieldUpdateOperationsInput | string
+    approved?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    interaction?: InteractionUpdateOneRequiredWithoutTermsNestedInput
+    currency?: CurrencyUpdateOneRequiredWithoutTermsNestedInput
+  }
+
+  export type InteractionTermsUncheckedUpdateWithoutCounterCurrencyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    interactionId?: StringFieldUpdateOperationsInput | string
+    version?: IntFieldUpdateOperationsInput | number
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    amount?: IntFieldUpdateOperationsInput | number
+    currencyId?: StringFieldUpdateOperationsInput | string
+    counterAmount?: NullableIntFieldUpdateOperationsInput | number | null
+    frequency?: EnumFrequencyFieldUpdateOperationsInput | $Enums.Frequency
+    paymentMode?: EnumPaymentModeFieldUpdateOperationsInput | $Enums.PaymentMode
+    startDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    endDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    maxPayments?: NullableIntFieldUpdateOperationsInput | number | null
+    rulesVersion?: StringFieldUpdateOperationsInput | string
+    approved?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type InteractionTermsUncheckedUpdateManyWithoutCounterCurrencyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    interactionId?: StringFieldUpdateOperationsInput | string
+    version?: IntFieldUpdateOperationsInput | number
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    amount?: IntFieldUpdateOperationsInput | number
+    currencyId?: StringFieldUpdateOperationsInput | string
+    counterAmount?: NullableIntFieldUpdateOperationsInput | number | null
     frequency?: EnumFrequencyFieldUpdateOperationsInput | $Enums.Frequency
     paymentMode?: EnumPaymentModeFieldUpdateOperationsInput | $Enums.PaymentMode
     startDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null

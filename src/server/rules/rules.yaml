@@ -2,7 +2,7 @@
 # One entry per rule. The app validates this file at startup and refuses to start if it is invalid.
 # Changing it bumps `version`; every interaction records the version it was approved under.
 
-version: "2026-10-30.2"
+version: "2026-11-04.1"
 
 capabilityMap:
   # capability: [roles that carry it]. System-wide; node-level overrides are a parked question.
@@ -96,13 +96,13 @@ rules:
 
   # Financial
   - id: R-FIN-01
-    name: Reserve ratio (minted units = converted value / ratio); one unit costs the ratio in the reserve fiat, its price
+    name: Reserve ratio, optional, for fiat-backed currencies only (minted units = fiat paid in / ratio); that backed price is published as the currency's rate. Free currencies have none
     type: parameter
-    default: 1.0
+    default: none                  # free (R-FIN-17); a fiat-backed currency must set one
     currency_level: true           # one value per currency, set by its issuer
     changed_by: [TREASURER, OWNER]
   - id: R-FIN-02
-    name: Value converted when minting is locked in the reserve
+    name: For a fiat-backed currency, the fiat paid in when minting is locked in its own reserve
     type: precondition
   - id: R-FIN-03
     name: Demurrage rate (defined, not applied)
@@ -114,7 +114,7 @@ rules:
     name: Every node has a home currency (its primary fiat, a collection's currency, or its own); leaving that collection falls back to the primary fiat
     type: precondition
   - id: R-FIN-05
-    name: Rates come from the exchange-rate table (fiat rates fetched daily, node currency prices from their reserve ratio); other pairs are worked out from these
+    name: Rates come from the exchange-rate table (fiat rates fetched daily, accepted trades, backed currencies' reserve ratios); other pairs are worked out from these; nobody sets a rate alone
     type: configuration
     default: exchange_rate_table
   - id: R-FIN-06
@@ -134,12 +134,8 @@ rules:
     type: tbd
     default: not_enforced
   - id: R-FIN-10
-    name: Conversion policy (reserve - only as far as the reserves cover; open - a straight swap at the price beyond the reserve, if both currencies are open)
-    type: parameter
-    default: reserve
-    values: [reserve, open]
-    currency_level: true
-    changed_by: [TREASURER, OWNER]
+    name: Converting works only through reserves (fiat and fiat-backed currencies, as far as the reserve covers); free currencies are exchanged by trading
+    type: precondition
   - id: R-FIN-11
     name: Creating, changing or retiring a currency needs a Treasurer and an Owner
     type: approval
@@ -163,6 +159,18 @@ rules:
   - id: R-FIN-15
     name: Rates are never changed or deleted; a new rate closes the previous one, and every transaction records the rate it used
     type: precondition
+  - id: R-FIN-16
+    name: Every accepted trade publishes its rate; for a pair, the most recent rate counts; who traded stays private
+    type: process
+    default: most_recent
+  - id: R-FIN-17
+    name: A free currency (the default) has no reserve; its issuer's Treasurer mints any amount, and it has no price until it is traded
+    type: default
+    default: free
+  - id: R-FIN-18
+    name: Each currency keeps amounts at its own precision, at most 8 decimal places; amounts show 2 decimals unless more are not zero
+    type: validation
+    default: 8                     # the most decimal places a currency may have
 
   # Governance
   - id: R-GOV-01
@@ -244,4 +252,7 @@ rules:
   # Visibility
   - id: R-VIS-01
     name: A node sees only the transactions it shares with another node
+    type: permission
+  - id: R-VIS-02
+    name: The network is public (every node and who is connected to whom); amounts and trust show only on a viewer's own relationships
     type: permission

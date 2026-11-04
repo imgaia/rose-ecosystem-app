@@ -5,6 +5,7 @@ import {
   convertTable,
   currencyBacking,
   homeCurrencyOf,
+  priceOf,
   proposeCurrencyChange,
   quoteConvert,
   reserveRatio,
@@ -38,9 +39,14 @@ const accountOf = (nodeId: string, currencyId: string) =>
 /** The reserve behind a currency: what its balance is, or null if nothing has gone in yet. */
 const reserveOf = async (currencyId: string) => (await t.db.account.findFirst({ where: { isReserve: true, backsCurrencyId: currencyId } }))?.balance ?? null;
 
-/** An individual creates a currency: it applies at once (R-FIN-11, both roles are the person). */
-async function ownCurrency(issuer: { id: string }, code: string, extra: { reserveRatio?: string; policy?: "reserve" | "open" } = {}) {
-  const p = await proposeCurrencyChange(t.db, as(issuer), { action: "CREATE", fields: { name: `${code} coin`, code, ...extra } });
+/**
+ * An individual creates a currency: it applies at once (R-FIN-11, both roles are the person).
+ * Fiat-backed at a ratio of 1 unless told otherwise, since most tests here convert through reserves.
+ */
+async function ownCurrency(issuer: { id: string }, code: string, extra: { reserveRatio?: string; backing?: "FREE" | "FIAT" } = {}) {
+  const backing = extra.backing ?? "FIAT";
+  const fields = { name: `${code} coin`, code, backing, reserveRatio: backing === "FIAT" ? (extra.reserveRatio ?? "1") : null };
+  const p = await proposeCurrencyChange(t.db, as(issuer), { action: "CREATE", fields });
   expect(p.status).toBe("APPROVED");
   return t.db.currency.findFirstOrThrow({ where: { issuerNodeId: issuer.id, code } });
 }
@@ -185,6 +191,99 @@ describe("creating and changing a currency (R-FIN-11, R-FIN-12)", () => {
   });
 });
 
+describe("free and fiat-backed currencies (R-FIN-01, R-FIN-17, R-FIN-18)", () => {
+  it("a new currency is free by default: no ratio, no price row, no price yet", async () => {
+    const ana = await t.person("Ana");
+    const p = await proposeCurrencyChange(t.db, as(ana), { action: "CREATE", fields: { name: "Free coin", code: "FRE" } });
+    const coin = await t.db.currency.findFirstOrThrow({ where: { issuerNodeId: ana.id, code: "FRE" } });
+    expect(p.status).toBe("APPROVED");
+    expect(coin.backing).toBe("FREE");
+    expect(await reserveRatio(t.db, coin.id)).toBeNull();
+    expect(await rateHistory(t.db, coin.id, t.chf.id)).toEqual([]);
+    expect(await priceOf(t.db, coin.id)).toBeNull();
+  });
+
+  it("a fiat-backed currency needs a ratio; a free one can't have one", async () => {
+    const ana = await t.person("Ana");
+    const noRatio = await refusal(proposeCurrencyChange(t.db, as(ana), { action: "CREATE", fields: { name: "X", code: "XB", backing: "FIAT" } }));
+    expect(noRatio?.ruleIds).toEqual(["R-FIN-01"]);
+    const freeWithRatio = await refusal(
+      proposeCurrencyChange(t.db, as(ana), { action: "CREATE", fields: { name: "X", code: "XF", backing: "FREE", reserveRatio: "2" } }),
+    );
+    expect(freeWithRatio?.ruleIds).toEqual(["R-FIN-17"]);
+  });
+
+  it("allows up to 8 decimal places (R-FIN-18)", async () => {
+    const ana = await t.person("Ana");
+    await ownCurrency(ana, "SAT", { backing: "FREE" });
+    const sat = await t.db.currency.findFirstOrThrow({ where: { issuerNodeId: ana.id, code: "SAT" } });
+    await proposeCurrencyChange(t.db, as(ana), { action: "EDIT", currencyId: sat.id, fields: { decimals: 8 } });
+    expect((await t.db.currency.findUniqueOrThrow({ where: { id: sat.id } })).decimals).toBe(8);
+    const nine = await refusal(proposeCurrencyChange(t.db, as(ana), { action: "EDIT", currencyId: sat.id, fields: { decimals: 9 } }));
+    expect(nine?.ruleIds).toEqual(["R-FIN-18"]);
+  });
+
+  it("mints a free currency in any amount, with nothing locked and no rate written", async () => {
+    const ana = await t.person("Ana");
+    const coin = await ownCurrency(ana, "FMI", { backing: "FREE" });
+    const quote = await quoteMint(t.db, as(ana), { amount: 123_456, currencyId: coin.id });
+    expect(quote).toMatchObject({ source: null, units: 123_456, rate: null });
+    const { locked, minted } = await mint(t.db, as(ana), { amount: 123_456, currencyId: coin.id });
+    expect(locked).toBeNull();
+    expect(minted).toMatchObject({ kind: "MINT", fromAccountId: null, amount: 123_456, rate: null });
+    expect(await t.balanceOf(ana.id, coin.id)).toBe(123_456);
+    expect(await reserveOf(coin.id)).toBeNull();
+    expect(await rateHistory(t.db, coin.id, t.chf.id)).toEqual([]);
+    expect(await t.balancesNotMatchingLedger()).toEqual([]);
+  });
+
+  it("mints a fiat-backed currency only from fiat, which is locked in its reserve", async () => {
+    const ana = await t.person("Ana");
+    const coin = await ownCurrency(ana, "BMI", { reserveRatio: "0.25" });
+    expect((await refusal(mint(t.db, as(ana), { amount: 100, currencyId: coin.id })))?.ruleIds).toEqual(["R-FIN-02"]);
+    const chf = await fundChf(ana.id, 1_000);
+    const { locked, minted } = await mint(t.db, as(ana), { sourceAccountId: chf.id, amount: 1_000, currencyId: coin.id });
+    expect(locked).toMatchObject({ kind: "MINT", amount: 1_000 });
+    expect(minted.amount).toBe(4_000); // 10.00 CHF at 0.25 CHF a unit
+    expect(await reserveOf(coin.id)).toBe(1_000);
+    expect(await t.balanceOf(ana.id, t.chf.id)).toBe(0);
+  });
+
+  it("a free currency can become fiat-backed; a backed one becomes free only with an empty reserve", async () => {
+    const ana = await t.person("Ana");
+    const coin = await ownCurrency(ana, "SWI", { backing: "FREE" });
+    await proposeCurrencyChange(t.db, as(ana), { action: "EDIT", currencyId: coin.id, fields: { backing: "FIAT", reserveRatio: "2" } });
+    expect(await reserveRatio(t.db, coin.id)).toBe("2");
+    expect((await priceOf(t.db, coin.id))?.rate).toBe("2");
+
+    await backed(ana, coin.id, 400);
+    const toFree = { action: "EDIT" as const, currencyId: coin.id, fields: { backing: "FREE" as const, reserveRatio: null } };
+    expect((await refusal(proposeCurrencyChange(t.db, as(ana), toFree)))?.ruleIds).toEqual(["R-FIN-02"]);
+
+    // Cashed out, the reserve is empty: now it can go free, and its reserve-ratio price closes.
+    await convert(t.db, as(ana), { fromAccountId: (await accountOf(ana.id, coin.id))!.id, toCurrencyId: t.chf.id, amount: 200 });
+    expect(await reserveOf(coin.id)).toBe(0);
+    await proposeCurrencyChange(t.db, as(ana), toFree);
+    expect((await t.db.currency.findUniqueOrThrow({ where: { id: coin.id } })).backing).toBe("FREE");
+    expect(await reserveRatio(t.db, coin.id)).toBeNull();
+    expect((await rateHistory(t.db, coin.id, t.chf.id)).every((r) => r.validTo !== null)).toBe(true);
+    expect(await priceOf(t.db, coin.id)).toBeNull();
+  });
+
+  it("convert refuses a free currency on either side, pointing to a trade (R-FIN-10)", async () => {
+    const [ana, ben] = await Promise.all([t.person("Ana"), t.person("Ben")]);
+    const free = await ownCurrency(ana, "FCV", { backing: "FREE" });
+    await mint(t.db, as(ana), { amount: 1_000, currencyId: free.id });
+    const out = await refusal(convert(t.db, as(ana), { fromAccountId: (await accountOf(ana.id, free.id))!.id, toCurrencyId: t.chf.id, amount: 100 }));
+    expect(out?.ruleIds).toEqual(["R-FIN-10"]);
+    expect(out?.message).toMatch(/Propose a trade/);
+    const benChf = await fundChf(ben.id, 1_000);
+    expect((await refusal(convert(t.db, as(ben), { fromAccountId: benChf.id, toCurrencyId: free.id, amount: 100 })))?.ruleIds).toEqual(["R-FIN-10"]);
+    const row = (await convertTable(t.db, ben.id, free.id)).find((r) => r.currency.id === t.chf.id)?.into;
+    expect(row && "reason" in row ? row.reason : null).toBe("trade instead");
+  });
+});
+
 describe("converting (UC-FIN-03, R-FIN-10, R-FIN-14)", () => {
   it("converts one node currency into another through both reserves; ledger sums hold", async () => {
     const [ana, ben, cat] = await Promise.all([t.person("Ana"), t.person("Ben"), t.person("Cat")]);
@@ -232,7 +331,7 @@ describe("converting (UC-FIN-03, R-FIN-10, R-FIN-14)", () => {
     expect(await t.balancesNotMatchingLedger()).toEqual([]);
   });
 
-  it("refuses when the reserve can't cover it and a currency is 'reserve'; swaps straight when both are open", async () => {
+  it("refuses when the reserve can't cover it, with no straight swap beyond it (R-FIN-10)", async () => {
     const [ana, ben] = await Promise.all([t.person("Ana"), t.person("Ben")]);
     const aaa = await ownCurrency(ana, "SHA");
     const bbb = await ownCurrency(ben, "SHB");
@@ -242,23 +341,14 @@ describe("converting (UC-FIN-03, R-FIN-10, R-FIN-14)", () => {
     await postTransaction(t.db, { kind: "OPENING_BALANCE", toAccountId: anaUnits.id, amount: 500, comment: "Unbacked", actedByPersonId: ana.id });
     const input = { fromAccountId: anaUnits.id, toCurrencyId: bbb.id, amount: 800 };
 
-    const short = await refusal(quoteConvert(t.db, as(ana), input));
+    const short = await refusal(convert(t.db, as(ana), input));
     expect(short?.ruleIds).toEqual(["R-FIN-10"]);
     expect(short?.message).toMatch(/reserve holds 5.00 CHF/);
+    expect(await t.balanceOf(ana.id, aaa.id)).toBe(1_000);
 
-    // Only one side open: still refused.
-    await proposeCurrencyChange(t.db, as(ana), { action: "EDIT", currencyId: aaa.id, fields: { policy: "open" } });
-    expect((await refusal(quoteConvert(t.db, as(ana), input)))?.ruleIds).toEqual(["R-FIN-10"]);
-
-    // Both open: a straight swap at the price, no fiat moving.
-    await proposeCurrencyChange(t.db, as(ben), { action: "EDIT", currencyId: bbb.id, fields: { policy: "open" } });
-    const { mode, rows } = await convert(t.db, as(ana), input);
-    expect(mode).toBe("SWAP");
-    expect(rows).toHaveLength(2);
-    expect(await t.balanceOf(ana.id, aaa.id)).toBe(200);
-    expect(await t.balanceOf(ana.id, bbb.id)).toBe(800);
-    expect(await reserveOf(aaa.id)).toBe(500); // the reserve didn't move
-    expect(await reserveOf(bbb.id)).toBeNull();
+    // Up to what the reserve covers, it goes through.
+    await convert(t.db, as(ana), { ...input, amount: 500 });
+    expect([await reserveOf(aaa.id), await reserveOf(bbb.id)]).toEqual([0, 500]);
     expect(await t.balancesNotMatchingLedger()).toEqual([]);
   });
 
@@ -304,7 +394,7 @@ describe("converting (UC-FIN-03, R-FIN-10, R-FIN-14)", () => {
     expect(euroCoin.reserveCurrencyId).toBe(eur.id); // its issuer's primary fiat when created
     await setRate(t.db, { fromCurrencyId: t.chf.id, toCurrencyId: eur.id, rate: "1.05", validFrom: new Date("2026-01-01"), source: "MANUAL", setBy: "t" });
     const blocked = await refusal(quoteConvert(t.db, as(ana), { fromAccountId: chf.id, toCurrencyId: euroCoin.id, amount: 100 }));
-    expect(blocked?.ruleIds).toEqual(["R-FIN-14", "R-FIN-10"]);
+    expect(blocked?.ruleIds).toEqual(["R-FIN-14"]);
   });
 
   it("converting fiat into the node's own currency is a mint: same rows, same reserve, its ratio", async () => {
@@ -324,7 +414,7 @@ describe("converting (UC-FIN-03, R-FIN-10, R-FIN-14)", () => {
     // Both write the same two rows: fiat into the currency's own reserve, new units to the node.
     const shape = (r: { kind: string; fromAccountId: string | null; toAccountId: string | null; amount: number; rate: string | null }) =>
       [r.kind, r.fromAccountId, r.toAccountId, r.amount, r.rate];
-    expect(converted.rows.map(shape)).toEqual([minted.locked, minted.minted].map(shape));
+    expect(converted.rows.map(shape)).toEqual([minted.locked!, minted.minted].map(shape));
     expect(converted.rows[0]!.groupId).toBe(converted.rows[1]!.groupId);
     expect(await reserveOf(coin.id)).toBe(2_000);
     expect(await t.balanceOf(ana.id, coin.id)).toBe(4_000);
@@ -363,7 +453,7 @@ describe("converting (UC-FIN-03, R-FIN-10, R-FIN-14)", () => {
     expect(row("CHF")).toMatchObject({ price: null, fiatRate: null });
     expect(row("EU3").fiatRate?.rate).toBe("0.92");
     // Into BKD: 1 CHF buys 0.5 BKD; fiat into a node currency of another fiat is refused (R-FIN-14);
-    // EMP's reserve is empty and it is not open (R-FIN-10); the target's own row has nothing.
+    // EMP's reserve is empty (R-FIN-10); the target's own row has nothing.
     expect(row("CHF").into).toEqual({ rate: "0.5" });
     const refusedBy = (code: string) => {
       const into = row(code).into;

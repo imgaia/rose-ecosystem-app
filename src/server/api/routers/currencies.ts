@@ -11,20 +11,19 @@ import { actingProcedure, createTRPCRouter, requireCan } from "~/server/api/trpc
 import type { Currency } from "../../../../generated/prisma";
 import { publicNode, type Ctx } from "./shared";
 
-/** A currency as the screens list it: with its price in its reserve fiat, its policy and ratio. */
+/** A currency as the screens list it: with its price in its reserve fiat (null: no price yet) and, if fiat-backed, its ratio. */
 async function listed(ctx: Ctx, currency: Currency) {
   const price = await core.priceOf(ctx.db, currency.id);
   const community = currency.kind === "COMMUNITY";
   return {
     ...currency,
     price: price && { rate: price.rate, fiat: { id: price.fiat.id, code: price.fiat.code, decimals: price.fiat.decimals } },
-    policy: community ? await core.conversionPolicy(ctx.db, currency.id) : null,
     reserveRatio: community ? await core.reserveRatio(ctx.db, currency.id) : null,
   };
 }
 
 function inverted(text: string) {
-  const { num, den } = core.parseDecimal(text);
+  const { num, den } = core.parseRate(text);
   return core.rateOf(den, num).text;
 }
 
@@ -32,9 +31,9 @@ const fields = z.object({
   name: z.string().max(100),
   code: z.string().max(20),
   description: z.string().max(1000).nullish(),
-  decimals: z.number().int().min(0).max(6),
-  reserveRatio: z.string().max(30),
-  policy: z.enum(["reserve", "open"]),
+  decimals: z.number().int().min(0).max(core.MAX_DECIMALS),
+  backing: z.enum(["FREE", "FIAT"]),
+  reserveRatio: z.string().max(30).nullable(),
 });
 
 export const currenciesRouter = createTRPCRouter({
@@ -95,7 +94,7 @@ export const currenciesRouter = createTRPCRouter({
   }),
 
   /**
-   * S27: anyone sees what the currency is, its price and history, policy and
+   * S27: anyone sees what the currency is, its price and history, backing and
    * status. The issuer's Treasurers (VIEW_BALANCES there) also see what backs it.
    */
   detail: actingProcedure.input(z.object({ currencyId: z.string().min(1) })).query(async ({ ctx, input }) => {
@@ -129,14 +128,14 @@ export const currenciesRouter = createTRPCRouter({
       openProposalId: open?.id ?? null,
       history: history.map((r) => ({
         id: r.id,
-        // Price rows are written currency -> reserve fiat; one stored the other way round is inverted.
+        // Price rows are written currency -> reserve fiat; one stored the other way round (a trade) is inverted.
         rate: r.fromCurrencyId === currency.id ? r.rate : inverted(r.rate),
         source: r.source,
         validFrom: r.validFrom,
         validTo: r.validTo,
       })),
       fiatRates,
-      backing: seesBacking && currency.kind === "COMMUNITY" ? await core.currencyBacking(ctx.db, currency.id) : null,
+      reserve: seesBacking && currency.kind === "COMMUNITY" ? await core.currencyBacking(ctx.db, currency.id) : null,
     };
   }),
 

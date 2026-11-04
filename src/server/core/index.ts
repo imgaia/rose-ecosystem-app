@@ -23,7 +23,7 @@ export * from "./invitations";
 export * from "./identity";
 export * from "./governance";
 export { runDuePayments, type DuePaymentsResult } from "./schedules";
-export { getRate, setRate, rateHistory, applyRate, parseDecimal, rateOf, type Rate } from "./rates";
+export { findRate, getRate, setRate, publishRate, rateHistory, applyRate, parseDecimal, parseRate, rateOf, MAX_CHAIN, type Rate } from "./rates";
 export { runRateFeed, frankfurter, type RateFeedResult, type RateSourceAdapter } from "./rateFeed";
 
 /** Every kind of proposal the inbox can decide, and the handler that knows how. */

@@ -296,3 +296,87 @@ From the wireframes: Wallet (total in the home currency; buttons Convert, Add fu
 Back up dev; show the SQL, then apply `v10-currencies.sql`, `v10-reserves.sql` and the backfill to dev (DB_TARGET=dev), asking before each; check every balance is unchanged and equals its ledger; push dev and click through. Never DB_TARGET=production.
 
 **Done when:** the dev site shows currencies, the home currency and conversion, with everyone's balances unchanged.
+
+## Step 11. Free and fiat-backed currencies, trading, decimals, the whole-network map
+
+Source of truth: PRD tab 2 (2.7 and 2.8: "Free and fiat-backed", "Price", "Exchange rates", "Trading", "Converting", "Decimals", "RCC"); use cases UC-FIN-01, 02, 03, 05, 07, 09, 10 and UC-NET-05 (tab 3); screens S11, S13, S15, S16, S26, S27 and the new S28 "Propose a trade" (tab 4); the Interaction, Interaction terms, Currency, Exchange rate and Account rows (tab 5); rules R-FIN-01, 02, 05, 10, 16, 17, 18 and R-VIS-02 (tab 6); decision 8.5 "Free and fiat-backed currencies, and trading". Wireframes: in the ROSE App Wireframes canvas, Wallet row: Create a currency, Mint, Currency detail: RCC, Convert through a reserve, Propose a trade; Relationships row: map of the whole network.
+
+What changes, in one paragraph: the reserve ratio is no longer required. A currency is **free** by default: its issuer's Treasurer mints any amount, and it has no price until it is traded. A currency can instead be **fiat-backed** with a reserve ratio, minted only from fiat locked in its own reserve; that backed price is published as its rate. Nobody sets a rate alone: rates come from accepted **trades** between two nodes (the most recent counts), backed currencies' reserve ratios and the daily fiat feed. **Convert** works only through reserves; the `open` conversion policy is dropped. RCC becomes free, starting at 1 CHF. Amounts keep each currency's precision (at most 8 decimals) and show 2 decimals unless more are not zero. The **network map** shows the whole network.
+
+Three slices, one chat each. Stop at the end of each.
+
+### 11a. Data, rules and core logic (no screens, local database only)
+
+**Status: done** · checked with the unit tests (196), type check, lint, build and the browser tests (18); applied to the local database only.
+
+- Local database: backed up (`backup-local-2026-11-04T18-58-16-113Z.json`), `v11-free-currencies.sql` applied with `sqlite3`, then `scripts/migrate-v11.ts`: RCC free with an INITIAL rate of 1 CHF, 20 transactions before and after, all 20 balances equal their ledger.
+- On the 4 Nov seed candidate (the test, `scripts/migrate-v11.test.ts`): GAIA, JCN, THC and RCR become fiat-backed with their ratios; RBO and RCC become free; RBO's and RCC's reserve-ratio rows are closed; RBO's ratio and the five R-FIN-10 values are removed; 57 transactions and 34 balances unchanged.
+- Decided when it came up (4 Nov):
+  - **RCC is free even though its reserve holds something** (304.00 CHF on dev, from test conversions and mints). The script leaves that reserve untouched and reports it; nothing can convert out of it, since RCC is free. How to release it is still open.
+  - **Amounts are 32-bit for now.** Prisma's `Int` holds at most 2,147,483,647 minor units: 21.47 units at 8 decimals, and JCN's largest dev balance is already 1,229.769229 (57% of its limit at 6 decimals). The ledger refuses anything larger with a clear message (R-FIN-18) instead of a database error; step 11a-2 lifts the limit.
+- Other things that differ from the plan above:
+  - Convert prices through the **reserve ratios**, not the pair's latest rate: a trade may move the published rate, but a reserve takes in and pays out at the ratio it was minted at.
+  - A trade needs **PAY on both sides** (each side gives money). Its rate is stored as an exact fraction ("1/3") when it has no exact decimal, as transactions already did. The rate row's `setBy` is `trade:<interaction id>`, not a person. Both legs are EXCHANGE rows with one groupId; a trade doesn't step the trust score. Fiat for fiat is refused (R-FIN-14), so trades never override the feed.
+  - **Amend** a waiting trade: the side that hasn't approved counter-proposes; the proposer's new terms replace its open ones (the trade stays open).
+  - A currency that becomes free also loses its R-FIN-01 value (free currencies have none), besides closing its price rows.
+  - `findRate` returns null for "no price yet"; `getRate` still throws R-FIN-05 for actions that can't go ahead without a rate. The daily feed compares only the pair's own row, never a chain.
+  - The app had to keep building, so a few screens changed early: the currency form's policy switch is now Free | Fiat-backed (ratio only for fiat-backed, decimals up to 8), Mint of a free currency asks for the amount only, the currency proposal review shows the backing, and the "straight swap" text is gone from Convert. The currency detail's reserve figures are now `reserve` (`backing` is the column). The browser-test fixture now trades for RCC, and Annie issues a fiat-backed ABK for Convert to buy.
+  - `vitest` also runs `scripts/**/*.test.ts`; `createDbFromBackup` in `test-helpers.ts` builds a throwaway database from a backup file.
+- **Not pushed yet** (decided 4 Nov): the dev database has no `backing` column until 11c, so the dev site's currency screens would fail, and applying the SQL alone would make GAIA, JCN, THC and RCR read as free (mintable from nothing) until `migrate-v11.ts` runs. Push together with 11c: SQL, then the script, then the push.
+
+Schema (`prisma/schema.prisma`, plus `scripts/migrations/v11-free-currencies.sql` for an existing database: ALTERs and new columns only, no table rebuilds):
+- Currency: a backing field, FREE (default) or FIAT. Decimal places: at most 8 (validate on create and edit).
+- InteractionKind: add TRADE. InteractionTerms: for a trade, `counterAmount` and `counterCurrencyId` (what comes back). The existing amount and currency are what the proposer gives.
+- ExchangeRate source: add TRADE and INITIAL (keep FEED, RESERVE_RATIO, MANUAL).
+- CurrencyRuleValue keeps the reserve ratio (R-FIN-01) only; conversion policy (R-FIN-10) values are no longer used.
+
+Rules (`rules.yaml`, bump the version), wording as in PRD tab 6:
+- R-FIN-01 optional, fiat-backed currencies only; R-FIN-02 applies to backed currencies; R-FIN-05 lists the rate sources; R-FIN-10 becomes "converting works only through reserves" (no `reserve` | `open` values any more).
+- New: R-FIN-16 (each accepted trade publishes its rate; for a pair the most recent counts), R-FIN-17 (free by default, minted in any amount, no price until traded), R-FIN-18 (at most 8 decimals; shown with 2 unless more are not zero), R-VIS-02 (the network is public; amounts and trust only on a viewer's own relationships).
+
+Core:
+- `currencies.ts`: create with backing FREE or FIAT (ratio required only for FIAT). A free currency can become backed through a CURRENCY_CHANGE proposal; a backed currency can't become free while its reserve holds anything.
+- Mint: FREE → any amount, nothing locked, no rate written. FIAT → as today (fiat into the currency's own reserve; writes its RESERVE_RATIO rate when the ratio is set or changed).
+- `convert`: reserves only (fiat ↔ backed, backed ↔ backed on the same fiat). Remove the open-swap path. A free currency on either side is refused with R-FIN-10 and a message pointing to "Propose a trade".
+- `rates.ts` (still the only code that reads or writes rates): the current rate for a pair is the most recent row of any source, in either direction (inverting as needed). Other pairs: the shortest chain of current rates, at most 3 steps; none means "no price yet" (return null, never a guess). Wallet totals leave unpriced currencies out and say so.
+- Trades (`interactions.ts`, kind TRADE): propose (give X of P for Y of Q to a node), counter-propose and amend (new terms version, both approve again), accept, decline, withdraw. On acceptance, both legs post in one database transaction through `ledger.ts` (the negative-balance limit applies to both sides; if either fails, nothing moves), then a TRADE rate row is written (Q per P, valid from now) and becomes the pair's current rate. A node can't trade with itself. Acting for a collection needs PAY. It forms or uses the relationship like any interaction.
+- Display: one shared money formatter: at least 2 decimals, up to the currency's decimals, trailing zeros beyond 2 dropped (5.000000 JCN → 5.00; 0.12345678 BTC-like → 0.12345678).
+
+Data change (a script, `scripts/migrate-v11.ts`, run locally now and on dev in 11c; it prints a before/after report and changes nothing in the ledger):
+- Currencies with a reserve account holding more than 0 become FIAT with their current ratio; every other node currency becomes FREE.
+- For each currency that becomes FREE, close its RESERVE_RATIO rate rows (set validTo to now; never delete). These were prices the issuer chose alone.
+- RCC: FREE, with an INITIAL rate of 1 CHF valid from the v0.8 migration date (close its RESERVE_RATIO row).
+- Remove the R-FIN-10 policy values from CurrencyRuleValue.
+- Report any currency with more than 8 decimals (expect none) and stop if there is one.
+
+Tests: free mint of any amount; backed mint locks fiat; convert refuses free currencies (R-FIN-10); trade happy path (both legs, rate row, relationship); trade refused when either side lacks funds (nothing moves); counter-propose then accept uses the new terms and rate; latest trade wins; chained rate through two trades; "no price yet" and wallet total excluding it; money formatter cases; migrate-v11 on a copy of the 4 Nov seed candidate (free/backed split, closed rows, RCC at 1 CHF, balances and ledger sums unchanged).
+
+**Done when:** unit tests, type check, lint and build pass; the local database is migrated; every balance still equals its ledger.
+
+### 11a-2. Amounts as 64-bit whole numbers (before 11c)
+
+Decided on 4 Nov while doing 11a. Change `Account.balance`, `Transaction.amount` and `toAmount`, and `InteractionTerms.amount` and `counterAmount` from `Int` to `BigInt`. In SQLite both are stored as INTEGER, so existing databases need no SQL and no rebuild; only the code changes: amounts become `bigint` in TypeScript (the ledger, core, routers through superjson, and the screens' formatter and parser). Then remove `MAX_MINOR_UNITS` from `ledger.ts`. Tests: a balance above 2,147,483,647 minor units, an 8-decimal currency holding millions of units, and the money formatter on bigint.
+
+**Done when:** unit and browser tests, type check, lint and build pass, and an amount of 100,000.00000000 in an 8-decimal currency moves and shows correctly.
+
+### 11b. Screens
+
+From the wireframes:
+- Create / Edit currency: Backing switch Free | Fiat-backed with a one-line explanation of each; reserve ratio and price preview only for Fiat-backed; decimal places up to 8.
+- Mint: free currency → amount only ("nothing is locked; no price until traded"); backed → from fiat into its reserve.
+- Currency detail (S27): backing, current price with its source (trade, reserve ratio, starting rate, feed) or "No price yet", price history, the last few published trade rates (no names). Reserve section only for backed currencies. A "Trade" button opening Propose a trade with this currency filled in.
+- Convert (S11): reserves only; in the currencies table, free currencies show "Trade instead" with the rule in small text.
+- Propose a trade (S28): with whom, you give (amount + currency you hold), you get (amount + currency), this trade's rate, the last published rate if any. Reachable from Wallet, the + menu, a currency's detail and another node's profile. Review in the inbox (accept, counter-propose, decline) and trade interaction detail, reusing the work-proposal patterns.
+- Wallet: total in the home currency, leaving out currencies with no price yet ("2 currencies have no price yet").
+- Amounts everywhere through the shared formatter (fixes JCN's 5.000000).
+- Network map (S16): every node and every active relationship. Your own relationships darker, with thickness by trust and dashed when pending; other people's connections as thin light lines, with no amounts or trust. Tap a node to open its profile. Keep the Work / Payments / Gifts filters for your own relationships.
+
+Extend the browser tests (`npm run test:e2e`) to cover: create free and backed, free mint, convert refusal for a free currency, propose → counter → accept a trade between two fixture people, the rate appearing on the currency detail, JCN-style decimals, and the whole-network map showing a connection between two other people.
+
+**Done when:** unit and browser tests pass at 360px and 430px with no console errors.
+
+### 11c. Move dev
+
+Back up dev; show the SQL, then apply `v11-free-currencies.sql` to dev (DB_TARGET=dev) after I say yes; run `scripts/migrate-v11.ts` on dev after I say yes and show its report; check every balance is unchanged and equals its ledger; push dev and give me a click-through checklist. Never DB_TARGET=production.
+
+**Done when:** the dev site shows free and backed currencies, trading, the decimals fix and the whole-network map, with everyone's balances unchanged.

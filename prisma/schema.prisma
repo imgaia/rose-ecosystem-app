@@ -128,10 +128,10 @@ model NodeRuleValue {
 }
 
 // The same for rules marked currency_level in rules.yaml: the issuer's value
-// for one of its currencies (R-FIN-01 reserve ratio, R-FIN-10 conversion policy).
+// for one of its currencies (R-FIN-01 reserve ratio, fiat-backed currencies only).
 model CurrencyRuleValue {
   currencyId String
-  ruleId     String // R-FIN-01, R-FIN-10
+  ruleId     String // R-FIN-01
   value      String
   currency   Currency @relation(fields: [currencyId], references: [id])
 
@@ -175,6 +175,7 @@ enum InteractionKind {
   PAYMENT
   GIFT
   WORK
+  TRADE // two currencies swapped between two nodes at a rate they agree (R-FIN-16)
 }
 
 enum InteractionStatus {
@@ -222,13 +223,17 @@ enum PaymentMode {
 }
 
 // Every change to the terms is a new version, approved by both sides.
+// A trade: the payer gives `amount` of currencyId, and the payee gives back
+// `counterAmount` of counterCurrencyId.
 model InteractionTerms {
   id            String      @id @default(cuid())
   interactionId String
   version       Int
-  description   String? // the work; or the comment for a payment or gift
+  description   String? // the work; or the comment for a payment, gift or trade
   amount        Int // minor units
   currencyId    String
+  counterAmount     Int? // trades only: minor units of counterCurrencyId
+  counterCurrencyId String?
   frequency     Frequency   @default(ONCE)
   paymentMode   PaymentMode @default(AUTOMATIC)
   startDate     DateTime?
@@ -238,8 +243,9 @@ model InteractionTerms {
   approved      Boolean     @default(false)
   createdAt     DateTime    @default(now())
 
-  interaction Interaction @relation(fields: [interactionId], references: [id])
-  currency    Currency    @relation(fields: [currencyId], references: [id])
+  interaction     Interaction @relation(fields: [interactionId], references: [id])
+  currency        Currency    @relation("TermsCurrency", fields: [currencyId], references: [id])
+  counterCurrency Currency?   @relation("TermsCounterCurrency", fields: [counterCurrencyId], references: [id])
 
   @@unique([interactionId, version])
 }
@@ -321,14 +327,20 @@ enum CurrencyKind {
   COMMUNITY
 }
 
+// PRD 2.8 "Free and fiat-backed". Fiat itself is neither; its rows keep the default.
+enum CurrencyBacking {
+  FREE // the default: minted in any amount, no price until traded (R-FIN-17)
+  FIAT // minted only from fiat locked in its own reserve, at its reserve ratio (R-FIN-01, R-FIN-02)
+}
+
 enum CurrencyStatus {
   ACTIVE
   RETIRED // no new units; balances stay usable and convertible (R-FIN-12)
 }
 
 // The fiat list (R-FIN-13) is the FIAT rows: the system admin keeps them.
-// A node currency's reserve ratio and conversion policy are CurrencyRuleValues
-// (R-FIN-01, R-FIN-10); its price is in ExchangeRate.
+// A fiat-backed currency's reserve ratio is a CurrencyRuleValue (R-FIN-01);
+// every price is in ExchangeRate.
 model Currency {
   id           String       @id @default(cuid())
   name         String // "Swiss franc", "Rose Currency Contribution"
@@ -336,9 +348,10 @@ model Currency {
   description       String?
   kind         CurrencyKind
   status            CurrencyStatus @default(ACTIVE)
-  decimals          Int            @default(2) // fixed once units exist (R-FIN-12)
+  backing           CurrencyBacking @default(FREE) // node currencies only
+  decimals          Int            @default(2) // at most 8 (R-FIN-18); fixed once units exist (R-FIN-12)
   issuerNodeId String? // null for fiat
-  reserveCurrencyId String? // the fiat its reserve is held in; null for fiat
+  reserveCurrencyId String? // the fiat its reserve is (or would be) held in; null for fiat
   country           String? // fiat only: the ISO 3166 codes it is the currency of, comma-separated ("CH")
   createdAt    DateTime     @default(now())
 
@@ -347,7 +360,8 @@ model Currency {
   backs           Currency[]         @relation("ReserveFiat")
   homeOf          Node[]             @relation("HomeCurrency")
   accounts Account[]
-  terms    InteractionTerms[]
+  terms        InteractionTerms[] @relation("TermsCurrency")
+  counterTerms InteractionTerms[] @relation("TermsCounterCurrency")
   ratesFrom       ExchangeRate[]     @relation("RateFrom")
   ratesTo         ExchangeRate[]     @relation("RateTo")
   ruleValues      CurrencyRuleValue[]
@@ -355,8 +369,10 @@ model Currency {
 
 enum RateSource {
   FEED // fiat to fiat, from the daily feed (rateFeed.ts)
-  RESERVE_RATIO // a node currency's price in its reserve fiat (R-FIN-01)
+  RESERVE_RATIO // a fiat-backed currency's price in its reserve fiat (R-FIN-01)
   MANUAL // set by hand (scripts/set-rate.ts), e.g. when the feed is down
+  TRADE // an accepted trade between two nodes (R-FIN-16)
+  INITIAL // a starting rate carried over (RCC: 1 CHF from Phase 1)
 }
 
 // Every rate with its history (R-FIN-05, R-FIN-15). One unit of `from` is

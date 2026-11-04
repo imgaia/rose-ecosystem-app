@@ -3,16 +3,21 @@
 // ExchangeRate table. Nothing else touches that table, so a different source
 // can replace the daily feed (rateFeed.ts) without changing anything else.
 //
-// Two kinds of rows are stored, each valid from a date until the next one for
-// the same pair replaces it:
+// Rows come from four places, each valid from a date until the next one for
+// the same pair (in either direction) replaces it (R-FIN-05):
 //   - fiat to fiat (CHF -> EUR), from the feed or set by hand;
-//   - a node currency's price in its reserve fiat (RCC -> CHF), written from
-//     its reserve ratio (R-FIN-01) by currencies.ts.
-// Any other pair is worked out from these when asked (getRate).
+//   - a fiat-backed currency's price in its reserve fiat, written from its
+//     reserve ratio (R-FIN-01) by currencies.ts;
+//   - every accepted trade (R-FIN-16), written by interactions.ts;
+//   - a starting rate carried over (INITIAL: RCC's 1 CHF from Phase 1).
+// For a pair, the most recent row counts, whatever its source. Any other pair
+// is worked out through the shortest chain of current rates, at most
+// MAX_CHAIN steps; with none, there is no price yet (findRate returns null).
 //
-// Rates are kept as text ("1", "0.95") and worked with as exact fractions
-// (BigInt), so no float rounding ever touches money. A converted amount is
-// rounded down to the receiving currency's minor unit.
+// Rates are kept as text ("1", "0.95", or "1/3" when a trade's rate has no
+// exact decimal) and worked with as exact fractions (BigInt), so no float
+// rounding ever touches money. A converted amount is rounded down to the
+// receiving currency's minor unit.
 
 import type { RateSource } from "../../../generated/prisma";
 import { inTransaction, type Db } from "./db";
@@ -55,7 +60,18 @@ export function rateOf(num: bigint, den: bigint): Rate {
   return { num: n, den: d, text: fraction ? `${whole}.${fraction}` : whole };
 }
 
-const fromText = (text: string) => rateOf(parseDecimal(text).num, parseDecimal(text).den);
+/** A stored rate's text: a decimal ("1.25"), or a fraction ("100/107") as rateOf writes it. */
+export function parseRate(text: string): Rate {
+  const parts = text.trim().split("/");
+  if (parts.length === 2 && /^\d+$/.test(parts[0]!) && /^\d+$/.test(parts[1]!)) {
+    const [num, den] = [BigInt(parts[0]!), BigInt(parts[1]!)];
+    if (num === 0n || den === 0n) throw new Error(`"${text}" must be above 0`);
+    return rateOf(num, den);
+  }
+  const d = parseDecimal(text);
+  return rateOf(d.num, d.den);
+}
+
 export const sameRate = (a: Rate, b: Rate) => a.num * b.den === b.num * a.den;
 const times = (a: Rate, b: Rate) => rateOf(a.num * b.num, a.den * b.den);
 const inverse = (r: Rate) => rateOf(r.den, r.num);
@@ -70,56 +86,79 @@ export function applyRate(amount: number, fromDecimals: number, toDecimals: numb
   return Number(top / bottom);
 }
 
-/** The stored row valid at `at` for this pair, in this direction only. */
-async function storedRow(db: Db, fromCurrencyId: string, toCurrencyId: string, at: Date) {
-  return db.exchangeRate.findFirst({
-    where: { fromCurrencyId, toCurrencyId, validFrom: { lte: at }, OR: [{ validTo: null }, { validTo: { gt: at } }] },
-    orderBy: { validFrom: "desc" },
+/** The longest chain of current rates findRate follows (CO -> CHF -> EUR -> LF is 3). */
+export const MAX_CHAIN = 3;
+
+/** Every row valid at `at`, most recent first (validFrom, then when it was written). */
+function rowsValidAt(db: Db, at: Date, where: object = {}) {
+  return db.exchangeRate.findMany({
+    where: { ...where, validFrom: { lte: at }, OR: [{ validTo: null }, { validTo: { gt: at } }] },
+    orderBy: [{ validFrom: "desc" }, { createdAt: "desc" }],
   });
 }
 
-/** A stored rate valid at `at`, in either direction (inverted when stored the other way), or null. */
-async function storedRate(db: Db, fromCurrencyId: string, toCurrencyId: string, at: Date): Promise<Rate | null> {
-  const direct = await storedRow(db, fromCurrencyId, toCurrencyId, at);
-  if (direct) return fromText(direct.rate);
-  const reverse = await storedRow(db, toCurrencyId, fromCurrencyId, at);
-  return reverse ? inverse(fromText(reverse.rate)) : null;
-}
-
 /**
- * A currency's value in fiat at `at`: itself for fiat; for a node currency,
- * its price in its reserve fiat. Null when it has no price yet.
+ * The rate from one currency to another at `at` (now by default), or null
+ * when there is no price yet; never a guess (R-FIN-05).
+ *   1. The pair's most recent row, in either direction (inverted as needed),
+ *      whatever its source (R-FIN-16).
+ *   2. Otherwise the shortest chain of rates valid at `at`, at most
+ *      `maxSteps` long; among equally short chains, the one through the most
+ *      recent rows. Pass maxSteps 1 to look at the pair's own rows only.
  */
-async function inFiat(db: Db, currencyId: string, at: Date): Promise<{ fiatId: string; rate: Rate } | null> {
-  const currency = await db.currency.findUniqueOrThrow({ where: { id: currencyId }, select: { kind: true, reserveCurrencyId: true } });
-  if (currency.kind === "FIAT") return { fiatId: currencyId, rate: rateOf(1n, 1n) };
-  if (!currency.reserveCurrencyId) return null;
-  const price = await storedRate(db, currencyId, currency.reserveCurrencyId, at);
-  return price ? { fiatId: currency.reserveCurrencyId, rate: price } : null;
-}
-
-/**
- * The rate from one currency to another at `at` (now by default): a stored
- * row for the pair if there is one, otherwise worked out through the two
- * currencies' fiats (price of `from`, then fiat to fiat, then 1 / price of `to`).
- * Throws a RuleError (R-FIN-05) when there is no way to work it out.
- */
-export async function getRate(db: Db, fromCurrencyId: string, toCurrencyId: string, at = new Date()): Promise<Rate> {
+export async function findRate(
+  db: Db,
+  fromCurrencyId: string,
+  toCurrencyId: string,
+  at = new Date(),
+  { maxSteps = MAX_CHAIN } = {},
+): Promise<Rate | null> {
   if (fromCurrencyId === toCurrencyId) return rateOf(1n, 1n);
-  const stored = await storedRate(db, fromCurrencyId, toCurrencyId, at);
-  if (stored) return stored;
+  const rows = await rowsValidAt(db, at);
 
-  const [from, to] = await Promise.all([inFiat(db, fromCurrencyId, at), inFiat(db, toCurrencyId, at)]);
-  const fiatRate = from && to ? (from.fiatId === to.fiatId ? rateOf(1n, 1n) : await storedRate(db, from.fiatId, to.fiatId, at)) : null;
-  if (!from || !to || !fiatRate) {
-    const names = await db.currency.findMany({ where: { id: { in: [fromCurrencyId, toCurrencyId] } }, select: { id: true, code: true, name: true } });
-    const name = (id: string) => {
-      const c = names.find((n) => n.id === id);
-      return c?.code ?? c?.name ?? id;
-    };
-    throw new RuleError(`No exchange rate from ${name(fromCurrencyId)} to ${name(toCurrencyId)}`, ["R-FIN-05"]);
+  // Each row is an edge both ways. Rows come most recent first, so the first
+  // edge seen for a pair is the one that counts.
+  const edges = new Map<string, Map<string, Rate>>();
+  const addEdge = (a: string, b: string, rate: Rate) => {
+    const out = edges.get(a) ?? new Map<string, Rate>();
+    if (!out.has(b)) out.set(b, rate);
+    edges.set(a, out);
+  };
+  for (const row of rows) {
+    const rate = parseRate(row.rate);
+    addEdge(row.fromCurrencyId, row.toCurrencyId, rate);
+    addEdge(row.toCurrencyId, row.fromCurrencyId, inverse(rate));
   }
-  return times(times(from.rate, fiatRate), inverse(to.rate));
+
+  // Breadth first: the first time we reach `to` is through a shortest chain.
+  let frontier = new Map<string, Rate>([[fromCurrencyId, rateOf(1n, 1n)]]);
+  const seen = new Set([fromCurrencyId]);
+  for (let step = 0; step < maxSteps && frontier.size > 0; step++) {
+    const next = new Map<string, Rate>();
+    for (const [currencyId, soFar] of frontier) {
+      for (const [neighbour, rate] of edges.get(currencyId) ?? []) {
+        if (seen.has(neighbour)) continue;
+        const total = times(soFar, rate);
+        if (neighbour === toCurrencyId) return total;
+        seen.add(neighbour);
+        next.set(neighbour, total);
+      }
+    }
+    frontier = next;
+  }
+  return null;
+}
+
+/** As findRate, but a missing rate is an error naming R-FIN-05 (for actions that can't go ahead without one). */
+export async function getRate(db: Db, fromCurrencyId: string, toCurrencyId: string, at = new Date()): Promise<Rate> {
+  const rate = await findRate(db, fromCurrencyId, toCurrencyId, at);
+  if (rate) return rate;
+  const names = await db.currency.findMany({ where: { id: { in: [fromCurrencyId, toCurrencyId] } }, select: { id: true, code: true, name: true } });
+  const name = (id: string) => {
+    const c = names.find((n) => n.id === id);
+    return c?.code ?? c?.name ?? id;
+  };
+  throw new RuleError(`No price yet from ${name(fromCurrencyId)} to ${name(toCurrencyId)}`, ["R-FIN-05"]);
 }
 
 export interface SetRateInput {
@@ -137,7 +176,7 @@ export interface SetRateInput {
  * transaction. Nothing is ever changed but that validTo.
  */
 export async function setRate(db: Db, input: SetRateInput) {
-  parseDecimal(input.rate); // refuses anything that isn't a positive decimal
+  parseRate(input.rate); // refuses anything that isn't a positive decimal or fraction
   if (input.fromCurrencyId === input.toCurrencyId) throw new RuleError("A rate needs two different currencies");
   return inTransaction(db, async (tx) => {
     const pair = [
@@ -151,6 +190,42 @@ export async function setRate(db: Db, input: SetRateInput) {
     await tx.exchangeRate.updateMany({ where: { id: { in: current.map((r) => r.id) } }, data: { validTo: input.validFrom } });
     return tx.exchangeRate.create({ data: { ...input, rate: input.rate.trim() } });
   });
+}
+
+/**
+ * R-FIN-16: publish a rate from now (an accepted trade). If the pair's current
+ * row was written in this same millisecond, the new one starts just after it,
+ * so the most recent always wins.
+ */
+export async function publishRate(db: Db, input: Omit<SetRateInput, "validFrom">) {
+  return inTransaction(db, async (tx) => {
+    const current = await tx.exchangeRate.findFirst({
+      where: {
+        validTo: null,
+        OR: [
+          { fromCurrencyId: input.fromCurrencyId, toCurrencyId: input.toCurrencyId },
+          { fromCurrencyId: input.toCurrencyId, toCurrencyId: input.fromCurrencyId },
+        ],
+      },
+      orderBy: { validFrom: "desc" },
+    });
+    const now = Date.now();
+    const validFrom = new Date(current && current.validFrom.getTime() >= now ? current.validFrom.getTime() + 1 : now);
+    return setRate(tx, { ...input, validFrom });
+  });
+}
+
+/**
+ * Close (set validTo on) every current row from one source that involves a
+ * currency, e.g. its reserve-ratio price once it becomes free. Nothing else
+ * changes. Returns how many rows were closed.
+ */
+export async function closeCurrentRates(db: Db, input: { currencyId: string; source: RateSource; at: Date }) {
+  const { count } = await db.exchangeRate.updateMany({
+    where: { validTo: null, source: input.source, OR: [{ fromCurrencyId: input.currencyId }, { toCurrencyId: input.currencyId }] },
+    data: { validTo: input.at },
+  });
+  return count;
 }
 
 /** Every row for a pair, newest first, both directions: a currency's price history, say. */

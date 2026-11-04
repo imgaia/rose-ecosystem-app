@@ -19,16 +19,16 @@ test("an individual's currency: create, price, edit, mint, home currency", async
     await expect(page.getByRole("button", { name: button, exact: true })).toBeVisible();
   }
 
-  // Create, with the live price and the policy toggle; made the home currency at once.
+  // Create a fiat-backed one, with the live price; made the home currency at once.
   await page.getByRole("button", { name: "Currencies", exact: true }).click();
   await expect(page.getByText("Home currency").first()).toBeVisible();
   await page.getByRole("button", { name: "Create a currency" }).click();
   await field(page, "Name").fill(name);
   await field(page, "Symbol").fill(symbol.toLowerCase());
+  await expect(page.getByText("Mint any amount; no price until it is traded")).toBeVisible(); // free by default
+  await page.getByRole("button", { name: "Fiat-backed", exact: true }).click();
   await field(page, "Reserve ratio").fill("0.5");
   await expect(page.getByText(`1 ${symbol} = 0.50 CHF`)).toBeVisible();
-  await page.getByRole("button", { name: "Open", exact: true }).click();
-  await expect(page.getByText("Beyond the reserve, swaps straight")).toBeVisible();
   await page.getByRole("checkbox", { name: /Make this my home currency/ }).check();
   await page.getByRole("button", { name: "Create currency" }).click();
   await expect(notice(page)).toContainText("Currency created. It is now the home currency.");
@@ -67,7 +67,7 @@ test("an individual's currency: create, price, edit, mint, home currency", async
   await expect(page.getByText("Home currency", { exact: true })).toBeVisible();
 });
 
-test("Convert: the currencies table, refusals named, a conversion and a mint", async ({ signIn }) => {
+test("Convert: the currencies table, refusals named, and a conversion through a reserve", async ({ signIn }) => {
   const page = await signIn("nora");
   await tab(page, "Wallet").click();
   await page.getByRole("button", { name: "Convert", exact: true }).click();
@@ -86,14 +86,19 @@ test("Convert: the currencies table, refusals named, a conversion and a mint", a
   await expect(row("EUR")).toContainText("Not held");
   await expect(row("EUR")).toContainText("Fiat face value · 1 EUR ≈ 0.93 CHF");
 
-  // CHF into RCC: both prices, the rate, what you receive; converted.
+  // CHF into RCC: RCC is free, so it is traded, not converted (R-FIN-10); its starting price still shows.
   await choose(field(page, "Into"), "RCC");
-  await expect(row("CHF")).toContainText("1 CHF = 1.00 RCC");
+  await expect(row("CHF")).toContainText("Not available: trade instead");
+  await expect(row("CHF")).toContainText("R-FIN-10");
   await expect(row("RCC")).toContainText("Balance:");
   await expect(row("RCC")).toContainText("1 RCC = 1.00 CHF");
+
+  // CHF into ABK (Annie's, fiat-backed at 1 CHF): the rate, what you receive; converted.
+  await choose(field(page, "Into"), "ABK");
+  await expect(row("CHF")).toContainText("1 CHF = 1.00 ABK");
   await field(page, "Amount").fill("5");
   await expect(page.getByText("You receive", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: /^Convert for 5.00 RCC/ }).click();
+  await page.getByRole("button", { name: /^Convert for 5.00 ABK/ }).click();
   await expect(notice(page)).toContainText("Converted.");
 });
 

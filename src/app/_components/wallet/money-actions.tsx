@@ -169,9 +169,7 @@ export function Convert({ fromAccountId: initialFrom, toCurrencyId: initialTo }:
         <p className="text-xs text-rose-muted">
           {q.mode === "MINT"
             ? `A mint: ${money(q.value, q.fiat)} is locked in ${to?.code}'s reserve and new ${to?.code} is created at its reserve ratio, as on Mint (R-FIN-01, R-FIN-02).`
-            : q.mode === "RESERVES"
-            ? `Through the reserves: ${money(q.value, q.fiat)} moves ${from?.currency.kind === "FIAT" ? "from your account" : `out of ${from?.currency.code}'s reserve`} ${to?.kind === "FIAT" ? "to your account" : `into ${to?.code}'s reserve`}. What you receive is rounded down.`
-            : "A straight swap at the price, beyond the reserve: both currencies are open, so no fiat moves (R-FIN-10)."}
+            : `Through the reserves: ${money(q.value, q.fiat)} moves ${from?.currency.kind === "FIAT" ? "from your account" : `out of ${from?.currency.code}'s reserve`} ${to?.kind === "FIAT" ? "to your account" : `into ${to?.code}'s reserve`}. What you receive is rounded down.`}
         </p>
       )}
       {own.length === 0 && <p className="text-rose-muted">This node has no account to convert from.</p>}
@@ -282,15 +280,17 @@ export function Mint() {
   const currency = mintable.find((c) => c.id === currencyId) ?? mintable[0];
   const [sourceAccountId, setSourceAccountId] = useState("");
   const [amount, setAmount] = useState("");
-  // Minting draws on the currency's reserve fiat only (R-FIN-14).
+  // A free currency mints any amount from nothing (R-FIN-17). A fiat-backed
+  // one draws on its reserve fiat only (R-FIN-14).
+  const free = currency?.backing === "FREE";
   const sources = fiat.list.filter((a) => !currency || a.currencyId === currency.reserveCurrencyId);
-  const source = sources.find((a) => a.id === sourceAccountId) ?? sources[0];
-  const typed = source ? readAmount(amount, source.currency) : null;
+  const source = free ? undefined : (sources.find((a) => a.id === sourceAccountId) ?? sources[0]);
+  const typed = free ? readAmount(amount, currency) : source ? readAmount(amount, source.currency) : null;
   const units = typed && "amount" in typed ? typed.amount : 0;
 
   const quote = api.wallet.quoteMint.useQuery(
-    { actingNodeId, sourceAccountId: source?.id ?? "", amount: units, currencyId: currency?.id },
-    { enabled: !!source && !!currency && units > 0, retry: false },
+    { actingNodeId, sourceAccountId: source?.id, amount: units, currencyId: currency?.id },
+    { enabled: (free || !!source) && !!currency && units > 0, retry: false },
   );
   const mint = api.wallet.mint.useMutation({ onSuccess: useDone("Minted.") });
   const code = quote.data?.currency.code;
@@ -309,30 +309,34 @@ export function Mint() {
         </Field>
       )}
       {overview.data && mintable.length === 0 && <p className="text-rose-muted">{acting.node.name} issues no active currency. Create one under Currencies.</p>}
-      <Field label="Convert from">
-        <Select value={source?.id ?? ""} onChange={(e) => setSourceAccountId(e.target.value)}>
-          {sources.map((a) => (
-            <option key={a.id} value={a.id}>
-              {a.currency.code}
-              {a.isPrimaryFiat ? " · primary fiat" : ""} · {money(a.balance, a.currency)} available
-            </option>
-          ))}
-        </Select>
-      </Field>
-      <Field label={`Amount${source?.currency.code ? ` in ${source.currency.code}` : ""}`}>
+      {!free && (
+        <Field label="Convert from">
+          <Select value={source?.id ?? ""} onChange={(e) => setSourceAccountId(e.target.value)}>
+            {sources.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.currency.code}
+                {a.isPrimaryFiat ? " · primary fiat" : ""} · {money(a.balance, a.currency)} available
+              </option>
+            ))}
+          </Select>
+        </Field>
+      )}
+      <Field label={`Amount${free ? ` in ${currency.code}` : source?.currency.code ? ` in ${source.currency.code}` : ""}`}>
         <Input inputMode="decimal" placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value)} />
       </Field>
       {quote.data && (
         <>
           <Card className="gap-0 py-1">
-            <Row label="Exchange rate">{quote.data.rate}</Row>
-            <Row label="Reserve ratio">{quote.data.reserveRatio}</Row>
+            {quote.data.rate && <Row label="Exchange rate">{quote.data.rate}</Row>}
+            {quote.data.reserveRatio && <Row label="Reserve ratio">{quote.data.reserveRatio}</Row>}
             <Row label="You will mint" strong>
               {money(quote.data.units, quote.data.currency)}
             </Row>
           </Card>
           <p className="text-xs text-rose-muted">
-            {money(units, source?.currency)} moves into the {code} reserve and stays locked there, backing the new units.
+            {quote.data.source
+              ? `${money(units, source?.currency)} moves into the ${code} reserve and stays locked there, backing the new units.`
+              : `${code} is a free currency: nothing is locked, and it has no price until it is traded.`}
           </p>
         </>
       )}
@@ -344,7 +348,7 @@ export function Mint() {
          
           permission={permissionFor("MINT")}
           disabled={!quote.data || mint.isPending}
-          onClick={() => source && currency && mint.mutate({ actingNodeId, sourceAccountId: source.id, amount: units, currencyId: currency.id })}
+          onClick={() => currency && mint.mutate({ actingNodeId, sourceAccountId: source?.id, amount: units, currencyId: currency.id })}
         >
           {quote.data ? `Mint ${money(quote.data.units, quote.data.currency)}` : "Mint"}
         </GatedButton>

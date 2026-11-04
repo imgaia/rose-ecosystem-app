@@ -233,7 +233,7 @@ function label(node: { id: string; name: string } | null, me: string) {
 
 const capital = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
-const POLICY: Record<string, string> = { reserve: "Reserve", open: "Open" };
+const BACKING: Record<string, string> = { FREE: "Free", FIAT: "Fiat-backed" };
 
 /** What a currency proposal would do: the new currency's fields, or what changes. */
 function CurrencyChangeCard({ change, issuer }: { change: NonNullable<ProposalView["currencyChange"]>; issuer: string }) {
@@ -252,12 +252,12 @@ function CurrencyChangeCard({ change, issuer }: { change: NonNullable<ProposalVi
       {fields.code !== undefined && <Row label="Symbol">{fields.code}</Row>}
       {fields.description !== undefined && <Row label="Description">{fields.description ?? "None"}</Row>}
       {fields.decimals !== undefined && <Row label="Decimal places">{fields.decimals}</Row>}
-      {fields.reserveRatio !== undefined && (
+      {fields.backing !== undefined && <Row label="Backing">{BACKING[fields.backing] ?? fields.backing}</Row>}
+      {fields.reserveRatio != null && (
         <Row label="Price">
           {rateLine(fields.code ?? currency?.code ?? "unit", fields.reserveRatio, { code: fiatCode ?? "", decimals: 2 })}
         </Row>
       )}
-      {fields.policy !== undefined && <Row label="Conversion policy">{POLICY[fields.policy] ?? fields.policy}</Row>}
       {makeHome && <Row label="Home currency">Becomes {issuer}&apos;s home currency</Row>}
       {action === "RETIRE" && <Row label="After">No new units; balances stay usable and convertible</Row>}
       {action === "DELETE" && <Row label="After">Removed for good (nobody has held it)</Row>}

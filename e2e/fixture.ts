@@ -5,10 +5,12 @@
 // from prisma/seed-reference.ts, and the people, money and work from the
 // app's own core functions.
 //
-// - Nora: founder, Owner and Treasurer of ROSE Org, which issues RCC.
-// - Annie: joined from ROSE Org's invitation (Member), also an Owner.
+// - Nora: founder, Owner and Treasurer of ROSE Org, which issues RCC (free).
+// - Annie: joined from ROSE Org's invitation (Member), also an Owner. She
+//   issues ABK, fiat-backed at 1 CHF.
 // - Theo: joined from Nora's invitation.
-// - Nora deposited 500 CHF and bought 200 RCC; her home currency is RCC.
+// - ROSE Org minted 1,000 RCC; Nora deposited 500 CHF and bought 200 RCC
+//   from ROSE Org in a trade, for 200 CHF. Her home currency is RCC.
 // - Nora and Annie agreed work (a relationship with an interaction).
 
 import { createClient } from "@libsql/client";
@@ -18,11 +20,22 @@ import path from "path";
 
 import { PrismaClient } from "../generated/prisma";
 import { seedReference } from "../prisma/seed-reference";
-import { acceptInvitation, addFunds, convert, createInvitation, proposeWork, respond, setHomeCurrency, setRate } from "../src/server/core";
+import {
+  acceptInvitation,
+  addFunds,
+  createInvitation,
+  mint,
+  proposeCurrencyChange,
+  proposeTrade,
+  proposeWork,
+  respond,
+  setHomeCurrency,
+  setRate,
+} from "../src/server/core";
 import { roles } from "../src/server/rules/index";
 import { COLLECTION, PASSWORD, USERS } from "./fixture-data";
 
-const MIGRATIONS = ["v08-schema.sql", "v10-currencies.sql", "v10-reserves.sql"];
+const MIGRATIONS = ["v08-schema.sql", "v10-currencies.sql", "v10-reserves.sql", "v11-free-currencies.sql"];
 
 export async function buildFixture(url: string) {
   const client = createClient({ url });
@@ -77,11 +90,21 @@ export async function buildFixture(url: string) {
     const annie = await join(asNoraForRose, USERS.annie);
     await db.roleAssignment.create({ data: { scopeNodeId: rose.id, holderNodeId: annie.id, roleKey: "OWNER" } });
     await join(asNora, USERS.theo);
+    // Annie's own fiat-backed currency: something Convert can buy through a reserve.
+    await proposeCurrencyChange(db, { personId: annie.id, actingNodeId: annie.id }, {
+      action: "CREATE",
+      fields: { name: "Annie's Bakery", code: "ABK", backing: "FIAT", reserveRatio: "1" },
+    });
 
-    // Money: Nora deposits 500 CHF and buys 200 RCC through RCC's reserve.
+    // Money: ROSE Org mints RCC (free); Nora deposits 500 CHF and buys 200 RCC from ROSE Org in a trade.
+    await mint(db, asNoraForRose, { amount: 100_000, currencyId: rcc.id });
     await addFunds(db, asNora, { amount: 50_000, reference: "E2E deposit", depositedOn: new Date() });
-    const noraChf = await db.account.findFirstOrThrow({ where: { nodeId: nora.id, isPrimaryFiat: true } });
-    await convert(db, asNora, { fromAccountId: noraChf.id, toCurrencyId: rcc.id, amount: 20_000 });
+    const trade = await proposeTrade(db, asNora, {
+      toNodeId: rose.id,
+      give: { amount: 20_000, currencyId: chf.id },
+      get: { amount: 20_000, currencyId: rcc.id },
+    });
+    await respond(db, asNoraForRose, { proposalId: trade.proposal.id, approve: true });
     await setHomeCurrency(db, asNora, { currencyId: rcc.id });
     await setHomeCurrency(db, asNoraForRose, { currencyId: rcc.id });
 

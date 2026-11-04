@@ -208,6 +208,8 @@ exports.Prisma.InteractionTermsScalarFieldEnum = {
   description: 'description',
   amount: 'amount',
   currencyId: 'currencyId',
+  counterAmount: 'counterAmount',
+  counterCurrencyId: 'counterCurrencyId',
   frequency: 'frequency',
   paymentMode: 'paymentMode',
   startDate: 'startDate',
@@ -262,6 +264,7 @@ exports.Prisma.CurrencyScalarFieldEnum = {
   description: 'description',
   kind: 'kind',
   status: 'status',
+  backing: 'backing',
   decimals: 'decimals',
   issuerNodeId: 'issuerNodeId',
   reserveCurrencyId: 'reserveCurrencyId',
@@ -369,7 +372,8 @@ exports.RelationshipStatus = exports.$Enums.RelationshipStatus = {
 exports.InteractionKind = exports.$Enums.InteractionKind = {
   PAYMENT: 'PAYMENT',
   GIFT: 'GIFT',
-  WORK: 'WORK'
+  WORK: 'WORK',
+  TRADE: 'TRADE'
 };
 
 exports.InteractionStatus = exports.$Enums.InteractionStatus = {
@@ -422,10 +426,17 @@ exports.CurrencyStatus = exports.$Enums.CurrencyStatus = {
   RETIRED: 'RETIRED'
 };
 
+exports.CurrencyBacking = exports.$Enums.CurrencyBacking = {
+  FREE: 'FREE',
+  FIAT: 'FIAT'
+};
+
 exports.RateSource = exports.$Enums.RateSource = {
   FEED: 'FEED',
   RESERVE_RATIO: 'RESERVE_RATIO',
-  MANUAL: 'MANUAL'
+  MANUAL: 'MANUAL',
+  TRADE: 'TRADE',
+  INITIAL: 'INITIAL'
 };
 
 exports.TransactionKind = exports.$Enums.TransactionKind = {
