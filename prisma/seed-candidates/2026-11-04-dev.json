@@ -1,0 +1,4683 @@
+{
+  "format": 2,
+  "exportedAt": "2026-11-04T16:51:58.865Z",
+  "target": "dev",
+  "schema": {
+    "Account": "CREATE TABLE \"Account\" (\n    \"id\" TEXT NOT NULL PRIMARY KEY,\n    \"nodeId\" TEXT NOT NULL,\n    \"currencyId\" TEXT NOT NULL,\n    \"balance\" INTEGER NOT NULL DEFAULT 0,\n    \"isPrimaryFiat\" BOOLEAN NOT NULL DEFAULT false,\n    \"isReserve\" BOOLEAN NOT NULL DEFAULT false,\n    \"createdAt\" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, \"backsCurrencyId\" TEXT NOT NULL DEFAULT '',\n    CONSTRAINT \"Account_nodeId_fkey\" FOREIGN KEY (\"nodeId\") REFERENCES \"Node\" (\"id\") ON DELETE RESTRICT ON UPDATE CASCADE,\n    CONSTRAINT \"Account_currencyId_fkey\" FOREIGN KEY (\"currencyId\") REFERENCES \"Currency\" (\"id\") ON DELETE RESTRICT ON UPDATE CASCADE\n)",
+    "Activity": "CREATE TABLE \"Activity\" (\n    \"id\" TEXT NOT NULL PRIMARY KEY,\n    \"nodeId\" TEXT NOT NULL,\n    \"type\" TEXT NOT NULL,\n    \"refId\" TEXT,\n    \"summary\" TEXT NOT NULL,\n    \"createdAt\" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    CONSTRAINT \"Activity_nodeId_fkey\" FOREIGN KEY (\"nodeId\") REFERENCES \"Node\" (\"id\") ON DELETE RESTRICT ON UPDATE CASCADE\n)",
+    "Capability": "CREATE TABLE \"Capability\" (\n    \"key\" TEXT NOT NULL PRIMARY KEY,\n    \"label\" TEXT NOT NULL,\n    \"description\" TEXT NOT NULL\n)",
+    "Currency": "CREATE TABLE \"Currency\" (\n    \"id\" TEXT NOT NULL PRIMARY KEY,\n    \"name\" TEXT NOT NULL,\n    \"code\" TEXT,\n    \"kind\" TEXT NOT NULL,\n    \"decimals\" INTEGER NOT NULL DEFAULT 2,\n    \"issuerNodeId\" TEXT,\n    \"createdAt\" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, \"description\" TEXT, \"status\" TEXT NOT NULL DEFAULT 'ACTIVE', \"reserveCurrencyId\" TEXT REFERENCES \"Currency\" (\"id\") ON DELETE SET NULL ON UPDATE CASCADE, \"country\" TEXT,\n    CONSTRAINT \"Currency_issuerNodeId_fkey\" FOREIGN KEY (\"issuerNodeId\") REFERENCES \"Node\" (\"id\") ON DELETE SET NULL ON UPDATE CASCADE\n)",
+    "CurrencyRuleValue": "CREATE TABLE \"CurrencyRuleValue\" (\n    \"currencyId\" TEXT NOT NULL,\n    \"ruleId\" TEXT NOT NULL,\n    \"value\" TEXT NOT NULL,\n\n    PRIMARY KEY (\"currencyId\", \"ruleId\"),\n    CONSTRAINT \"CurrencyRuleValue_currencyId_fkey\" FOREIGN KEY (\"currencyId\") REFERENCES \"Currency\" (\"id\") ON DELETE RESTRICT ON UPDATE CASCADE\n)",
+    "ExchangeRate": "CREATE TABLE \"ExchangeRate\" (\n    \"id\" TEXT NOT NULL PRIMARY KEY,\n    \"fromCurrencyId\" TEXT NOT NULL,\n    \"toCurrencyId\" TEXT NOT NULL,\n    \"rate\" TEXT NOT NULL,\n    \"validFrom\" DATETIME NOT NULL,\n    \"validTo\" DATETIME,\n    \"source\" TEXT NOT NULL,\n    \"setBy\" TEXT NOT NULL,\n    \"createdAt\" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    CONSTRAINT \"ExchangeRate_fromCurrencyId_fkey\" FOREIGN KEY (\"fromCurrencyId\") REFERENCES \"Currency\" (\"id\") ON DELETE RESTRICT ON UPDATE CASCADE,\n    CONSTRAINT \"ExchangeRate_toCurrencyId_fkey\" FOREIGN KEY (\"toCurrencyId\") REFERENCES \"Currency\" (\"id\") ON DELETE RESTRICT ON UPDATE CASCADE\n)",
+    "Interaction": "CREATE TABLE \"Interaction\" (\n    \"id\" TEXT NOT NULL PRIMARY KEY,\n    \"relationshipId\" TEXT NOT NULL,\n    \"kind\" TEXT NOT NULL,\n    \"payerNodeId\" TEXT NOT NULL,\n    \"payeeNodeId\" TEXT NOT NULL,\n    \"proposerNodeId\" TEXT NOT NULL,\n    \"status\" TEXT NOT NULL DEFAULT 'PROPOSED',\n    \"nextDueAt\" DATETIME,\n    \"createdAt\" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    CONSTRAINT \"Interaction_relationshipId_fkey\" FOREIGN KEY (\"relationshipId\") REFERENCES \"Relationship\" (\"id\") ON DELETE RESTRICT ON UPDATE CASCADE\n)",
+    "InteractionCurator": "CREATE TABLE \"InteractionCurator\" (\n    \"interactionId\" TEXT NOT NULL,\n    \"curatorNodeId\" TEXT NOT NULL,\n\n    PRIMARY KEY (\"interactionId\", \"curatorNodeId\"),\n    CONSTRAINT \"InteractionCurator_interactionId_fkey\" FOREIGN KEY (\"interactionId\") REFERENCES \"Interaction\" (\"id\") ON DELETE RESTRICT ON UPDATE CASCADE\n)",
+    "InteractionTerms": "CREATE TABLE \"InteractionTerms\" (\n    \"id\" TEXT NOT NULL PRIMARY KEY,\n    \"interactionId\" TEXT NOT NULL,\n    \"version\" INTEGER NOT NULL,\n    \"description\" TEXT,\n    \"amount\" INTEGER NOT NULL,\n    \"currencyId\" TEXT NOT NULL,\n    \"frequency\" TEXT NOT NULL DEFAULT 'ONCE',\n    \"paymentMode\" TEXT NOT NULL DEFAULT 'AUTOMATIC',\n    \"startDate\" DATETIME,\n    \"endDate\" DATETIME,\n    \"maxPayments\" INTEGER,\n    \"rulesVersion\" TEXT NOT NULL,\n    \"approved\" BOOLEAN NOT NULL DEFAULT false,\n    \"createdAt\" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    CONSTRAINT \"InteractionTerms_interactionId_fkey\" FOREIGN KEY (\"interactionId\") REFERENCES \"Interaction\" (\"id\") ON DELETE RESTRICT ON UPDATE CASCADE,\n    CONSTRAINT \"InteractionTerms_currencyId_fkey\" FOREIGN KEY (\"currencyId\") REFERENCES \"Currency\" (\"id\") ON DELETE RESTRICT ON UPDATE CASCADE\n)",
+    "Invitation": "CREATE TABLE \"Invitation\" (\n    \"id\" TEXT NOT NULL PRIMARY KEY,\n    \"inviterNodeId\" TEXT NOT NULL,\n    \"name\" TEXT NOT NULL,\n    \"email\" TEXT,\n    \"phone\" TEXT,\n    \"message\" TEXT,\n    \"tokenHash\" TEXT NOT NULL,\n    \"status\" TEXT NOT NULL DEFAULT 'PENDING',\n    \"expiresAt\" DATETIME NOT NULL,\n    \"acceptedNodeId\" TEXT,\n    \"createdAt\" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    CONSTRAINT \"Invitation_inviterNodeId_fkey\" FOREIGN KEY (\"inviterNodeId\") REFERENCES \"Node\" (\"id\") ON DELETE RESTRICT ON UPDATE CASCADE\n)",
+    "Node": "CREATE TABLE \"Node\" (\n    \"id\" TEXT NOT NULL PRIMARY KEY,\n    \"kind\" TEXT NOT NULL,\n    \"status\" TEXT NOT NULL DEFAULT 'ACTIVE',\n    \"name\" TEXT NOT NULL,\n    \"firstName\" TEXT,\n    \"lastName\" TEXT,\n    \"description\" TEXT,\n    \"photoUrl\" TEXT,\n    \"username\" TEXT,\n    \"passwordHash\" TEXT,\n    \"email\" TEXT,\n    \"phone\" TEXT,\n    \"createdAt\" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP\n, \"country\" TEXT, \"homeCurrencyId\" TEXT REFERENCES \"Currency\" (\"id\") ON DELETE SET NULL ON UPDATE CASCADE)",
+    "NodeRuleValue": "CREATE TABLE \"NodeRuleValue\" (\n    \"nodeId\" TEXT NOT NULL,\n    \"ruleId\" TEXT NOT NULL,\n    \"value\" TEXT NOT NULL,\n\n    PRIMARY KEY (\"nodeId\", \"ruleId\"),\n    CONSTRAINT \"NodeRuleValue_nodeId_fkey\" FOREIGN KEY (\"nodeId\") REFERENCES \"Node\" (\"id\") ON DELETE RESTRICT ON UPDATE CASCADE\n)",
+    "PasswordResetToken": "CREATE TABLE \"PasswordResetToken\" (\n    \"id\" TEXT NOT NULL PRIMARY KEY,\n    \"token\" TEXT NOT NULL,\n    \"nodeId\" TEXT NOT NULL,\n    \"expiresAt\" DATETIME NOT NULL,\n    \"used\" BOOLEAN NOT NULL DEFAULT false,\n    \"createdAt\" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP\n)",
+    "Proposal": "CREATE TABLE \"Proposal\" (\n    \"id\" TEXT NOT NULL PRIMARY KEY,\n    \"kind\" TEXT NOT NULL,\n    \"status\" TEXT NOT NULL DEFAULT 'OPEN',\n    \"proposerNodeId\" TEXT NOT NULL,\n    \"proposedByPersonId\" TEXT NOT NULL,\n    \"interactionId\" TEXT,\n    \"subjectNodeId\" TEXT,\n    \"payload\" TEXT NOT NULL,\n    \"comment\" TEXT,\n    \"createdAt\" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    \"decidedAt\" DATETIME,\n    CONSTRAINT \"Proposal_interactionId_fkey\" FOREIGN KEY (\"interactionId\") REFERENCES \"Interaction\" (\"id\") ON DELETE SET NULL ON UPDATE CASCADE\n)",
+    "ProposalApprover": "CREATE TABLE \"ProposalApprover\" (\n    \"proposalId\" TEXT NOT NULL,\n    \"approverNodeId\" TEXT NOT NULL,\n    \"decision\" BOOLEAN,\n    \"decidedByPersonId\" TEXT,\n    \"decidedAt\" DATETIME,\n    \"comment\" TEXT,\n\n    PRIMARY KEY (\"proposalId\", \"approverNodeId\"),\n    CONSTRAINT \"ProposalApprover_proposalId_fkey\" FOREIGN KEY (\"proposalId\") REFERENCES \"Proposal\" (\"id\") ON DELETE RESTRICT ON UPDATE CASCADE\n)",
+    "Relationship": "CREATE TABLE \"Relationship\" (\n    \"id\" TEXT NOT NULL PRIMARY KEY,\n    \"nodeAId\" TEXT NOT NULL,\n    \"nodeBId\" TEXT NOT NULL,\n    \"status\" TEXT NOT NULL DEFAULT 'PENDING',\n    \"createdAt\" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    \"formedAt\" DATETIME,\n    CONSTRAINT \"Relationship_nodeAId_fkey\" FOREIGN KEY (\"nodeAId\") REFERENCES \"Node\" (\"id\") ON DELETE RESTRICT ON UPDATE CASCADE,\n    CONSTRAINT \"Relationship_nodeBId_fkey\" FOREIGN KEY (\"nodeBId\") REFERENCES \"Node\" (\"id\") ON DELETE RESTRICT ON UPDATE CASCADE\n)",
+    "Role": "CREATE TABLE \"Role\" (\n    \"key\" TEXT NOT NULL PRIMARY KEY,\n    \"label\" TEXT NOT NULL,\n    \"native\" BOOLEAN NOT NULL\n)",
+    "RoleAssignment": "CREATE TABLE \"RoleAssignment\" (\n    \"id\" TEXT NOT NULL PRIMARY KEY,\n    \"scopeNodeId\" TEXT NOT NULL,\n    \"holderNodeId\" TEXT NOT NULL,\n    \"roleKey\" TEXT NOT NULL,\n    \"createdAt\" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    \"endedAt\" DATETIME,\n    CONSTRAINT \"RoleAssignment_scopeNodeId_fkey\" FOREIGN KEY (\"scopeNodeId\") REFERENCES \"Node\" (\"id\") ON DELETE RESTRICT ON UPDATE CASCADE,\n    CONSTRAINT \"RoleAssignment_holderNodeId_fkey\" FOREIGN KEY (\"holderNodeId\") REFERENCES \"Node\" (\"id\") ON DELETE RESTRICT ON UPDATE CASCADE,\n    CONSTRAINT \"RoleAssignment_roleKey_fkey\" FOREIGN KEY (\"roleKey\") REFERENCES \"Role\" (\"key\") ON DELETE RESTRICT ON UPDATE CASCADE\n)",
+    "RoleCapability": "CREATE TABLE \"RoleCapability\" (\n    \"roleKey\" TEXT NOT NULL,\n    \"capabilityKey\" TEXT NOT NULL,\n\n    PRIMARY KEY (\"roleKey\", \"capabilityKey\"),\n    CONSTRAINT \"RoleCapability_roleKey_fkey\" FOREIGN KEY (\"roleKey\") REFERENCES \"Role\" (\"key\") ON DELETE RESTRICT ON UPDATE CASCADE,\n    CONSTRAINT \"RoleCapability_capabilityKey_fkey\" FOREIGN KEY (\"capabilityKey\") REFERENCES \"Capability\" (\"key\") ON DELETE RESTRICT ON UPDATE CASCADE\n)",
+    "Transaction": "CREATE TABLE \"Transaction\" (\n    \"id\" TEXT NOT NULL PRIMARY KEY,\n    \"kind\" TEXT NOT NULL,\n    \"fromAccountId\" TEXT,\n    \"toAccountId\" TEXT,\n    \"amount\" INTEGER NOT NULL,\n    \"toAmount\" INTEGER,\n    \"rate\" TEXT,\n    \"comment\" TEXT NOT NULL,\n    \"interactionId\" TEXT,\n    \"groupId\" TEXT,\n    \"effectiveDate\" DATETIME,\n    \"actedByPersonId\" TEXT NOT NULL,\n    \"createdAt\" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    CONSTRAINT \"Transaction_fromAccountId_fkey\" FOREIGN KEY (\"fromAccountId\") REFERENCES \"Account\" (\"id\") ON DELETE SET NULL ON UPDATE CASCADE,\n    CONSTRAINT \"Transaction_toAccountId_fkey\" FOREIGN KEY (\"toAccountId\") REFERENCES \"Account\" (\"id\") ON DELETE SET NULL ON UPDATE CASCADE,\n    CONSTRAINT \"Transaction_interactionId_fkey\" FOREIGN KEY (\"interactionId\") REFERENCES \"Interaction\" (\"id\") ON DELETE SET NULL ON UPDATE CASCADE\n)",
+    "TrustScore": "CREATE TABLE \"TrustScore\" (\n    \"relationshipId\" TEXT NOT NULL PRIMARY KEY,\n    \"value\" REAL NOT NULL DEFAULT 0.75,\n    \"updatedAt\" DATETIME NOT NULL,\n    CONSTRAINT \"TrustScore_relationshipId_fkey\" FOREIGN KEY (\"relationshipId\") REFERENCES \"Relationship\" (\"id\") ON DELETE RESTRICT ON UPDATE CASCADE\n)",
+    "Verification": "CREATE TABLE \"Verification\" (\n    \"id\" TEXT NOT NULL PRIMARY KEY,\n    \"interactionId\" TEXT NOT NULL,\n    \"curatorNodeId\" TEXT NOT NULL,\n    \"confirmed\" BOOLEAN NOT NULL,\n    \"note\" TEXT,\n    \"createdAt\" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    CONSTRAINT \"Verification_interactionId_fkey\" FOREIGN KEY (\"interactionId\") REFERENCES \"Interaction\" (\"id\") ON DELETE RESTRICT ON UPDATE CASCADE\n)"
+  },
+  "indexes": {
+    "Account_nodeId_currencyId_isReserve_backsCurrencyId_key": "CREATE UNIQUE INDEX \"Account_nodeId_currencyId_isReserve_backsCurrencyId_key\" ON \"Account\"(\"nodeId\", \"currencyId\", \"isReserve\", \"backsCurrencyId\")",
+    "Activity_nodeId_createdAt_idx": "CREATE INDEX \"Activity_nodeId_createdAt_idx\" ON \"Activity\"(\"nodeId\", \"createdAt\")",
+    "ExchangeRate_fromCurrencyId_toCurrencyId_validFrom_idx": "CREATE INDEX \"ExchangeRate_fromCurrencyId_toCurrencyId_validFrom_idx\" ON \"ExchangeRate\"(\"fromCurrencyId\", \"toCurrencyId\", \"validFrom\")",
+    "InteractionTerms_interactionId_version_key": "CREATE UNIQUE INDEX \"InteractionTerms_interactionId_version_key\" ON \"InteractionTerms\"(\"interactionId\", \"version\")",
+    "Interaction_payeeNodeId_idx": "CREATE INDEX \"Interaction_payeeNodeId_idx\" ON \"Interaction\"(\"payeeNodeId\")",
+    "Interaction_payerNodeId_idx": "CREATE INDEX \"Interaction_payerNodeId_idx\" ON \"Interaction\"(\"payerNodeId\")",
+    "Invitation_tokenHash_key": "CREATE UNIQUE INDEX \"Invitation_tokenHash_key\" ON \"Invitation\"(\"tokenHash\")",
+    "Node_email_key": "CREATE UNIQUE INDEX \"Node_email_key\" ON \"Node\"(\"email\")",
+    "Node_phone_key": "CREATE UNIQUE INDEX \"Node_phone_key\" ON \"Node\"(\"phone\")",
+    "Node_username_key": "CREATE UNIQUE INDEX \"Node_username_key\" ON \"Node\"(\"username\")",
+    "PasswordResetToken_token_key": "CREATE UNIQUE INDEX \"PasswordResetToken_token_key\" ON \"PasswordResetToken\"(\"token\")",
+    "ProposalApprover_approverNodeId_decision_idx": "CREATE INDEX \"ProposalApprover_approverNodeId_decision_idx\" ON \"ProposalApprover\"(\"approverNodeId\", \"decision\")",
+    "Relationship_nodeAId_nodeBId_key": "CREATE UNIQUE INDEX \"Relationship_nodeAId_nodeBId_key\" ON \"Relationship\"(\"nodeAId\", \"nodeBId\")",
+    "RoleAssignment_holderNodeId_idx": "CREATE INDEX \"RoleAssignment_holderNodeId_idx\" ON \"RoleAssignment\"(\"holderNodeId\")",
+    "RoleAssignment_scopeNodeId_roleKey_idx": "CREATE INDEX \"RoleAssignment_scopeNodeId_roleKey_idx\" ON \"RoleAssignment\"(\"scopeNodeId\", \"roleKey\")",
+    "Transaction_fromAccountId_idx": "CREATE INDEX \"Transaction_fromAccountId_idx\" ON \"Transaction\"(\"fromAccountId\")",
+    "Transaction_interactionId_idx": "CREATE INDEX \"Transaction_interactionId_idx\" ON \"Transaction\"(\"interactionId\")",
+    "Transaction_toAccountId_idx": "CREATE INDEX \"Transaction_toAccountId_idx\" ON \"Transaction\"(\"toAccountId\")"
+  },
+  "tables": {
+    "Account": [
+      {
+        "id": "cmvntu9s90038uny9zqfgdtvo",
+        "nodeId": "cmtpttiir0000un7q3g2btgus",
+        "currencyId": "cmvnttkwp0001unp9e0plgwuk",
+        "balance": 24500,
+        "isPrimaryFiat": false,
+        "isReserve": false,
+        "createdAt": "2026-09-06T13:07:18.147Z",
+        "backsCurrencyId": ""
+      },
+      {
+        "id": "cmvntu9xe003auny9hybeb2cq",
+        "nodeId": "cmtpttiir0000un7q3g2btgus",
+        "currencyId": "cmvnttkkx0000unp9l2ckpdf0",
+        "balance": 148400,
+        "isPrimaryFiat": true,
+        "isReserve": false,
+        "createdAt": "2026-09-06T13:07:18.147Z",
+        "backsCurrencyId": ""
+      },
+      {
+        "id": "cmvntua1x003cuny9i6zw8uyp",
+        "nodeId": "cmtpttiqk0004un7qtohawslw",
+        "currencyId": "cmvnttkwp0001unp9e0plgwuk",
+        "balance": 21000,
+        "isPrimaryFiat": false,
+        "isReserve": false,
+        "createdAt": "2026-09-06T13:07:18.428Z",
+        "backsCurrencyId": ""
+      },
+      {
+        "id": "cmvntua6i003euny934imj3ie",
+        "nodeId": "cmtpttiqk0004un7qtohawslw",
+        "currencyId": "cmvnttkkx0000unp9l2ckpdf0",
+        "balance": 100,
+        "isPrimaryFiat": true,
+        "isReserve": false,
+        "createdAt": "2026-09-06T13:07:18.428Z",
+        "backsCurrencyId": ""
+      },
+      {
+        "id": "cmvntuabx003guny9aeeyduqk",
+        "nodeId": "cmtpttiz90007un7qgs7e8dac",
+        "currencyId": "cmvnttkwp0001unp9e0plgwuk",
+        "balance": 17000,
+        "isPrimaryFiat": false,
+        "isReserve": false,
+        "createdAt": "2026-09-06T13:07:18.741Z",
+        "backsCurrencyId": ""
+      },
+      {
+        "id": "cmvntuagm003iuny9nag38clx",
+        "nodeId": "cmtpttiz90007un7qgs7e8dac",
+        "currencyId": "cmvnttkkx0000unp9l2ckpdf0",
+        "balance": 80000,
+        "isPrimaryFiat": true,
+        "isReserve": false,
+        "createdAt": "2026-09-06T13:07:18.741Z",
+        "backsCurrencyId": ""
+      },
+      {
+        "id": "cmvntualc003kuny9vtd0u6j3",
+        "nodeId": "cmtpttj70000aun7qysschrfo",
+        "currencyId": "cmvnttkwp0001unp9e0plgwuk",
+        "balance": 23500,
+        "isPrimaryFiat": false,
+        "isReserve": false,
+        "createdAt": "2026-09-06T13:07:19.020Z",
+        "backsCurrencyId": ""
+      },
+      {
+        "id": "cmvntuaqj003muny9suds1yja",
+        "nodeId": "cmtpttj70000aun7qysschrfo",
+        "currencyId": "cmvnttkkx0000unp9l2ckpdf0",
+        "balance": 0,
+        "isPrimaryFiat": true,
+        "isReserve": false,
+        "createdAt": "2026-09-06T13:07:19.020Z",
+        "backsCurrencyId": ""
+      },
+      {
+        "id": "cmvntuavf003ouny9k8lhe9za",
+        "nodeId": "cmtpttjj3000eun7q0ud7jzry",
+        "currencyId": "cmvnttkwp0001unp9e0plgwuk",
+        "balance": 4000,
+        "isPrimaryFiat": false,
+        "isReserve": false,
+        "createdAt": "2026-09-06T13:07:19.455Z",
+        "backsCurrencyId": ""
+      },
+      {
+        "id": "cmvntub02003quny9oks93enq",
+        "nodeId": "cmtpttjj3000eun7q0ud7jzry",
+        "currencyId": "cmvnttkkx0000unp9l2ckpdf0",
+        "balance": 70000,
+        "isPrimaryFiat": true,
+        "isReserve": false,
+        "createdAt": "2026-09-06T13:07:19.455Z",
+        "backsCurrencyId": ""
+      },
+      {
+        "id": "cmvntub52003suny9qwmwxrkd",
+        "nodeId": "cmtpttjtf000hun7qal6h70dl",
+        "currencyId": "cmvnttkwp0001unp9e0plgwuk",
+        "balance": 19400,
+        "isPrimaryFiat": false,
+        "isReserve": false,
+        "createdAt": "2026-09-06T13:07:19.827Z",
+        "backsCurrencyId": ""
+      },
+      {
+        "id": "cmvntub9r003uuny9xzj1nd28",
+        "nodeId": "cmtpttjtf000hun7qal6h70dl",
+        "currencyId": "cmvnttkkx0000unp9l2ckpdf0",
+        "balance": 74100,
+        "isPrimaryFiat": true,
+        "isReserve": false,
+        "createdAt": "2026-09-06T13:07:19.827Z",
+        "backsCurrencyId": ""
+      },
+      {
+        "id": "cmvntubee003wuny9evtfisun",
+        "nodeId": "cmtpttk1s000kun7q4brs42h3",
+        "currencyId": "cmvnttkwp0001unp9e0plgwuk",
+        "balance": 7500,
+        "isPrimaryFiat": false,
+        "isReserve": false,
+        "createdAt": "2026-09-06T13:07:20.128Z",
+        "backsCurrencyId": ""
+      },
+      {
+        "id": "cmvntubjl003yuny93s3wzhl2",
+        "nodeId": "cmtpttk1s000kun7q4brs42h3",
+        "currencyId": "cmvnttkkx0000unp9l2ckpdf0",
+        "balance": 0,
+        "isPrimaryFiat": true,
+        "isReserve": false,
+        "createdAt": "2026-09-06T13:07:20.128Z",
+        "backsCurrencyId": ""
+      },
+      {
+        "id": "cmvntubo80040uny9ns752y0y",
+        "nodeId": "cmtpttkan000nun7qg8a2rb40",
+        "currencyId": "cmvnttkwp0001unp9e0plgwuk",
+        "balance": 11000,
+        "isPrimaryFiat": false,
+        "isReserve": false,
+        "createdAt": "2026-09-06T13:07:20.447Z",
+        "backsCurrencyId": ""
+      },
+      {
+        "id": "cmvntubsx0042uny94y3wtck2",
+        "nodeId": "cmtpttkan000nun7qg8a2rb40",
+        "currencyId": "cmvnttkkx0000unp9l2ckpdf0",
+        "balance": 0,
+        "isPrimaryFiat": true,
+        "isReserve": false,
+        "createdAt": "2026-09-06T13:07:20.447Z",
+        "backsCurrencyId": ""
+      },
+      {
+        "id": "cmvntuby60044uny9cvxm15b2",
+        "nodeId": "cmtpttkjh000qun7qtzghog1o",
+        "currencyId": "cmvnttkwp0001unp9e0plgwuk",
+        "balance": 15000,
+        "isPrimaryFiat": false,
+        "isReserve": false,
+        "createdAt": "2026-09-06T13:07:20.766Z",
+        "backsCurrencyId": ""
+      },
+      {
+        "id": "cmvntuc2u0046uny966erx9xn",
+        "nodeId": "cmtpttkjh000qun7qtzghog1o",
+        "currencyId": "cmvnttkkx0000unp9l2ckpdf0",
+        "balance": 0,
+        "isPrimaryFiat": true,
+        "isReserve": false,
+        "createdAt": "2026-09-06T13:07:20.766Z",
+        "backsCurrencyId": ""
+      },
+      {
+        "id": "cmvntuc7o0048uny9qakwfha2",
+        "nodeId": "cmtpttkrm000tun7q4midtp5a",
+        "currencyId": "cmvnttkwp0001unp9e0plgwuk",
+        "balance": 3000,
+        "isPrimaryFiat": false,
+        "isReserve": false,
+        "createdAt": "2026-09-06T13:07:21.058Z",
+        "backsCurrencyId": ""
+      },
+      {
+        "id": "cmvntuccp004auny9bhvz9u2b",
+        "nodeId": "cmtpttkrm000tun7q4midtp5a",
+        "currencyId": "cmvnttkkx0000unp9l2ckpdf0",
+        "balance": 0,
+        "isPrimaryFiat": true,
+        "isReserve": false,
+        "createdAt": "2026-09-06T13:07:21.058Z",
+        "backsCurrencyId": ""
+      },
+      {
+        "id": "cmvuxoac10001jo08uu47esfo",
+        "nodeId": "cmvntu7i0002cuny9bjveqjou",
+        "currencyId": "cmvnttkkx0000unp9l2ckpdf0",
+        "balance": 30400,
+        "isPrimaryFiat": false,
+        "isReserve": true,
+        "createdAt": "2026-10-30T12:13:28.274Z",
+        "backsCurrencyId": "cmvnttkwp0001unp9e0plgwuk"
+      },
+      {
+        "id": "cmvz48hp1000fjm083lwdn7iz",
+        "nodeId": "cmtpttiir0000un7q3g2btgus",
+        "currencyId": "cmvnttkkx0000unp9l2ckpdf0",
+        "balance": 5000,
+        "isPrimaryFiat": false,
+        "isReserve": true,
+        "createdAt": "2026-11-02T10:28:13.333Z",
+        "backsCurrencyId": "cmvv6kl990002gw08ke2sh2as"
+      },
+      {
+        "id": "cmvz48hri000ljm08c7bep8jm",
+        "nodeId": "cmtpttjtf000hun7qal6h70dl",
+        "currencyId": "cmvv6kl990002gw08ke2sh2as",
+        "balance": 5000,
+        "isPrimaryFiat": false,
+        "isReserve": false,
+        "createdAt": "2026-11-02T10:28:13.422Z",
+        "backsCurrencyId": ""
+      },
+      {
+        "id": "cmvz4e5gq0017jm08p3f21cor",
+        "nodeId": "cmtpttjtf000hun7qal6h70dl",
+        "currencyId": "cmvnttkkx0000unp9l2ckpdf0",
+        "balance": 16000,
+        "isPrimaryFiat": false,
+        "isReserve": true,
+        "createdAt": "2026-11-02T10:32:37.418Z",
+        "backsCurrencyId": "cmvz4bgiq000rjm08to07j0fs"
+      },
+      {
+        "id": "cmvz4e5h30019jm08oiakk81o",
+        "nodeId": "cmtpttjtf000hun7qal6h70dl",
+        "currencyId": "cmvz4bgiq000rjm08to07j0fs",
+        "balance": 1229769229,
+        "isPrimaryFiat": false,
+        "isReserve": false,
+        "createdAt": "2026-11-02T10:32:37.431Z",
+        "backsCurrencyId": ""
+      },
+      {
+        "id": "cmvz4rrlt000sle08pg81t9sm",
+        "nodeId": "cmvz4rrl5000nle08u3e0z9gu",
+        "currencyId": "cmvnttkkx0000unp9l2ckpdf0",
+        "balance": 0,
+        "isPrimaryFiat": true,
+        "isReserve": false,
+        "createdAt": "2026-11-02T10:43:12.641Z",
+        "backsCurrencyId": ""
+      },
+      {
+        "id": "cmvz58tbb0003jt07d2dk1vvs",
+        "nodeId": "cmvntu7i0002cuny9bjveqjou",
+        "currencyId": "cmvnttkkx0000unp9l2ckpdf0",
+        "balance": 4500,
+        "isPrimaryFiat": false,
+        "isReserve": false,
+        "createdAt": "2026-11-02T10:56:28.007Z",
+        "backsCurrencyId": ""
+      },
+      {
+        "id": "cmw1vpdrv0003i508tm0f722i",
+        "nodeId": "cmvntu7i0002cuny9bjveqjou",
+        "currencyId": "cmvnttkwp0001unp9e0plgwuk",
+        "balance": 500,
+        "isPrimaryFiat": false,
+        "isReserve": false,
+        "createdAt": "2026-11-04T08:52:43.387Z",
+        "backsCurrencyId": ""
+      },
+      {
+        "id": "cmw1vzkhj000vi508nbf2b3y5",
+        "nodeId": "cmtpttiqk0004un7qtohawslw",
+        "currencyId": "cmvnttkkx0000unp9l2ckpdf0",
+        "balance": 1500,
+        "isPrimaryFiat": false,
+        "isReserve": true,
+        "createdAt": "2026-11-04T09:00:38.648Z",
+        "backsCurrencyId": "cmw0w1zrk0002l808zl2vyo4b"
+      },
+      {
+        "id": "cmw1vzkk80011i508wf9ppsjm",
+        "nodeId": "cmtpttiir0000un7q3g2btgus",
+        "currencyId": "cmw0w1zrk0002l808zl2vyo4b",
+        "balance": 400,
+        "isPrimaryFiat": false,
+        "isReserve": false,
+        "createdAt": "2026-11-04T09:00:38.744Z",
+        "backsCurrencyId": ""
+      },
+      {
+        "id": "cmw1vzwt6001gi508az20vf41",
+        "nodeId": "cmtpttiqk0004un7qtohawslw",
+        "currencyId": "cmw0w1zrk0002l808zl2vyo4b",
+        "balance": 100,
+        "isPrimaryFiat": false,
+        "isReserve": false,
+        "createdAt": "2026-11-04T09:00:54.618Z",
+        "backsCurrencyId": ""
+      },
+      {
+        "id": "cmw1w1p7u002ai508kqwih643",
+        "nodeId": "cmtpttiir0000un7q3g2btgus",
+        "currencyId": "cmvz4bgiq000rjm08to07j0fs",
+        "balance": 1000000,
+        "isPrimaryFiat": false,
+        "isReserve": false,
+        "createdAt": "2026-11-04T09:02:18.091Z",
+        "backsCurrencyId": ""
+      },
+      {
+        "id": "cmw1w4uei0035i5085v37ya7g",
+        "nodeId": "cmtpttjj3000eun7q0ud7jzry",
+        "currencyId": "cmvnttkkx0000unp9l2ckpdf0",
+        "balance": 20000,
+        "isPrimaryFiat": false,
+        "isReserve": true,
+        "createdAt": "2026-11-04T09:04:44.778Z",
+        "backsCurrencyId": "cmw1w132a001zi508ipvofu1s"
+      },
+      {
+        "id": "cmw1w4uex0037i508gu43mmsx",
+        "nodeId": "cmtpttjj3000eun7q0ud7jzry",
+        "currencyId": "cmw1w132a001zi508ipvofu1s",
+        "balance": 6666,
+        "isPrimaryFiat": false,
+        "isReserve": false,
+        "createdAt": "2026-11-04T09:04:44.793Z",
+        "backsCurrencyId": ""
+      }
+    ],
+    "Activity": [
+      {
+        "id": "cmvntukul006cuny9tzgh3mv9",
+        "nodeId": "cmtpttiir0000un7q3g2btgus",
+        "type": "evaluation.recorded",
+        "refId": "cmtpttl960013un7q9ydgtht7",
+        "summary": "Evaluated Reiner: Fencing work confirmed complete",
+        "createdAt": "2026-09-06T13:07:21.690Z"
+      },
+      {
+        "id": "cmvntukz6006euny95zlc9acr",
+        "nodeId": "cmtpttjj3000eun7q0ud7jzry",
+        "type": "evaluation.recorded",
+        "refId": "cmttrbn4g000nl104tnb4jgiz",
+        "summary": "Evaluated Annie: INTERDEPENDISM",
+        "createdAt": "2026-09-09T07:08:29.776Z"
+      },
+      {
+        "id": "cmvnutydv0008i908ma54r7nh",
+        "nodeId": "cmvntu7i0002cuny9bjveqjou",
+        "type": "interaction.proposed",
+        "refId": "cmvnutyb40003i908jz5sy3fc",
+        "summary": "Nimesh Ranjan-DEV proposed work \"App development\" for 5000.00 RCC (monthly), paid by ROSE Org to Nimesh Ranjan-DEV",
+        "createdAt": "2026-10-25T13:19:30.644Z"
+      },
+      {
+        "id": "cmvnutydv0009i908cijewywg",
+        "nodeId": "cmtpttiir0000un7q3g2btgus",
+        "type": "interaction.proposed",
+        "refId": "cmvnutyb40003i908jz5sy3fc",
+        "summary": "Nimesh Ranjan-DEV proposed work \"App development\" for 5000.00 RCC (monthly), paid by ROSE Org to Nimesh Ranjan-DEV",
+        "createdAt": "2026-10-25T13:19:30.644Z"
+      },
+      {
+        "id": "cmvnuvkey000ai908i6yxbexf",
+        "nodeId": "cmvntu7i0002cuny9bjveqjou",
+        "type": "relationship.formed",
+        "refId": "cmvnutyam0001i908d6qxh3yn",
+        "summary": "ROSE Org and Nimesh Ranjan-DEV formed a relationship",
+        "createdAt": "2026-10-25T13:20:45.850Z"
+      },
+      {
+        "id": "cmvnuvkey000bi908jop99vet",
+        "nodeId": "cmtpttiir0000un7q3g2btgus",
+        "type": "relationship.formed",
+        "refId": "cmvnutyam0001i908d6qxh3yn",
+        "summary": "ROSE Org and Nimesh Ranjan-DEV formed a relationship",
+        "createdAt": "2026-10-25T13:20:45.850Z"
+      },
+      {
+        "id": "cmvnuvkga000ci908gy9cbp6n",
+        "nodeId": "cmvntu7i0002cuny9bjveqjou",
+        "type": "interaction.accepted",
+        "refId": "cmvnutyb40003i908jz5sy3fc",
+        "summary": "Nimesh Ranjan-DEV for ROSE Org accepted work \"App development\" for 5000.00 RCC (monthly), paid by ROSE Org to Nimesh Ranjan-DEV",
+        "createdAt": "2026-10-25T13:20:45.898Z"
+      },
+      {
+        "id": "cmvnuvkga000di908wec7n49f",
+        "nodeId": "cmtpttiir0000un7q3g2btgus",
+        "type": "interaction.accepted",
+        "refId": "cmvnutyb40003i908jz5sy3fc",
+        "summary": "Nimesh Ranjan-DEV for ROSE Org accepted work \"App development\" for 5000.00 RCC (monthly), paid by ROSE Org to Nimesh Ranjan-DEV",
+        "createdAt": "2026-10-25T13:20:45.898Z"
+      },
+      {
+        "id": "cmvnxqfp10008i408045hkes0",
+        "nodeId": "cmtpttiir0000un7q3g2btgus",
+        "type": "interaction.proposed",
+        "refId": "cmvnxqfkt0003i408vrbpow3p",
+        "summary": "Nimesh Ranjan-DEV proposed a payment of 1.00 RCC from Nimesh Ranjan-DEV to Theo Theo",
+        "createdAt": "2026-10-25T14:40:45.302Z"
+      },
+      {
+        "id": "cmvnxqfp10009i408cvjjsb8i",
+        "nodeId": "cmtpttiqk0004un7qtohawslw",
+        "type": "interaction.proposed",
+        "refId": "cmvnxqfkt0003i408vrbpow3p",
+        "summary": "Nimesh Ranjan-DEV proposed a payment of 1.00 RCC from Nimesh Ranjan-DEV to Theo Theo",
+        "createdAt": "2026-10-25T14:40:45.302Z"
+      },
+      {
+        "id": "cmvnymd0b0002kx07p4x19j86",
+        "nodeId": "cmtpttiir0000un7q3g2btgus",
+        "type": "transaction.deposit",
+        "refId": "cmvnymczh0001kx07r9b4fxvo",
+        "summary": "Nimesh Ranjan-DEV recorded a deposit of 1000.00 CHF",
+        "createdAt": "2026-10-25T15:05:34.811Z"
+      },
+      {
+        "id": "cmvtbp9hg0004js08ekf8me9v",
+        "nodeId": "cmtpttiir0000un7q3g2btgus",
+        "type": "transaction.payment",
+        "refId": "cmvtbp9gy0003js08bz18o6vf",
+        "summary": "Nimesh Ranjan-DEV paid Theo Theo 1.00 RCC",
+        "createdAt": "2026-10-29T09:10:36.100Z"
+      },
+      {
+        "id": "cmvtbp9hg0005js08gw5n4gsw",
+        "nodeId": "cmtpttiqk0004un7qtohawslw",
+        "type": "transaction.payment",
+        "refId": "cmvtbp9gy0003js08bz18o6vf",
+        "summary": "Nimesh Ranjan-DEV paid Theo Theo 1.00 RCC",
+        "createdAt": "2026-10-29T09:10:36.100Z"
+      },
+      {
+        "id": "cmvtbp9iy0006js08yfozzou9",
+        "nodeId": "cmtpttiir0000un7q3g2btgus",
+        "type": "interaction.accepted",
+        "refId": "cmvnxqfkt0003i408vrbpow3p",
+        "summary": "Theo Theo accepted a payment of 1.00 RCC from Nimesh Ranjan-DEV to Theo Theo",
+        "createdAt": "2026-10-29T09:10:36.154Z"
+      },
+      {
+        "id": "cmvtbp9iy0007js089o2xqsq3",
+        "nodeId": "cmtpttiqk0004un7qtohawslw",
+        "type": "interaction.accepted",
+        "refId": "cmvnxqfkt0003i408vrbpow3p",
+        "summary": "Theo Theo accepted a payment of 1.00 RCC from Nimesh Ranjan-DEV to Theo Theo",
+        "createdAt": "2026-10-29T09:10:36.154Z"
+      },
+      {
+        "id": "cmvuxoadr0004jo08zdkygr5x",
+        "nodeId": "cmtpttiir0000un7q3g2btgus",
+        "type": "transaction.exchange",
+        "refId": "cmvuxoad60003jo08ach055vh",
+        "summary": "1.00 CHF into RCC's reserve for Nimesh Ranjan-DEV",
+        "createdAt": "2026-10-30T12:13:28.336Z"
+      },
+      {
+        "id": "cmvuxoadr0005jo08ejdeu7gg",
+        "nodeId": "cmvntu7i0002cuny9bjveqjou",
+        "type": "transaction.exchange",
+        "refId": "cmvuxoad60003jo08ach055vh",
+        "summary": "1.00 CHF into RCC's reserve for Nimesh Ranjan-DEV",
+        "createdAt": "2026-10-30T12:13:28.336Z"
+      },
+      {
+        "id": "cmvuxoaf9000ajo080k1m4wxd",
+        "nodeId": "cmtpttiir0000un7q3g2btgus",
+        "type": "transaction.exchange",
+        "refId": "cmvuxoaen0009jo08o7kcyd3y",
+        "summary": "1.00 RCC minted for Nimesh Ranjan-DEV",
+        "createdAt": "2026-10-30T12:13:28.390Z"
+      },
+      {
+        "id": "cmvv6klap0005gw08br0kw1cr",
+        "nodeId": "cmtpttiir0000un7q3g2btgus",
+        "type": "currency.applied",
+        "refId": "cmvv6kl990002gw08ke2sh2as",
+        "summary": "Nimesh Ranjan-DEV created GaiaCoins (GAIA)",
+        "createdAt": "2026-10-30T16:22:32.401Z"
+      },
+      {
+        "id": "cmvz46i590002jm082ih2xlbu",
+        "nodeId": "cmtpttjtf000hun7qal6h70dl",
+        "type": "transaction.exchange",
+        "refId": "cmvz46i430001jm089swkjy35",
+        "summary": "James James cashed 1.00 RCC out of RCC's reserve",
+        "createdAt": "2026-11-02T10:26:40.606Z"
+      },
+      {
+        "id": "cmvz46i7n0009jm083vcqg77o",
+        "nodeId": "cmtpttjtf000hun7qal6h70dl",
+        "type": "transaction.exchange",
+        "refId": "cmvz46i6t0008jm08c910vv9v",
+        "summary": "1.00 CHF paid out of RCC's reserve to James James",
+        "createdAt": "2026-11-02T10:26:40.691Z"
+      },
+      {
+        "id": "cmvz46i7n000ajm082lkozlxp",
+        "nodeId": "cmvntu7i0002cuny9bjveqjou",
+        "type": "transaction.exchange",
+        "refId": "cmvz46i6t0008jm08c910vv9v",
+        "summary": "1.00 CHF paid out of RCC's reserve to James James",
+        "createdAt": "2026-11-02T10:26:40.691Z"
+      },
+      {
+        "id": "cmvz47qg8000djm08to848jf3",
+        "nodeId": "cmtpttjtf000hun7qal6h70dl",
+        "type": "transaction.deposit",
+        "refId": "cmvz47qfi000cjm08a5q83orr",
+        "summary": "James James recorded a deposit of 1000.00 CHF",
+        "createdAt": "2026-11-02T10:27:38.024Z"
+      },
+      {
+        "id": "cmvz48hrd000ijm08n2pz7bs7",
+        "nodeId": "cmtpttjtf000hun7qal6h70dl",
+        "type": "transaction.exchange",
+        "refId": "cmvz48hqk000hjm08tb8nvn3q",
+        "summary": "50.00 CHF into GAIA's reserve for James James",
+        "createdAt": "2026-11-02T10:28:13.417Z"
+      },
+      {
+        "id": "cmvz48hrd000jjm08kud6xo8g",
+        "nodeId": "cmtpttiir0000un7q3g2btgus",
+        "type": "transaction.exchange",
+        "refId": "cmvz48hqk000hjm08tb8nvn3q",
+        "summary": "50.00 CHF into GAIA's reserve for James James",
+        "createdAt": "2026-11-02T10:28:13.417Z"
+      },
+      {
+        "id": "cmvz48ht3000ojm08a7gzw6y4",
+        "nodeId": "cmtpttjtf000hun7qal6h70dl",
+        "type": "transaction.exchange",
+        "refId": "cmvz48hsh000njm08g929salo",
+        "summary": "50.00 GAIA minted for James James",
+        "createdAt": "2026-11-02T10:28:13.479Z"
+      },
+      {
+        "id": "cmvz4bgk3000ujm084qic8583",
+        "nodeId": "cmtpttjtf000hun7qal6h70dl",
+        "type": "currency.applied",
+        "refId": "cmvz4bgiq000rjm08to07j0fs",
+        "summary": "James James created jcoin (JCN)",
+        "createdAt": "2026-11-02T10:30:31.827Z"
+      },
+      {
+        "id": "cmvz4e5iy001cjm08lt1ia2li",
+        "nodeId": "cmtpttjtf000hun7qal6h70dl",
+        "type": "transaction.mint",
+        "refId": "cmvz4e5i6001bjm08pobryz5s",
+        "summary": "James James locked 10.00 CHF in the reserve",
+        "createdAt": "2026-11-02T10:32:37.499Z"
+      },
+      {
+        "id": "cmvz4e5kr001fjm08vkloz7ut",
+        "nodeId": "cmtpttjtf000hun7qal6h70dl",
+        "type": "transaction.mint",
+        "refId": "cmvz4e5ji001ejm08ekvkac3h",
+        "summary": "James James minted 76.923076 JCN",
+        "createdAt": "2026-11-02T10:32:37.564Z"
+      },
+      {
+        "id": "cmvz4fifz001mjm08309vkd7v",
+        "nodeId": "cmtpttjtf000hun7qal6h70dl",
+        "type": "transaction.mint",
+        "refId": "cmvz4fif3001ljm08t0zm9mvr",
+        "summary": "James James locked 50.00 CHF in the reserve",
+        "createdAt": "2026-11-02T10:33:40.895Z"
+      },
+      {
+        "id": "cmvz4fihf001pjm08yoszrs73",
+        "nodeId": "cmtpttjtf000hun7qal6h70dl",
+        "type": "transaction.mint",
+        "refId": "cmvz4figp001ojm08wo2f6jgt",
+        "summary": "James James minted 384.615384 JCN",
+        "createdAt": "2026-11-02T10:33:40.947Z"
+      },
+      {
+        "id": "cmvz4onhr0008le08t3pdzayv",
+        "nodeId": "cmtpttjtf000hun7qal6h70dl",
+        "type": "interaction.proposed",
+        "refId": "cmvz4onfa0003le08cr3ab34i",
+        "summary": "James James proposed a gift of 1.000000 JCN from James James to Nimesh Ranjan-DEV",
+        "createdAt": "2026-11-02T10:40:47.343Z"
+      },
+      {
+        "id": "cmvz4onhr0009le08ufrxogrk",
+        "nodeId": "cmtpttiir0000un7q3g2btgus",
+        "type": "interaction.proposed",
+        "refId": "cmvz4onfa0003le08cr3ab34i",
+        "summary": "James James proposed a gift of 1.000000 JCN from James James to Nimesh Ranjan-DEV",
+        "createdAt": "2026-11-02T10:40:47.343Z"
+      },
+      {
+        "id": "cmvz4pfzd000ile08l2cjf7dq",
+        "nodeId": "cmtpttjtf000hun7qal6h70dl",
+        "type": "interaction.proposed",
+        "refId": "cmvz4pfww000dle08omm4wfkw",
+        "summary": "James James proposed a payment of 50.00 CHF from James James to ROSE Org",
+        "createdAt": "2026-11-02T10:41:24.265Z"
+      },
+      {
+        "id": "cmvz4pfzd000jle085y7zi2jh",
+        "nodeId": "cmvntu7i0002cuny9bjveqjou",
+        "type": "interaction.proposed",
+        "refId": "cmvz4pfww000dle08omm4wfkw",
+        "summary": "James James proposed a payment of 50.00 CHF from James James to ROSE Org",
+        "createdAt": "2026-11-02T10:41:24.265Z"
+      },
+      {
+        "id": "cmvz4qi95000mle08wycpocbm",
+        "nodeId": "cmtpttjtf000hun7qal6h70dl",
+        "type": "invitation.sent",
+        "refId": "cmvz4qi8z000lle08t9wd9mck",
+        "summary": "Invited James Two",
+        "createdAt": "2026-11-02T10:42:13.865Z"
+      },
+      {
+        "id": "cmvz4rrmb000tle08dgv6lgv1",
+        "nodeId": "cmtpttjtf000hun7qal6h70dl",
+        "type": "invitation.accepted",
+        "refId": "cmvz4qi8z000lle08t9wd9mck",
+        "summary": "James Two joined from an invitation",
+        "createdAt": "2026-11-02T10:43:12.659Z"
+      },
+      {
+        "id": "cmvz4rrmb000ule08qtvu11ar",
+        "nodeId": "cmvz4rrl5000nle08u3e0z9gu",
+        "type": "invitation.accepted",
+        "refId": "cmvz4qi8z000lle08t9wd9mck",
+        "summary": "James Two joined from an invitation",
+        "createdAt": "2026-11-02T10:43:12.659Z"
+      },
+      {
+        "id": "cmvz4v61p0013le08du3q8zdh",
+        "nodeId": "cmtpttjtf000hun7qal6h70dl",
+        "type": "interaction.proposed",
+        "refId": "cmvz4v5yu000yle085cwnldki",
+        "summary": "James James proposed work \"Lorem ipsum\" for 50.00 EUR, paid by James James to Nimesh Ranjan-DEV",
+        "createdAt": "2026-11-02T10:45:51.326Z"
+      },
+      {
+        "id": "cmvz4v61p0014le08il8zgrug",
+        "nodeId": "cmtpttiir0000un7q3g2btgus",
+        "type": "interaction.proposed",
+        "refId": "cmvz4v5yu000yle085cwnldki",
+        "summary": "James James proposed work \"Lorem ipsum\" for 50.00 EUR, paid by James James to Nimesh Ranjan-DEV",
+        "createdAt": "2026-11-02T10:45:51.326Z"
+      },
+      {
+        "id": "cmvz4w4cu001dle08irmoo4kt",
+        "nodeId": "cmtpttiir0000un7q3g2btgus",
+        "type": "interaction.proposed",
+        "refId": "cmvz4w49x0018le087tedwqfm",
+        "summary": "James James proposed a payment of 15.00 RCC from Nimesh Ranjan-DEV to James James",
+        "createdAt": "2026-11-02T10:46:35.790Z"
+      },
+      {
+        "id": "cmvz4w4cu001ele08k81xdha3",
+        "nodeId": "cmtpttjtf000hun7qal6h70dl",
+        "type": "interaction.proposed",
+        "refId": "cmvz4w49x0018le087tedwqfm",
+        "summary": "James James proposed a payment of 15.00 RCC from Nimesh Ranjan-DEV to James James",
+        "createdAt": "2026-11-02T10:46:35.790Z"
+      },
+      {
+        "id": "cmvz4ynrm001lle08n8er5hn3",
+        "nodeId": "cmtpttjtf000hun7qal6h70dl",
+        "type": "transaction.mint",
+        "refId": "cmvz4ynr1001kle08rwz6kr9n",
+        "summary": "James James locked 100.00 CHF in the reserve",
+        "createdAt": "2026-11-02T10:48:34.258Z"
+      },
+      {
+        "id": "cmvz4ynsg001ole08dr24ba06",
+        "nodeId": "cmtpttjtf000hun7qal6h70dl",
+        "type": "transaction.mint",
+        "refId": "cmvz4yns0001nle080rlwzem1",
+        "summary": "James James minted 769.230769 JCN",
+        "createdAt": "2026-11-02T10:48:34.288Z"
+      },
+      {
+        "id": "cmvz58tb00000jt072l4uaktn",
+        "nodeId": "cmtpttjtf000hun7qal6h70dl",
+        "type": "relationship.formed",
+        "refId": "cmvz4pfwi000ble08txz7zt38",
+        "summary": "James James and ROSE Org formed a relationship",
+        "createdAt": "2026-11-02T10:56:27.996Z"
+      },
+      {
+        "id": "cmvz58tb00001jt076xf4d9w1",
+        "nodeId": "cmvntu7i0002cuny9bjveqjou",
+        "type": "relationship.formed",
+        "refId": "cmvz4pfwi000ble08txz7zt38",
+        "summary": "James James and ROSE Org formed a relationship",
+        "createdAt": "2026-11-02T10:56:27.996Z"
+      },
+      {
+        "id": "cmvz58tcu0006jt07ll3y6z6p",
+        "nodeId": "cmtpttjtf000hun7qal6h70dl",
+        "type": "transaction.payment",
+        "refId": "cmvz58tca0005jt07oaqk1lil",
+        "summary": "James James paid ROSE Org 50.00 CHF",
+        "createdAt": "2026-11-02T10:56:28.062Z"
+      },
+      {
+        "id": "cmvz58tcu0007jt07lnvov6yb",
+        "nodeId": "cmvntu7i0002cuny9bjveqjou",
+        "type": "transaction.payment",
+        "refId": "cmvz58tca0005jt07oaqk1lil",
+        "summary": "James James paid ROSE Org 50.00 CHF",
+        "createdAt": "2026-11-02T10:56:28.062Z"
+      },
+      {
+        "id": "cmvz58teg0008jt0768puqfh9",
+        "nodeId": "cmtpttjtf000hun7qal6h70dl",
+        "type": "interaction.accepted",
+        "refId": "cmvz4pfww000dle08omm4wfkw",
+        "summary": "James James for ROSE Org accepted a payment of 50.00 CHF from James James to ROSE Org",
+        "createdAt": "2026-11-02T10:56:28.120Z"
+      },
+      {
+        "id": "cmvz58teg0009jt07x6txvxie",
+        "nodeId": "cmvntu7i0002cuny9bjveqjou",
+        "type": "interaction.accepted",
+        "refId": "cmvz4pfww000dle08omm4wfkw",
+        "summary": "James James for ROSE Org accepted a payment of 50.00 CHF from James James to ROSE Org",
+        "createdAt": "2026-11-02T10:56:28.120Z"
+      },
+      {
+        "id": "cmw0w1zt20005l808q9c9kxqg",
+        "nodeId": "cmtpttiqk0004un7qtohawslw",
+        "type": "currency.applied",
+        "refId": "cmw0w1zrk0002l808zl2vyo4b",
+        "summary": "Theo Theo created TheoCoin (THC)",
+        "createdAt": "2026-11-03T16:14:45.638Z"
+      },
+      {
+        "id": "cmw0w1ztn0006l808k5jtdsxy",
+        "nodeId": "cmtpttiqk0004un7qtohawslw",
+        "type": "currency.home_set",
+        "refId": "cmw0w1zrk0002l808zl2vyo4b",
+        "summary": "Theo Theo made THC the home currency",
+        "createdAt": "2026-11-03T16:14:45.659Z"
+      },
+      {
+        "id": "cmw0w91y2000bl808dufvef2m",
+        "nodeId": "cmtpttiqk0004un7qtohawslw",
+        "type": "identity.updated",
+        "refId": "cmtpttiqk0004un7qtohawslw",
+        "summary": "Theo Helfenstein updated the identity of Theo Helfenstein",
+        "createdAt": "2026-11-03T16:20:15.003Z"
+      },
+      {
+        "id": "cmw0wbblh000kl808mim7uj10",
+        "nodeId": "cmtpttiir0000un7q3g2btgus",
+        "type": "interaction.proposed",
+        "refId": "cmw0wbbgq000fl808c4ygy985",
+        "summary": "Theo Helfenstein proposed a payment of 1.00 THC from Nimesh Ranjan-DEV to Theo Helfenstein",
+        "createdAt": "2026-11-03T16:22:00.821Z"
+      },
+      {
+        "id": "cmw0wbblh000ll8089o6mds83",
+        "nodeId": "cmtpttiqk0004un7qtohawslw",
+        "type": "interaction.proposed",
+        "refId": "cmw0wbbgq000fl808c4ygy985",
+        "summary": "Theo Helfenstein proposed a payment of 1.00 THC from Nimesh Ranjan-DEV to Theo Helfenstein",
+        "createdAt": "2026-11-03T16:22:00.821Z"
+      },
+      {
+        "id": "cmw1vpdtp0006i508zgqnccey",
+        "nodeId": "cmvntu7i0002cuny9bjveqjou",
+        "type": "transaction.mint",
+        "refId": "cmw1vpdt00005i508fdrye62z",
+        "summary": "ROSE Org locked 1.00 CHF in the reserve",
+        "createdAt": "2026-11-04T08:52:43.454Z"
+      },
+      {
+        "id": "cmw1vpdv10009i508wffcj1di",
+        "nodeId": "cmvntu7i0002cuny9bjveqjou",
+        "type": "transaction.mint",
+        "refId": "cmw1vpdu50008i508ci3vrims",
+        "summary": "ROSE Org minted 1.00 RCC",
+        "createdAt": "2026-11-04T08:52:43.501Z"
+      },
+      {
+        "id": "cmw1vugjf000ci508s1m8bcqi",
+        "nodeId": "cmtpttiqk0004un7qtohawslw",
+        "type": "transaction.exchange",
+        "refId": "cmw1vugiy000bi508sgqehvit",
+        "summary": "Theo Helfenstein cashed 1.00 RCC out of RCC's reserve",
+        "createdAt": "2026-11-04T08:56:40.251Z"
+      },
+      {
+        "id": "cmw1vuglp000ji5089j262jk9",
+        "nodeId": "cmtpttiqk0004un7qtohawslw",
+        "type": "transaction.exchange",
+        "refId": "cmw1vugkz000ii508f4zlqsf0",
+        "summary": "1.00 CHF paid out of RCC's reserve to Theo Helfenstein",
+        "createdAt": "2026-11-04T08:56:40.333Z"
+      },
+      {
+        "id": "cmw1vuglp000ki50829fwfat1",
+        "nodeId": "cmvntu7i0002cuny9bjveqjou",
+        "type": "transaction.exchange",
+        "refId": "cmw1vugkz000ii508f4zlqsf0",
+        "summary": "1.00 CHF paid out of RCC's reserve to Theo Helfenstein",
+        "createdAt": "2026-11-04T08:56:40.333Z"
+      },
+      {
+        "id": "cmw1vwkiq000ni508jdiojwkk",
+        "nodeId": "cmtpttiz90007un7qgs7e8dac",
+        "type": "transaction.deposit",
+        "refId": "cmw1vwki2000mi5087lsoa7fn",
+        "summary": "Richard Richard recorded a deposit of 1000.00 CHF",
+        "createdAt": "2026-11-04T08:58:18.723Z"
+      },
+      {
+        "id": "cmw1vwma4000qi508nyn2qbt7",
+        "nodeId": "cmtpttjj3000eun7q0ud7jzry",
+        "type": "transaction.deposit",
+        "refId": "cmw1vwm9l000pi508ztu8o5sn",
+        "summary": "Reiner Reiner recorded a deposit of 1000.00 CHF",
+        "createdAt": "2026-11-04T08:58:21.005Z"
+      },
+      {
+        "id": "cmw1vxepv000ti50834mw5yfw",
+        "nodeId": "cmtpttiir0000un7q3g2btgus",
+        "type": "transaction.deposit",
+        "refId": "cmw1vxep6000si5081taitipx",
+        "summary": "Nimesh Ranjan-DEV recorded a deposit of 500.00 CHF",
+        "createdAt": "2026-11-04T08:58:57.859Z"
+      },
+      {
+        "id": "cmw1vzkk2000yi508wqf5l2kc",
+        "nodeId": "cmtpttiir0000un7q3g2btgus",
+        "type": "transaction.exchange",
+        "refId": "cmw1vzkjg000xi50836kt43q8",
+        "summary": "15.00 CHF into THC's reserve for Nimesh Ranjan-DEV",
+        "createdAt": "2026-11-04T09:00:38.738Z"
+      },
+      {
+        "id": "cmw1vzkk2000zi508mlezrmbb",
+        "nodeId": "cmtpttiqk0004un7qtohawslw",
+        "type": "transaction.exchange",
+        "refId": "cmw1vzkjg000xi50836kt43q8",
+        "summary": "15.00 CHF into THC's reserve for Nimesh Ranjan-DEV",
+        "createdAt": "2026-11-04T09:00:38.738Z"
+      },
+      {
+        "id": "cmw1vzklx0014i508i0h1d6ys",
+        "nodeId": "cmtpttiir0000un7q3g2btgus",
+        "type": "transaction.exchange",
+        "refId": "cmw1vzkkx0013i508s24ccb5b",
+        "summary": "5.00 THC minted for Nimesh Ranjan-DEV",
+        "createdAt": "2026-11-04T09:00:38.805Z"
+      },
+      {
+        "id": "cmw1vzmgw001di508x1dx2u0x",
+        "nodeId": "cmtpttj70000aun7qysschrfo",
+        "type": "interaction.proposed",
+        "refId": "cmw1vzmdg0018i5082pdukvwe",
+        "summary": "Annie Annie proposed work \"work\" for 20.00 RCC, paid by Annie Annie to Reiner Reiner",
+        "createdAt": "2026-11-04T09:00:41.216Z"
+      },
+      {
+        "id": "cmw1vzmgw001ei508xo0y578i",
+        "nodeId": "cmtpttjj3000eun7q0ud7jzry",
+        "type": "interaction.proposed",
+        "refId": "cmw1vzmdg0018i5082pdukvwe",
+        "summary": "Annie Annie proposed work \"work\" for 20.00 RCC, paid by Annie Annie to Reiner Reiner",
+        "createdAt": "2026-11-04T09:00:41.216Z"
+      },
+      {
+        "id": "cmw1vzwv6001ji508ezcztuju",
+        "nodeId": "cmtpttiir0000un7q3g2btgus",
+        "type": "transaction.payment",
+        "refId": "cmw1vzwua001ii508lxrtn9ze",
+        "summary": "Nimesh Ranjan-DEV paid Theo Helfenstein 1.00 THC",
+        "createdAt": "2026-11-04T09:00:54.690Z"
+      },
+      {
+        "id": "cmw1vzwv6001ki5084f8p24cx",
+        "nodeId": "cmtpttiqk0004un7qtohawslw",
+        "type": "transaction.payment",
+        "refId": "cmw1vzwua001ii508lxrtn9ze",
+        "summary": "Nimesh Ranjan-DEV paid Theo Helfenstein 1.00 THC",
+        "createdAt": "2026-11-04T09:00:54.690Z"
+      },
+      {
+        "id": "cmw1vzwww001li508tpwgdoq0",
+        "nodeId": "cmtpttiir0000un7q3g2btgus",
+        "type": "interaction.accepted",
+        "refId": "cmw0wbbgq000fl808c4ygy985",
+        "summary": "Nimesh Ranjan-DEV accepted a payment of 1.00 THC from Nimesh Ranjan-DEV to Theo Helfenstein",
+        "createdAt": "2026-11-04T09:00:54.753Z"
+      },
+      {
+        "id": "cmw1vzwww001mi508qboswkbc",
+        "nodeId": "cmtpttiqk0004un7qtohawslw",
+        "type": "interaction.accepted",
+        "refId": "cmw0wbbgq000fl808c4ygy985",
+        "summary": "Nimesh Ranjan-DEV accepted a payment of 1.00 THC from Nimesh Ranjan-DEV to Theo Helfenstein",
+        "createdAt": "2026-11-04T09:00:54.753Z"
+      },
+      {
+        "id": "cmw1w0xwq001ni508tych8xo8",
+        "nodeId": "cmtpttiir0000un7q3g2btgus",
+        "type": "relationship.formed",
+        "refId": "cmvz4oneq0001le08n946b077",
+        "summary": "Nimesh Ranjan-DEV and James James formed a relationship",
+        "createdAt": "2026-11-04T09:01:42.698Z"
+      },
+      {
+        "id": "cmw1w0xwq001oi508wrt28a6w",
+        "nodeId": "cmtpttjtf000hun7qal6h70dl",
+        "type": "relationship.formed",
+        "refId": "cmvz4oneq0001le08n946b077",
+        "summary": "Nimesh Ranjan-DEV and James James formed a relationship",
+        "createdAt": "2026-11-04T09:01:42.698Z"
+      },
+      {
+        "id": "cmw1w0xzf001ti508e8f093ts",
+        "nodeId": "cmtpttiir0000un7q3g2btgus",
+        "type": "transaction.payment",
+        "refId": "cmw1w0xys001si508o79oxh1o",
+        "summary": "Nimesh Ranjan-DEV paid James James 15.00 RCC",
+        "createdAt": "2026-11-04T09:01:42.795Z"
+      },
+      {
+        "id": "cmw1w0xzf001ui5083z8qwl8b",
+        "nodeId": "cmtpttjtf000hun7qal6h70dl",
+        "type": "transaction.payment",
+        "refId": "cmw1w0xys001si508o79oxh1o",
+        "summary": "Nimesh Ranjan-DEV paid James James 15.00 RCC",
+        "createdAt": "2026-11-04T09:01:42.795Z"
+      },
+      {
+        "id": "cmw1w0y11001vi508wxhq0j6e",
+        "nodeId": "cmtpttiir0000un7q3g2btgus",
+        "type": "interaction.accepted",
+        "refId": "cmvz4w49x0018le087tedwqfm",
+        "summary": "Nimesh Ranjan-DEV accepted a payment of 15.00 RCC from Nimesh Ranjan-DEV to James James",
+        "createdAt": "2026-11-04T09:01:42.854Z"
+      },
+      {
+        "id": "cmw1w0y11001wi508fjr5egdh",
+        "nodeId": "cmtpttjtf000hun7qal6h70dl",
+        "type": "interaction.accepted",
+        "refId": "cmvz4w49x0018le087tedwqfm",
+        "summary": "Nimesh Ranjan-DEV accepted a payment of 15.00 RCC from Nimesh Ranjan-DEV to James James",
+        "createdAt": "2026-11-04T09:01:42.854Z"
+      },
+      {
+        "id": "cmw1w134k0022i508wfi0ac2h",
+        "nodeId": "cmtpttjj3000eun7q0ud7jzry",
+        "type": "currency.applied",
+        "refId": "cmw1w132a001zi508ipvofu1s",
+        "summary": "Reiner Reiner created Reiner Contribution Rubel (RCR)",
+        "createdAt": "2026-11-04T09:01:49.461Z"
+      },
+      {
+        "id": "cmw1w1b8k0028i50800ja1lo8",
+        "nodeId": "cmtpttiz90007un7qgs7e8dac",
+        "type": "currency.applied",
+        "refId": "cmw1w1b710025i5088fg15if1",
+        "summary": "Richard Richard created Richard (RBO)",
+        "createdAt": "2026-11-04T09:01:59.973Z"
+      },
+      {
+        "id": "cmw1w1p9n002di5083jfm15oj",
+        "nodeId": "cmtpttjtf000hun7qal6h70dl",
+        "type": "transaction.gift",
+        "refId": "cmw1w1p95002ci508vebkre9h",
+        "summary": "James James gave Nimesh Ranjan-DEV a gift of 1.000000 JCN",
+        "createdAt": "2026-11-04T09:02:18.155Z"
+      },
+      {
+        "id": "cmw1w1p9n002ei5089ahv7ybg",
+        "nodeId": "cmtpttiir0000un7q3g2btgus",
+        "type": "transaction.gift",
+        "refId": "cmw1w1p95002ci508vebkre9h",
+        "summary": "James James gave Nimesh Ranjan-DEV a gift of 1.000000 JCN",
+        "createdAt": "2026-11-04T09:02:18.155Z"
+      },
+      {
+        "id": "cmw1w1pax002fi508jcha3mtq",
+        "nodeId": "cmtpttjtf000hun7qal6h70dl",
+        "type": "interaction.accepted",
+        "refId": "cmvz4onfa0003le08cr3ab34i",
+        "summary": "Nimesh Ranjan-DEV accepted a gift of 1.000000 JCN from James James to Nimesh Ranjan-DEV",
+        "createdAt": "2026-11-04T09:02:18.201Z"
+      },
+      {
+        "id": "cmw1w1pax002gi508t7iybsre",
+        "nodeId": "cmtpttiir0000un7q3g2btgus",
+        "type": "interaction.accepted",
+        "refId": "cmvz4onfa0003le08cr3ab34i",
+        "summary": "Nimesh Ranjan-DEV accepted a gift of 1.000000 JCN from James James to Nimesh Ranjan-DEV",
+        "createdAt": "2026-11-04T09:02:18.201Z"
+      },
+      {
+        "id": "cmw1w21g1002pi50887lp44yv",
+        "nodeId": "cmtpttiir0000un7q3g2btgus",
+        "type": "interaction.proposed",
+        "refId": "cmw1w21d7002ki5080wxklm5w",
+        "summary": "Adam Adam proposed a payment of 5.000000 JCN from Nimesh Ranjan-DEV to Adam Adam",
+        "createdAt": "2026-11-04T09:02:33.938Z"
+      },
+      {
+        "id": "cmw1w21g1002qi508iythqlag",
+        "nodeId": "cmtpttkan000nun7qg8a2rb40",
+        "type": "interaction.proposed",
+        "refId": "cmw1w21d7002ki5080wxklm5w",
+        "summary": "Adam Adam proposed a payment of 5.000000 JCN from Nimesh Ranjan-DEV to Adam Adam",
+        "createdAt": "2026-11-04T09:02:33.938Z"
+      },
+      {
+        "id": "cmw1w268g002ri50856nkyebm",
+        "nodeId": "cmtpttj70000aun7qysschrfo",
+        "type": "interaction.accepted",
+        "refId": "cmw1vzmdg0018i5082pdukvwe",
+        "summary": "Reiner Reiner accepted work \"work\" for 20.00 RCC, paid by Annie Annie to Reiner Reiner",
+        "createdAt": "2026-11-04T09:02:40.144Z"
+      },
+      {
+        "id": "cmw1w268g002si508xtqgwbkd",
+        "nodeId": "cmtpttjj3000eun7q0ud7jzry",
+        "type": "interaction.accepted",
+        "refId": "cmw1vzmdg0018i5082pdukvwe",
+        "summary": "Reiner Reiner accepted work \"work\" for 20.00 RCC, paid by Annie Annie to Reiner Reiner",
+        "createdAt": "2026-11-04T09:02:40.144Z"
+      },
+      {
+        "id": "cmw1w4g6p002xi508snvnquba",
+        "nodeId": "cmtpttjj3000eun7q0ud7jzry",
+        "type": "transaction.exchange",
+        "refId": "cmw1w4g5z002wi508ujhp526y",
+        "summary": "100.00 CHF into RCC's reserve for Reiner Reiner",
+        "createdAt": "2026-11-04T09:04:26.354Z"
+      },
+      {
+        "id": "cmw1w4g6p002yi508m4j2wnpj",
+        "nodeId": "cmvntu7i0002cuny9bjveqjou",
+        "type": "transaction.exchange",
+        "refId": "cmw1w4g5z002wi508ujhp526y",
+        "summary": "100.00 CHF into RCC's reserve for Reiner Reiner",
+        "createdAt": "2026-11-04T09:04:26.354Z"
+      },
+      {
+        "id": "cmw1w4g860033i508gwrpydm1",
+        "nodeId": "cmtpttjj3000eun7q0ud7jzry",
+        "type": "transaction.exchange",
+        "refId": "cmw1w4g7q0032i5081gxlziyq",
+        "summary": "100.00 RCC minted for Reiner Reiner",
+        "createdAt": "2026-11-04T09:04:26.406Z"
+      },
+      {
+        "id": "cmw1w4ugm003ai508j01gghcf",
+        "nodeId": "cmtpttjj3000eun7q0ud7jzry",
+        "type": "transaction.mint",
+        "refId": "cmw1w4ug00039i508ls64pltv",
+        "summary": "Reiner Reiner locked 200.00 CHF in the reserve",
+        "createdAt": "2026-11-04T09:04:44.854Z"
+      },
+      {
+        "id": "cmw1w4ui2003di508cby93gdj",
+        "nodeId": "cmtpttjj3000eun7q0ud7jzry",
+        "type": "transaction.mint",
+        "refId": "cmw1w4uhb003ci50857x72suh",
+        "summary": "Reiner Reiner minted 66.66 RCR",
+        "createdAt": "2026-11-04T09:04:44.906Z"
+      },
+      {
+        "id": "cmw1w68fq003mi508d9jv3n6a",
+        "nodeId": "cmtpttjj3000eun7q0ud7jzry",
+        "type": "interaction.proposed",
+        "refId": "cmw1w68ce003hi508oriihkpn",
+        "summary": "Reiner Reiner proposed a payment of 20.00 RCR from Reiner Reiner to Theo Helfenstein",
+        "createdAt": "2026-11-04T09:05:49.622Z"
+      },
+      {
+        "id": "cmw1w68fq003ni5088fe4x62d",
+        "nodeId": "cmtpttiqk0004un7qtohawslw",
+        "type": "interaction.proposed",
+        "refId": "cmw1w68ce003hi508oriihkpn",
+        "summary": "Reiner Reiner proposed a payment of 20.00 RCR from Reiner Reiner to Theo Helfenstein",
+        "createdAt": "2026-11-04T09:05:49.622Z"
+      },
+      {
+        "id": "cmw1w6ro3003si508zlnan8mk",
+        "nodeId": "cmtpttiz90007un7qgs7e8dac",
+        "type": "transaction.exchange",
+        "refId": "cmw1w6rnb003ri508j5ww3503",
+        "summary": "200.00 CHF into RCC's reserve for Richard Richard",
+        "createdAt": "2026-11-04T09:06:14.547Z"
+      },
+      {
+        "id": "cmw1w6ro3003ti508zrvm3fol",
+        "nodeId": "cmvntu7i0002cuny9bjveqjou",
+        "type": "transaction.exchange",
+        "refId": "cmw1w6rnb003ri508j5ww3503",
+        "summary": "200.00 CHF into RCC's reserve for Richard Richard",
+        "createdAt": "2026-11-04T09:06:14.547Z"
+      },
+      {
+        "id": "cmw1w6rpo003yi5084r9icj45",
+        "nodeId": "cmtpttiz90007un7qgs7e8dac",
+        "type": "transaction.exchange",
+        "refId": "cmw1w6roz003xi508gk89woub",
+        "summary": "200.00 RCC minted for Richard Richard",
+        "createdAt": "2026-11-04T09:06:14.605Z"
+      },
+      {
+        "id": "cmw1w8uj00047i508nokduscm",
+        "nodeId": "cmtpttiz90007un7qgs7e8dac",
+        "type": "interaction.proposed",
+        "refId": "cmw1w8ug40042i508cqict6qt",
+        "summary": "Richard Richard proposed a payment of 120.00 RCC from Richard Richard to Annie Annie",
+        "createdAt": "2026-11-04T09:07:51.565Z"
+      },
+      {
+        "id": "cmw1w8uj00048i508pj265ay8",
+        "nodeId": "cmtpttj70000aun7qysschrfo",
+        "type": "interaction.proposed",
+        "refId": "cmw1w8ug40042i508cqict6qt",
+        "summary": "Richard Richard proposed a payment of 120.00 RCC from Richard Richard to Annie Annie",
+        "createdAt": "2026-11-04T09:07:51.565Z"
+      },
+      {
+        "id": "cmw1wepdc004li508ns4ra7v9",
+        "nodeId": "cmtpttiqk0004un7qtohawslw",
+        "type": "interaction.proposed",
+        "refId": "cmw1wep97004gi508kj3lwh0s",
+        "summary": "Reiner Reiner proposed work \"Values\" for 20.00 RCR (monthly), paid by Theo Helfenstein to Reiner Reiner",
+        "createdAt": "2026-11-04T09:12:24.816Z"
+      },
+      {
+        "id": "cmw1wepdc004mi508ha5kqfmn",
+        "nodeId": "cmtpttjj3000eun7q0ud7jzry",
+        "type": "interaction.proposed",
+        "refId": "cmw1wep97004gi508kj3lwh0s",
+        "summary": "Reiner Reiner proposed work \"Values\" for 20.00 RCR (monthly), paid by Theo Helfenstein to Reiner Reiner",
+        "createdAt": "2026-11-04T09:12:24.816Z"
+      },
+      {
+        "id": "cmw1wf95f004ti5082805arsq",
+        "nodeId": "cmvntu7i0002cuny9bjveqjou",
+        "type": "transaction.mint",
+        "refId": "cmw1wf94s004si508u85ak1ce",
+        "summary": "ROSE Org locked 4.00 CHF in the reserve",
+        "createdAt": "2026-11-04T09:12:50.451Z"
+      },
+      {
+        "id": "cmw1wf96c004wi508zqspfagj",
+        "nodeId": "cmvntu7i0002cuny9bjveqjou",
+        "type": "transaction.mint",
+        "refId": "cmw1wf95u004vi50800o82r35",
+        "summary": "ROSE Org minted 4.00 RCC",
+        "createdAt": "2026-11-04T09:12:50.485Z"
+      },
+      {
+        "id": "cmw1wgi5g004xi50826mj2j2e",
+        "nodeId": "cmtpttjtf000hun7qal6h70dl",
+        "type": "identity.updated",
+        "refId": "cmtpttjtf000hun7qal6h70dl",
+        "summary": "James Glattfelder updated the identity of James Glattfelder",
+        "createdAt": "2026-11-04T09:13:48.772Z"
+      },
+      {
+        "id": "cmw1wgsye004yi508bqnqn3ud",
+        "nodeId": "cmtpttjj3000eun7q0ud7jzry",
+        "type": "identity.updated",
+        "refId": "cmtpttjj3000eun7q0ud7jzry",
+        "summary": "Reiner Kautt updated the identity of Reiner Kautt",
+        "createdAt": "2026-11-04T09:14:02.775Z"
+      },
+      {
+        "id": "cmw1wgyf0004zi508051ijdeb",
+        "nodeId": "cmtpttjj3000eun7q0ud7jzry",
+        "type": "identity.updated",
+        "refId": "cmtpttjj3000eun7q0ud7jzry",
+        "summary": "Reiner Kautt updated the identity of Reiner Kautt",
+        "createdAt": "2026-11-04T09:14:09.853Z"
+      },
+      {
+        "id": "cmw1whc3l0058i5085byhuk3y",
+        "nodeId": "cmtpttiz90007un7qgs7e8dac",
+        "type": "interaction.proposed",
+        "refId": "cmw1whc1g0053i508lh0pqgoh",
+        "summary": "Richard Richard proposed a payment of 80.00 RCC from Richard Richard to ROSE Org",
+        "createdAt": "2026-11-04T09:14:27.586Z"
+      },
+      {
+        "id": "cmw1whc3l0059i508xd7wuwyi",
+        "nodeId": "cmvntu7i0002cuny9bjveqjou",
+        "type": "interaction.proposed",
+        "refId": "cmw1whc1g0053i508lh0pqgoh",
+        "summary": "Richard Richard proposed a payment of 80.00 RCC from Richard Richard to ROSE Org",
+        "createdAt": "2026-11-04T09:14:27.586Z"
+      },
+      {
+        "id": "cmw1wi1zq005ai508e0wp2zz0",
+        "nodeId": "cmtpttiz90007un7qgs7e8dac",
+        "type": "relationship.formed",
+        "refId": "cmw1w8ufp0040i508fli7djws",
+        "summary": "Richard Richard and Annie Annie formed a relationship",
+        "createdAt": "2026-11-04T09:15:01.142Z"
+      },
+      {
+        "id": "cmw1wi1zq005bi508o4lyxbxf",
+        "nodeId": "cmtpttj70000aun7qysschrfo",
+        "type": "relationship.formed",
+        "refId": "cmw1w8ufp0040i508fli7djws",
+        "summary": "Richard Richard and Annie Annie formed a relationship",
+        "createdAt": "2026-11-04T09:15:01.142Z"
+      },
+      {
+        "id": "cmw1wi220005gi508f1yb9v9o",
+        "nodeId": "cmtpttiz90007un7qgs7e8dac",
+        "type": "transaction.payment",
+        "refId": "cmw1wi21b005fi5086bcys3qh",
+        "summary": "Richard Richard paid Annie Annie 120.00 RCC",
+        "createdAt": "2026-11-04T09:15:01.225Z"
+      },
+      {
+        "id": "cmw1wi220005hi50852tsqjyi",
+        "nodeId": "cmtpttj70000aun7qysschrfo",
+        "type": "transaction.payment",
+        "refId": "cmw1wi21b005fi5086bcys3qh",
+        "summary": "Richard Richard paid Annie Annie 120.00 RCC",
+        "createdAt": "2026-11-04T09:15:01.225Z"
+      },
+      {
+        "id": "cmw1wi23t005ii508zvhb0nzz",
+        "nodeId": "cmtpttiz90007un7qgs7e8dac",
+        "type": "interaction.accepted",
+        "refId": "cmw1w8ug40042i508cqict6qt",
+        "summary": "Annie Annie accepted a payment of 120.00 RCC from Richard Richard to Annie Annie",
+        "createdAt": "2026-11-04T09:15:01.289Z"
+      },
+      {
+        "id": "cmw1wi23t005ji5080y834a97",
+        "nodeId": "cmtpttj70000aun7qysschrfo",
+        "type": "interaction.accepted",
+        "refId": "cmw1w8ug40042i508cqict6qt",
+        "summary": "Annie Annie accepted a payment of 120.00 RCC from Richard Richard to Annie Annie",
+        "createdAt": "2026-11-04T09:15:01.289Z"
+      },
+      {
+        "id": "cmw1wk5cq005si508lou1ffew",
+        "nodeId": "cmtpttkan000nun7qg8a2rb40",
+        "type": "interaction.proposed",
+        "refId": "cmw1wk58o005ni508q6766bez",
+        "summary": "Reiner Kautt proposed a payment of 20.00 RCR from Adam Adam to Reiner Kautt",
+        "createdAt": "2026-11-04T09:16:38.810Z"
+      },
+      {
+        "id": "cmw1wk5cq005ti5087fy75wm3",
+        "nodeId": "cmtpttjj3000eun7q0ud7jzry",
+        "type": "interaction.proposed",
+        "refId": "cmw1wk58o005ni508q6766bez",
+        "summary": "Reiner Kautt proposed a payment of 20.00 RCR from Adam Adam to Reiner Kautt",
+        "createdAt": "2026-11-04T09:16:38.810Z"
+      }
+    ],
+    "Capability": [
+      {
+        "key": "INTERACT",
+        "label": "Interact",
+        "description": "Request payments, propose work where the node is paid, accept money coming in"
+      },
+      {
+        "key": "INVITE",
+        "label": "Invite",
+        "description": "Invite someone to join"
+      },
+      {
+        "key": "VIEW",
+        "label": "View",
+        "description": "See the node's roles, rules and activity"
+      },
+      {
+        "key": "PROPOSE_REMOVAL",
+        "label": "Propose removal",
+        "description": "Propose removing a member"
+      },
+      {
+        "key": "PAY",
+        "label": "Pay",
+        "description": "Send payments and gifts, propose or accept work where the node pays, set up schedules"
+      },
+      {
+        "key": "ADD_FUNDS",
+        "label": "Add funds",
+        "description": "Record a deposit into the node's accounts"
+      },
+      {
+        "key": "MINT",
+        "label": "Mint",
+        "description": "Mint community currency against the reserve"
+      },
+      {
+        "key": "EXCHANGE",
+        "label": "Exchange",
+        "description": "Exchange between currencies"
+      },
+      {
+        "key": "WITHDRAW",
+        "label": "Withdraw",
+        "description": "Withdraw to primary fiat"
+      },
+      {
+        "key": "SET_UP_CURRENCY",
+        "label": "Set up currency",
+        "description": "Create the node's own currency"
+      },
+      {
+        "key": "VIEW_BALANCES",
+        "label": "View balances",
+        "description": "See the node's balances"
+      },
+      {
+        "key": "EDIT_IDENTITY",
+        "label": "Edit identity",
+        "description": "Change the node's name, description and photo"
+      },
+      {
+        "key": "EDIT_GOVERNANCE",
+        "label": "Edit governance",
+        "description": "Change optional roles, role holders and rule values"
+      },
+      {
+        "key": "ADD_MEMBERS",
+        "label": "Add members",
+        "description": "Add members to a collection"
+      },
+      {
+        "key": "VERIFY_WORK",
+        "label": "Verify work",
+        "description": "Confirm that work was done"
+      }
+    ],
+    "Currency": [
+      {
+        "id": "cmvnttkkx0000unp9l2ckpdf0",
+        "name": "Swiss franc",
+        "code": "CHF",
+        "kind": "FIAT",
+        "decimals": 2,
+        "issuerNodeId": null,
+        "createdAt": "2026-10-25T12:51:13.137Z",
+        "description": null,
+        "status": "ACTIVE",
+        "reserveCurrencyId": null,
+        "country": "CH"
+      },
+      {
+        "id": "cmvnttkwp0001unp9e0plgwuk",
+        "name": "Rose Currency Contribution",
+        "code": "RCC",
+        "kind": "COMMUNITY",
+        "decimals": 2,
+        "issuerNodeId": "cmvntu7i0002cuny9bjveqjou",
+        "createdAt": "2026-10-25T12:51:13.562Z",
+        "description": null,
+        "status": "ACTIVE",
+        "reserveCurrencyId": "cmvnttkkx0000unp9l2ckpdf0",
+        "country": null
+      },
+      {
+        "id": "cmvuxkht40000unm54icossoo",
+        "name": "Euro",
+        "code": "EUR",
+        "kind": "FIAT",
+        "decimals": 2,
+        "issuerNodeId": null,
+        "createdAt": "2026-10-30T12:10:31.337Z",
+        "description": null,
+        "status": "ACTIVE",
+        "reserveCurrencyId": null,
+        "country": "AT,BE,BG,CY,DE,EE,ES,FI,FR,GR,HR,IE,IT,LT,LU,LV,MT,NL,PT,SI,SK"
+      },
+      {
+        "id": "cmvv6kl990002gw08ke2sh2as",
+        "name": "GaiaCoins",
+        "code": "GAIA",
+        "kind": "COMMUNITY",
+        "decimals": 2,
+        "issuerNodeId": "cmtpttiir0000un7q3g2btgus",
+        "createdAt": "2026-10-30T16:22:32.349Z",
+        "description": "Heal money",
+        "status": "ACTIVE",
+        "reserveCurrencyId": "cmvnttkkx0000unp9l2ckpdf0",
+        "country": null
+      },
+      {
+        "id": "cmvz4bgiq000rjm08to07j0fs",
+        "name": "jcoin",
+        "code": "JCN",
+        "kind": "COMMUNITY",
+        "decimals": 6,
+        "issuerNodeId": "cmtpttjtf000hun7qal6h70dl",
+        "createdAt": "2026-11-02T10:30:31.779Z",
+        "description": "Lorem ipsum",
+        "status": "ACTIVE",
+        "reserveCurrencyId": "cmvnttkkx0000unp9l2ckpdf0",
+        "country": null
+      },
+      {
+        "id": "cmw0w1zrk0002l808zl2vyo4b",
+        "name": "TheoCoin",
+        "code": "THC",
+        "kind": "COMMUNITY",
+        "decimals": 2,
+        "issuerNodeId": "cmtpttiqk0004un7qtohawslw",
+        "createdAt": "2026-11-03T16:14:45.585Z",
+        "description": "prototype",
+        "status": "ACTIVE",
+        "reserveCurrencyId": "cmvnttkkx0000unp9l2ckpdf0",
+        "country": null
+      },
+      {
+        "id": "cmw1w132a001zi508ipvofu1s",
+        "name": "Reiner Contribution Rubel",
+        "code": "RCR",
+        "kind": "COMMUNITY",
+        "decimals": 2,
+        "issuerNodeId": "cmtpttjj3000eun7q0ud7jzry",
+        "createdAt": "2026-11-04T09:01:49.379Z",
+        "description": null,
+        "status": "ACTIVE",
+        "reserveCurrencyId": "cmvnttkkx0000unp9l2ckpdf0",
+        "country": null
+      },
+      {
+        "id": "cmw1w1b710025i5088fg15if1",
+        "name": "Richard",
+        "code": "RBO",
+        "kind": "COMMUNITY",
+        "decimals": 4,
+        "issuerNodeId": "cmtpttiz90007un7qgs7e8dac",
+        "createdAt": "2026-11-04T09:01:59.918Z",
+        "description": "Richard‘s personal currency",
+        "status": "ACTIVE",
+        "reserveCurrencyId": "cmvnttkkx0000unp9l2ckpdf0",
+        "country": null
+      }
+    ],
+    "CurrencyRuleValue": [
+      {
+        "currencyId": "cmvv6kl990002gw08ke2sh2as",
+        "ruleId": "R-FIN-01",
+        "value": "1"
+      },
+      {
+        "currencyId": "cmvv6kl990002gw08ke2sh2as",
+        "ruleId": "R-FIN-10",
+        "value": "reserve"
+      },
+      {
+        "currencyId": "cmvz4bgiq000rjm08to07j0fs",
+        "ruleId": "R-FIN-01",
+        "value": "0.13"
+      },
+      {
+        "currencyId": "cmvz4bgiq000rjm08to07j0fs",
+        "ruleId": "R-FIN-10",
+        "value": "reserve"
+      },
+      {
+        "currencyId": "cmw0w1zrk0002l808zl2vyo4b",
+        "ruleId": "R-FIN-01",
+        "value": "3"
+      },
+      {
+        "currencyId": "cmw0w1zrk0002l808zl2vyo4b",
+        "ruleId": "R-FIN-10",
+        "value": "open"
+      },
+      {
+        "currencyId": "cmw1w132a001zi508ipvofu1s",
+        "ruleId": "R-FIN-01",
+        "value": "3"
+      },
+      {
+        "currencyId": "cmw1w132a001zi508ipvofu1s",
+        "ruleId": "R-FIN-10",
+        "value": "reserve"
+      },
+      {
+        "currencyId": "cmw1w1b710025i5088fg15if1",
+        "ruleId": "R-FIN-01",
+        "value": "100"
+      },
+      {
+        "currencyId": "cmw1w1b710025i5088fg15if1",
+        "ruleId": "R-FIN-10",
+        "value": "reserve"
+      }
+    ],
+    "ExchangeRate": [
+      {
+        "id": "cmvuxkj9o0002unm5hiqf4joj",
+        "fromCurrencyId": "cmvnttkwp0001unp9e0plgwuk",
+        "toCurrencyId": "cmvnttkkx0000unp9l2ckpdf0",
+        "rate": "1",
+        "validFrom": "2026-10-25T12:51:42.841Z",
+        "validTo": null,
+        "source": "RESERVE_RATIO",
+        "setBy": "seed",
+        "createdAt": "2026-10-30T12:10:33.228Z"
+      },
+      {
+        "id": "cmvuxklel0004unm5ifvtng8t",
+        "fromCurrencyId": "cmvnttkkx0000unp9l2ckpdf0",
+        "toCurrencyId": "cmvuxkht40000unm54icossoo",
+        "rate": "1.0844",
+        "validFrom": "2026-10-30T12:10:33.774Z",
+        "validTo": null,
+        "source": "FEED",
+        "setBy": "system:feed",
+        "createdAt": "2026-10-30T12:10:35.998Z"
+      },
+      {
+        "id": "cmvv6kl9u0004gw08iipqm0bf",
+        "fromCurrencyId": "cmvv6kl990002gw08ke2sh2as",
+        "toCurrencyId": "cmvnttkkx0000unp9l2ckpdf0",
+        "rate": "1",
+        "validFrom": "2026-10-30T16:22:32.360Z",
+        "validTo": null,
+        "source": "RESERVE_RATIO",
+        "setBy": "cmtpttiir0000un7q3g2btgus",
+        "createdAt": "2026-10-30T16:22:32.371Z"
+      },
+      {
+        "id": "cmvz4bgjd000tjm088xenrtms",
+        "fromCurrencyId": "cmvz4bgiq000rjm08to07j0fs",
+        "toCurrencyId": "cmvnttkkx0000unp9l2ckpdf0",
+        "rate": "0.13",
+        "validFrom": "2026-11-02T10:30:31.790Z",
+        "validTo": null,
+        "source": "RESERVE_RATIO",
+        "setBy": "cmtpttjtf000hun7qal6h70dl",
+        "createdAt": "2026-11-02T10:30:31.801Z"
+      },
+      {
+        "id": "cmw0w1zs90004l808ld7gtrdo",
+        "fromCurrencyId": "cmw0w1zrk0002l808zl2vyo4b",
+        "toCurrencyId": "cmvnttkkx0000unp9l2ckpdf0",
+        "rate": "3",
+        "validFrom": "2026-11-03T16:14:45.595Z",
+        "validTo": null,
+        "source": "RESERVE_RATIO",
+        "setBy": "cmtpttiqk0004un7qtohawslw",
+        "createdAt": "2026-11-03T16:14:45.610Z"
+      },
+      {
+        "id": "cmw1w13370021i508mziqg934",
+        "fromCurrencyId": "cmw1w132a001zi508ipvofu1s",
+        "toCurrencyId": "cmvnttkkx0000unp9l2ckpdf0",
+        "rate": "3",
+        "validFrom": "2026-11-04T09:01:49.394Z",
+        "validTo": null,
+        "source": "RESERVE_RATIO",
+        "setBy": "cmtpttjj3000eun7q0ud7jzry",
+        "createdAt": "2026-11-04T09:01:49.411Z"
+      },
+      {
+        "id": "cmw1w1b7m0027i5089tefdvit",
+        "fromCurrencyId": "cmw1w1b710025i5088fg15if1",
+        "toCurrencyId": "cmvnttkkx0000unp9l2ckpdf0",
+        "rate": "100",
+        "validFrom": "2026-11-04T09:01:59.927Z",
+        "validTo": null,
+        "source": "RESERVE_RATIO",
+        "setBy": "cmtpttiz90007un7qgs7e8dac",
+        "createdAt": "2026-11-04T09:01:59.938Z"
+      }
+    ],
+    "Interaction": [
+      {
+        "id": "cmvntue43004yuny9xyp299cw",
+        "relationshipId": "cmvntudui004wuny9vsl62613",
+        "kind": "PAYMENT",
+        "payerNodeId": "cmtpttiir0000un7q3g2btgus",
+        "payeeNodeId": "cmtpttjj3000eun7q0ud7jzry",
+        "proposerNodeId": "cmtpttiir0000un7q3g2btgus",
+        "status": "COMPLETED",
+        "nextDueAt": null,
+        "createdAt": "2026-09-06T13:07:21.481Z"
+      },
+      {
+        "id": "cmvntuewt0054uny9zsjp5thp",
+        "relationshipId": "cmvntuenf0052uny9422xhgno",
+        "kind": "PAYMENT",
+        "payerNodeId": "cmtpttiqk0004un7qtohawslw",
+        "payeeNodeId": "cmtpttiir0000un7q3g2btgus",
+        "proposerNodeId": "cmtpttiqk0004un7qtohawslw",
+        "status": "COMPLETED",
+        "nextDueAt": null,
+        "createdAt": "2026-09-06T13:07:21.543Z"
+      },
+      {
+        "id": "cmvntufpx005auny9uljgtm9e",
+        "relationshipId": "cmvntufg10058uny9kvltpuci",
+        "kind": "GIFT",
+        "payerNodeId": "cmtpttiir0000un7q3g2btgus",
+        "payeeNodeId": "cmtpttj70000aun7qysschrfo",
+        "proposerNodeId": "cmtpttiir0000un7q3g2btgus",
+        "status": "COMPLETED",
+        "nextDueAt": null,
+        "createdAt": "2026-09-06T13:07:21.617Z"
+      },
+      {
+        "id": "cmvntugj4005guny9cz85lnoj",
+        "relationshipId": "cmvntug9f005euny9jrb4gmqm",
+        "kind": "GIFT",
+        "payerNodeId": "cmtpttiir0000un7q3g2btgus",
+        "payeeNodeId": "cmtpttkan000nun7qg8a2rb40",
+        "proposerNodeId": "cmtpttiir0000un7q3g2btgus",
+        "status": "COMPLETED",
+        "nextDueAt": null,
+        "createdAt": "2026-09-09T07:04:46.346Z"
+      },
+      {
+        "id": "cmvntuhc5005muny9mervupit",
+        "relationshipId": "cmvntuh27005kuny9bkaapups",
+        "kind": "PAYMENT",
+        "payerNodeId": "cmtpttj70000aun7qysschrfo",
+        "payeeNodeId": "cmtpttjj3000eun7q0ud7jzry",
+        "proposerNodeId": "cmtpttj70000aun7qysschrfo",
+        "status": "COMPLETED",
+        "nextDueAt": null,
+        "createdAt": "2026-09-09T07:05:18.720Z"
+      },
+      {
+        "id": "cmvntui5d005suny9npl8dhfj",
+        "relationshipId": "cmvntuhvl005quny9qkw5vaie",
+        "kind": "GIFT",
+        "payerNodeId": "cmtpttiqk0004un7qtohawslw",
+        "payeeNodeId": "cmtpttkan000nun7qg8a2rb40",
+        "proposerNodeId": "cmtpttiqk0004un7qtohawslw",
+        "status": "COMPLETED",
+        "nextDueAt": null,
+        "createdAt": "2026-09-09T07:05:19.069Z"
+      },
+      {
+        "id": "cmvntuiop005wuny9qb9l923w",
+        "relationshipId": "cmvntudui004wuny9vsl62613",
+        "kind": "GIFT",
+        "payerNodeId": "cmtpttjj3000eun7q0ud7jzry",
+        "payeeNodeId": "cmtpttiir0000un7q3g2btgus",
+        "proposerNodeId": "cmtpttjj3000eun7q0ud7jzry",
+        "status": "COMPLETED",
+        "nextDueAt": null,
+        "createdAt": "2026-09-09T07:05:49.439Z"
+      },
+      {
+        "id": "cmvntuj8d0060uny9dfbjp9k5",
+        "relationshipId": "cmvntuh27005kuny9bkaapups",
+        "kind": "PAYMENT",
+        "payerNodeId": "cmtpttjj3000eun7q0ud7jzry",
+        "payeeNodeId": "cmtpttj70000aun7qysschrfo",
+        "proposerNodeId": "cmtpttjj3000eun7q0ud7jzry",
+        "status": "COMPLETED",
+        "nextDueAt": null,
+        "createdAt": "2026-09-09T07:06:43.009Z"
+      },
+      {
+        "id": "cmvntujro0064uny9r5w469w2",
+        "relationshipId": "cmvntuh27005kuny9bkaapups",
+        "kind": "GIFT",
+        "payerNodeId": "cmtpttjj3000eun7q0ud7jzry",
+        "payeeNodeId": "cmtpttj70000aun7qysschrfo",
+        "proposerNodeId": "cmtpttjj3000eun7q0ud7jzry",
+        "status": "COMPLETED",
+        "nextDueAt": null,
+        "createdAt": "2026-09-09T07:08:30.534Z"
+      },
+      {
+        "id": "cmvntukao0068uny9oov1blwn",
+        "relationshipId": "cmvntufg10058uny9kvltpuci",
+        "kind": "PAYMENT",
+        "payerNodeId": "cmtpttiir0000un7q3g2btgus",
+        "payeeNodeId": "cmtpttj70000aun7qysschrfo",
+        "proposerNodeId": "cmtpttiir0000un7q3g2btgus",
+        "status": "COMPLETED",
+        "nextDueAt": null,
+        "createdAt": "2026-10-21T21:29:35.002Z"
+      },
+      {
+        "id": "cmvnutyb40003i908jz5sy3fc",
+        "relationshipId": "cmvnutyam0001i908d6qxh3yn",
+        "kind": "WORK",
+        "payerNodeId": "cmvntu7i0002cuny9bjveqjou",
+        "payeeNodeId": "cmtpttiir0000un7q3g2btgus",
+        "proposerNodeId": "cmtpttiir0000un7q3g2btgus",
+        "status": "ACTIVE",
+        "nextDueAt": "2026-10-31T23:00:00.000Z",
+        "createdAt": "2026-10-25T13:19:30.544Z"
+      },
+      {
+        "id": "cmvnxqfkt0003i408vrbpow3p",
+        "relationshipId": "cmvntuenf0052uny9422xhgno",
+        "kind": "PAYMENT",
+        "payerNodeId": "cmtpttiir0000un7q3g2btgus",
+        "payeeNodeId": "cmtpttiqk0004un7qtohawslw",
+        "proposerNodeId": "cmtpttiir0000un7q3g2btgus",
+        "status": "COMPLETED",
+        "nextDueAt": null,
+        "createdAt": "2026-10-25T14:40:45.149Z"
+      },
+      {
+        "id": "cmvz4onfa0003le08cr3ab34i",
+        "relationshipId": "cmvz4oneq0001le08n946b077",
+        "kind": "GIFT",
+        "payerNodeId": "cmtpttjtf000hun7qal6h70dl",
+        "payeeNodeId": "cmtpttiir0000un7q3g2btgus",
+        "proposerNodeId": "cmtpttjtf000hun7qal6h70dl",
+        "status": "COMPLETED",
+        "nextDueAt": null,
+        "createdAt": "2026-11-02T10:40:47.254Z"
+      },
+      {
+        "id": "cmvz4pfww000dle08omm4wfkw",
+        "relationshipId": "cmvz4pfwi000ble08txz7zt38",
+        "kind": "PAYMENT",
+        "payerNodeId": "cmtpttjtf000hun7qal6h70dl",
+        "payeeNodeId": "cmvntu7i0002cuny9bjveqjou",
+        "proposerNodeId": "cmtpttjtf000hun7qal6h70dl",
+        "status": "COMPLETED",
+        "nextDueAt": null,
+        "createdAt": "2026-11-02T10:41:24.177Z"
+      },
+      {
+        "id": "cmvz4v5yu000yle085cwnldki",
+        "relationshipId": "cmvz4oneq0001le08n946b077",
+        "kind": "WORK",
+        "payerNodeId": "cmtpttjtf000hun7qal6h70dl",
+        "payeeNodeId": "cmtpttiir0000un7q3g2btgus",
+        "proposerNodeId": "cmtpttjtf000hun7qal6h70dl",
+        "status": "PROPOSED",
+        "nextDueAt": null,
+        "createdAt": "2026-11-02T10:45:51.222Z"
+      },
+      {
+        "id": "cmvz4w49x0018le087tedwqfm",
+        "relationshipId": "cmvz4oneq0001le08n946b077",
+        "kind": "PAYMENT",
+        "payerNodeId": "cmtpttiir0000un7q3g2btgus",
+        "payeeNodeId": "cmtpttjtf000hun7qal6h70dl",
+        "proposerNodeId": "cmtpttjtf000hun7qal6h70dl",
+        "status": "COMPLETED",
+        "nextDueAt": null,
+        "createdAt": "2026-11-02T10:46:35.685Z"
+      },
+      {
+        "id": "cmw0wbbgq000fl808c4ygy985",
+        "relationshipId": "cmvntuenf0052uny9422xhgno",
+        "kind": "PAYMENT",
+        "payerNodeId": "cmtpttiir0000un7q3g2btgus",
+        "payeeNodeId": "cmtpttiqk0004un7qtohawslw",
+        "proposerNodeId": "cmtpttiqk0004un7qtohawslw",
+        "status": "COMPLETED",
+        "nextDueAt": null,
+        "createdAt": "2026-11-03T16:22:00.650Z"
+      },
+      {
+        "id": "cmw1vzmdg0018i5082pdukvwe",
+        "relationshipId": "cmvntuh27005kuny9bkaapups",
+        "kind": "WORK",
+        "payerNodeId": "cmtpttj70000aun7qysschrfo",
+        "payeeNodeId": "cmtpttjj3000eun7q0ud7jzry",
+        "proposerNodeId": "cmtpttj70000aun7qysschrfo",
+        "status": "ACTIVE",
+        "nextDueAt": "2026-11-03T23:00:00.000Z",
+        "createdAt": "2026-11-04T09:00:41.092Z"
+      },
+      {
+        "id": "cmw1w21d7002ki5080wxklm5w",
+        "relationshipId": "cmvntug9f005euny9jrb4gmqm",
+        "kind": "PAYMENT",
+        "payerNodeId": "cmtpttiir0000un7q3g2btgus",
+        "payeeNodeId": "cmtpttkan000nun7qg8a2rb40",
+        "proposerNodeId": "cmtpttkan000nun7qg8a2rb40",
+        "status": "PROPOSED",
+        "nextDueAt": null,
+        "createdAt": "2026-11-04T09:02:33.836Z"
+      },
+      {
+        "id": "cmw1w68ce003hi508oriihkpn",
+        "relationshipId": "cmw1w68bb003fi508hn0wsk1a",
+        "kind": "PAYMENT",
+        "payerNodeId": "cmtpttjj3000eun7q0ud7jzry",
+        "payeeNodeId": "cmtpttiqk0004un7qtohawslw",
+        "proposerNodeId": "cmtpttjj3000eun7q0ud7jzry",
+        "status": "PROPOSED",
+        "nextDueAt": null,
+        "createdAt": "2026-11-04T09:05:49.503Z"
+      },
+      {
+        "id": "cmw1w8ug40042i508cqict6qt",
+        "relationshipId": "cmw1w8ufp0040i508fli7djws",
+        "kind": "PAYMENT",
+        "payerNodeId": "cmtpttiz90007un7qgs7e8dac",
+        "payeeNodeId": "cmtpttj70000aun7qysschrfo",
+        "proposerNodeId": "cmtpttiz90007un7qgs7e8dac",
+        "status": "COMPLETED",
+        "nextDueAt": null,
+        "createdAt": "2026-11-04T09:07:51.460Z"
+      },
+      {
+        "id": "cmw1wep97004gi508kj3lwh0s",
+        "relationshipId": "cmw1w68bb003fi508hn0wsk1a",
+        "kind": "WORK",
+        "payerNodeId": "cmtpttiqk0004un7qtohawslw",
+        "payeeNodeId": "cmtpttjj3000eun7q0ud7jzry",
+        "proposerNodeId": "cmtpttjj3000eun7q0ud7jzry",
+        "status": "PROPOSED",
+        "nextDueAt": null,
+        "createdAt": "2026-11-04T09:12:24.667Z"
+      },
+      {
+        "id": "cmw1whc1g0053i508lh0pqgoh",
+        "relationshipId": "cmw1whc0t0051i5082gwhn9wd",
+        "kind": "PAYMENT",
+        "payerNodeId": "cmtpttiz90007un7qgs7e8dac",
+        "payeeNodeId": "cmvntu7i0002cuny9bjveqjou",
+        "proposerNodeId": "cmtpttiz90007un7qgs7e8dac",
+        "status": "PROPOSED",
+        "nextDueAt": null,
+        "createdAt": "2026-11-04T09:14:27.509Z"
+      },
+      {
+        "id": "cmw1wk58o005ni508q6766bez",
+        "relationshipId": "cmw1wk57p005li508rtz03xov",
+        "kind": "PAYMENT",
+        "payerNodeId": "cmtpttkan000nun7qg8a2rb40",
+        "payeeNodeId": "cmtpttjj3000eun7q0ud7jzry",
+        "proposerNodeId": "cmtpttjj3000eun7q0ud7jzry",
+        "status": "PROPOSED",
+        "nextDueAt": null,
+        "createdAt": "2026-11-04T09:16:38.664Z"
+      }
+    ],
+    "InteractionCurator": [
+      {
+        "interactionId": "cmw1wep97004gi508kj3lwh0s",
+        "curatorNodeId": "cmvz4rrl5000nle08u3e0z9gu"
+      }
+    ],
+    "InteractionTerms": [
+      {
+        "id": "cmvntue430050uny91n74s4u6",
+        "interactionId": "cmvntue43004yuny9xyp299cw",
+        "version": 1,
+        "description": "Nursery fencing materials",
+        "amount": 5000,
+        "currencyId": "cmvnttkwp0001unp9e0plgwuk",
+        "frequency": "ONCE",
+        "paymentMode": "AUTOMATIC",
+        "startDate": null,
+        "endDate": null,
+        "maxPayments": null,
+        "rulesVersion": "2026-10-24.1",
+        "approved": true,
+        "createdAt": "2026-09-06T13:07:21.481Z"
+      },
+      {
+        "id": "cmvntuewt0056uny90x7kdzpk",
+        "interactionId": "cmvntuewt0054uny9zsjp5thp",
+        "version": 1,
+        "description": "Funding round 2",
+        "amount": 10000,
+        "currencyId": "cmvnttkwp0001unp9e0plgwuk",
+        "frequency": "ONCE",
+        "paymentMode": "AUTOMATIC",
+        "startDate": null,
+        "endDate": null,
+        "maxPayments": null,
+        "rulesVersion": "2026-10-24.1",
+        "approved": true,
+        "createdAt": "2026-09-06T13:07:21.543Z"
+      },
+      {
+        "id": "cmvntufpx005cuny94ig7h3va",
+        "interactionId": "cmvntufpx005auny9uljgtm9e",
+        "version": 1,
+        "description": "Great writeup on the pilot",
+        "amount": 2000,
+        "currencyId": "cmvnttkwp0001unp9e0plgwuk",
+        "frequency": "ONCE",
+        "paymentMode": "AUTOMATIC",
+        "startDate": null,
+        "endDate": null,
+        "maxPayments": null,
+        "rulesVersion": "2026-10-24.1",
+        "approved": true,
+        "createdAt": "2026-09-06T13:07:21.617Z"
+      },
+      {
+        "id": "cmvntugj4005iuny9m3o7m4m0",
+        "interactionId": "cmvntugj4005guny9cz85lnoj",
+        "version": 1,
+        "description": null,
+        "amount": 10000,
+        "currencyId": "cmvnttkwp0001unp9e0plgwuk",
+        "frequency": "ONCE",
+        "paymentMode": "AUTOMATIC",
+        "startDate": null,
+        "endDate": null,
+        "maxPayments": null,
+        "rulesVersion": "2026-10-24.1",
+        "approved": true,
+        "createdAt": "2026-09-09T07:04:46.346Z"
+      },
+      {
+        "id": "cmvntuhc5005ouny96onkiady",
+        "interactionId": "cmvntuhc5005muny9mervupit",
+        "version": 1,
+        "description": "❤️",
+        "amount": 500,
+        "currencyId": "cmvnttkwp0001unp9e0plgwuk",
+        "frequency": "ONCE",
+        "paymentMode": "AUTOMATIC",
+        "startDate": null,
+        "endDate": null,
+        "maxPayments": null,
+        "rulesVersion": "2026-10-24.1",
+        "approved": true,
+        "createdAt": "2026-09-09T07:05:18.720Z"
+      },
+      {
+        "id": "cmvntui5d005uuny9ywrxuxac",
+        "interactionId": "cmvntui5d005suny9npl8dhfj",
+        "version": 1,
+        "description": "poetry in motion",
+        "amount": 1000,
+        "currencyId": "cmvnttkwp0001unp9e0plgwuk",
+        "frequency": "ONCE",
+        "paymentMode": "AUTOMATIC",
+        "startDate": null,
+        "endDate": null,
+        "maxPayments": null,
+        "rulesVersion": "2026-10-24.1",
+        "approved": true,
+        "createdAt": "2026-09-09T07:05:19.069Z"
+      },
+      {
+        "id": "cmvntuioq005yuny93xqjpngu",
+        "interactionId": "cmvntuiop005wuny9qb9l923w",
+        "version": 1,
+        "description": "APP",
+        "amount": 4000,
+        "currencyId": "cmvnttkwp0001unp9e0plgwuk",
+        "frequency": "ONCE",
+        "paymentMode": "AUTOMATIC",
+        "startDate": null,
+        "endDate": null,
+        "maxPayments": null,
+        "rulesVersion": "2026-10-24.1",
+        "approved": true,
+        "createdAt": "2026-09-09T07:05:49.439Z"
+      },
+      {
+        "id": "cmvntuj8d0062uny9h566tbm9",
+        "interactionId": "cmvntuj8d0060uny9dfbjp9k5",
+        "version": 1,
+        "description": "❤️",
+        "amount": 1000,
+        "currencyId": "cmvnttkwp0001unp9e0plgwuk",
+        "frequency": "ONCE",
+        "paymentMode": "AUTOMATIC",
+        "startDate": null,
+        "endDate": null,
+        "maxPayments": null,
+        "rulesVersion": "2026-10-24.1",
+        "approved": true,
+        "createdAt": "2026-09-09T07:06:43.009Z"
+      },
+      {
+        "id": "cmvntujro0066uny9j0thj6fs",
+        "interactionId": "cmvntujro0064uny9r5w469w2",
+        "version": 1,
+        "description": "INTERDEPENDISM",
+        "amount": 3000,
+        "currencyId": "cmvnttkwp0001unp9e0plgwuk",
+        "frequency": "ONCE",
+        "paymentMode": "AUTOMATIC",
+        "startDate": null,
+        "endDate": null,
+        "maxPayments": null,
+        "rulesVersion": "2026-10-24.1",
+        "approved": true,
+        "createdAt": "2026-09-09T07:08:30.534Z"
+      },
+      {
+        "id": "cmvntukao006auny9bcv4ex32",
+        "interactionId": "cmvntukao0068uny9oov1blwn",
+        "version": 1,
+        "description": "Songs and Prayers",
+        "amount": 2000,
+        "currencyId": "cmvnttkwp0001unp9e0plgwuk",
+        "frequency": "ONCE",
+        "paymentMode": "AUTOMATIC",
+        "startDate": null,
+        "endDate": null,
+        "maxPayments": null,
+        "rulesVersion": "2026-10-24.1",
+        "approved": true,
+        "createdAt": "2026-10-21T21:29:35.002Z"
+      },
+      {
+        "id": "cmvnutyb40005i9084momgexb",
+        "interactionId": "cmvnutyb40003i908jz5sy3fc",
+        "version": 1,
+        "description": "App development",
+        "amount": 500000,
+        "currencyId": "cmvnttkwp0001unp9e0plgwuk",
+        "frequency": "MONTHLY",
+        "paymentMode": "AUTOMATIC",
+        "startDate": "2026-10-31T23:00:00.000Z",
+        "endDate": null,
+        "maxPayments": null,
+        "rulesVersion": "2026-10-24.1",
+        "approved": true,
+        "createdAt": "2026-10-25T13:19:30.544Z"
+      },
+      {
+        "id": "cmvnxqfkt0005i408sktup5g3",
+        "interactionId": "cmvnxqfkt0003i408vrbpow3p",
+        "version": 1,
+        "description": "Hello New World!",
+        "amount": 100,
+        "currencyId": "cmvnttkwp0001unp9e0plgwuk",
+        "frequency": "ONCE",
+        "paymentMode": "AUTOMATIC",
+        "startDate": null,
+        "endDate": null,
+        "maxPayments": null,
+        "rulesVersion": "2026-10-24.1",
+        "approved": true,
+        "createdAt": "2026-10-25T14:40:45.149Z"
+      },
+      {
+        "id": "cmvz4onfa0005le08s8gvj6yp",
+        "interactionId": "cmvz4onfa0003le08cr3ab34i",
+        "version": 1,
+        "description": "text",
+        "amount": 1000000,
+        "currencyId": "cmvz4bgiq000rjm08to07j0fs",
+        "frequency": "ONCE",
+        "paymentMode": "AUTOMATIC",
+        "startDate": null,
+        "endDate": null,
+        "maxPayments": null,
+        "rulesVersion": "2026-10-30.2",
+        "approved": true,
+        "createdAt": "2026-11-02T10:40:47.254Z"
+      },
+      {
+        "id": "cmvz4pfww000fle08yfy653nx",
+        "interactionId": "cmvz4pfww000dle08omm4wfkw",
+        "version": 1,
+        "description": "text",
+        "amount": 5000,
+        "currencyId": "cmvnttkkx0000unp9l2ckpdf0",
+        "frequency": "ONCE",
+        "paymentMode": "AUTOMATIC",
+        "startDate": null,
+        "endDate": null,
+        "maxPayments": null,
+        "rulesVersion": "2026-10-30.2",
+        "approved": true,
+        "createdAt": "2026-11-02T10:41:24.177Z"
+      },
+      {
+        "id": "cmvz4v5yu0010le087ktamutb",
+        "interactionId": "cmvz4v5yu000yle085cwnldki",
+        "version": 1,
+        "description": "Lorem ipsum",
+        "amount": 5000,
+        "currencyId": "cmvuxkht40000unm54icossoo",
+        "frequency": "ONCE",
+        "paymentMode": "AUTOMATIC",
+        "startDate": "2026-11-02T23:00:00.000Z",
+        "endDate": "2026-11-05T23:00:00.000Z",
+        "maxPayments": null,
+        "rulesVersion": "2026-10-30.2",
+        "approved": false,
+        "createdAt": "2026-11-02T10:45:51.222Z"
+      },
+      {
+        "id": "cmvz4w49x001ale081mfcimn1",
+        "interactionId": "cmvz4w49x0018le087tedwqfm",
+        "version": 1,
+        "description": "Lorem ipsum",
+        "amount": 1500,
+        "currencyId": "cmvnttkwp0001unp9e0plgwuk",
+        "frequency": "ONCE",
+        "paymentMode": "AUTOMATIC",
+        "startDate": null,
+        "endDate": null,
+        "maxPayments": null,
+        "rulesVersion": "2026-10-30.2",
+        "approved": true,
+        "createdAt": "2026-11-02T10:46:35.685Z"
+      },
+      {
+        "id": "cmw0wbbgq000hl8081h6a96d4",
+        "interactionId": "cmw0wbbgq000fl808c4ygy985",
+        "version": 1,
+        "description": "trial",
+        "amount": 100,
+        "currencyId": "cmw0w1zrk0002l808zl2vyo4b",
+        "frequency": "ONCE",
+        "paymentMode": "AUTOMATIC",
+        "startDate": null,
+        "endDate": null,
+        "maxPayments": null,
+        "rulesVersion": "2026-10-30.2",
+        "approved": true,
+        "createdAt": "2026-11-03T16:22:00.650Z"
+      },
+      {
+        "id": "cmw1vzmdg001ai508abmtkr5e",
+        "interactionId": "cmw1vzmdg0018i5082pdukvwe",
+        "version": 1,
+        "description": "work",
+        "amount": 2000,
+        "currencyId": "cmvnttkwp0001unp9e0plgwuk",
+        "frequency": "ONCE",
+        "paymentMode": "AUTOMATIC",
+        "startDate": "2026-11-03T23:00:00.000Z",
+        "endDate": "2026-11-03T23:00:00.000Z",
+        "maxPayments": null,
+        "rulesVersion": "2026-10-30.2",
+        "approved": true,
+        "createdAt": "2026-11-04T09:00:41.092Z"
+      },
+      {
+        "id": "cmw1w21d7002mi5089uyfb1uh",
+        "interactionId": "cmw1w21d7002ki5080wxklm5w",
+        "version": 1,
+        "description": "Pre payment for working with James",
+        "amount": 5000000,
+        "currencyId": "cmvz4bgiq000rjm08to07j0fs",
+        "frequency": "ONCE",
+        "paymentMode": "AUTOMATIC",
+        "startDate": null,
+        "endDate": null,
+        "maxPayments": null,
+        "rulesVersion": "2026-10-30.2",
+        "approved": false,
+        "createdAt": "2026-11-04T09:02:33.836Z"
+      },
+      {
+        "id": "cmw1w68ce003ji5086ej40pgn",
+        "interactionId": "cmw1w68ce003hi508oriihkpn",
+        "version": 1,
+        "description": "To be or not to be",
+        "amount": 2000,
+        "currencyId": "cmw1w132a001zi508ipvofu1s",
+        "frequency": "ONCE",
+        "paymentMode": "AUTOMATIC",
+        "startDate": null,
+        "endDate": null,
+        "maxPayments": null,
+        "rulesVersion": "2026-10-30.2",
+        "approved": false,
+        "createdAt": "2026-11-04T09:05:49.503Z"
+      },
+      {
+        "id": "cmw1w8ug40044i508m9uz44tu",
+        "interactionId": "cmw1w8ug40042i508cqict6qt",
+        "version": 1,
+        "description": "Thank you for the session",
+        "amount": 12000,
+        "currencyId": "cmvnttkwp0001unp9e0plgwuk",
+        "frequency": "ONCE",
+        "paymentMode": "AUTOMATIC",
+        "startDate": null,
+        "endDate": null,
+        "maxPayments": null,
+        "rulesVersion": "2026-10-30.2",
+        "approved": true,
+        "createdAt": "2026-11-04T09:07:51.460Z"
+      },
+      {
+        "id": "cmw1wep97004ii508um8ft4eq",
+        "interactionId": "cmw1wep97004gi508kj3lwh0s",
+        "version": 1,
+        "description": "Values",
+        "amount": 2000,
+        "currencyId": "cmw1w132a001zi508ipvofu1s",
+        "frequency": "MONTHLY",
+        "paymentMode": "AUTOMATIC",
+        "startDate": "2026-11-03T23:00:00.000Z",
+        "endDate": null,
+        "maxPayments": null,
+        "rulesVersion": "2026-10-30.2",
+        "approved": false,
+        "createdAt": "2026-11-04T09:12:24.667Z"
+      },
+      {
+        "id": "cmw1whc1g0055i508bg17r5g1",
+        "interactionId": "cmw1whc1g0053i508lh0pqgoh",
+        "version": 1,
+        "description": "Payment to fund ROSE work",
+        "amount": 8000,
+        "currencyId": "cmvnttkwp0001unp9e0plgwuk",
+        "frequency": "ONCE",
+        "paymentMode": "AUTOMATIC",
+        "startDate": null,
+        "endDate": null,
+        "maxPayments": null,
+        "rulesVersion": "2026-10-30.2",
+        "approved": false,
+        "createdAt": "2026-11-04T09:14:27.509Z"
+      },
+      {
+        "id": "cmw1wk58o005pi508t69tw9ut",
+        "interactionId": "cmw1wk58o005ni508q6766bez",
+        "version": 1,
+        "description": "Publishing",
+        "amount": 2000,
+        "currencyId": "cmw1w132a001zi508ipvofu1s",
+        "frequency": "ONCE",
+        "paymentMode": "AUTOMATIC",
+        "startDate": null,
+        "endDate": null,
+        "maxPayments": null,
+        "rulesVersion": "2026-10-30.2",
+        "approved": false,
+        "createdAt": "2026-11-04T09:16:38.664Z"
+      }
+    ],
+    "Invitation": [
+      {
+        "id": "cmvntu6ad001vuny9l9bw8y0i",
+        "inviterNodeId": "cmtpttiqk0004un7qtohawslw",
+        "name": "Nimesh Ranjan-DEV",
+        "email": null,
+        "phone": null,
+        "message": null,
+        "tokenHash": "scrubbed-cmvntu6ad001vuny9l9bw8y0i",
+        "status": "ACCEPTED",
+        "expiresAt": "2026-09-06T13:07:18.147Z",
+        "acceptedNodeId": "cmtpttiir0000un7q3g2btgus",
+        "createdAt": "2026-09-06T13:07:18.147Z"
+      },
+      {
+        "id": "cmvntu6f5001xuny9c2ca4250",
+        "inviterNodeId": "cmtpttiqk0004un7qtohawslw",
+        "name": "Richard Richard",
+        "email": null,
+        "phone": null,
+        "message": null,
+        "tokenHash": "scrubbed-cmvntu6f5001xuny9c2ca4250",
+        "status": "ACCEPTED",
+        "expiresAt": "2026-09-06T13:07:18.741Z",
+        "acceptedNodeId": "cmtpttiz90007un7qgs7e8dac",
+        "createdAt": "2026-09-06T13:07:18.741Z"
+      },
+      {
+        "id": "cmvntu6js001zuny9uidtateu",
+        "inviterNodeId": "cmtpttiqk0004un7qtohawslw",
+        "name": "Annie Annie",
+        "email": null,
+        "phone": null,
+        "message": null,
+        "tokenHash": "scrubbed-cmvntu6js001zuny9uidtateu",
+        "status": "ACCEPTED",
+        "expiresAt": "2026-09-06T13:07:19.020Z",
+        "acceptedNodeId": "cmtpttj70000aun7qysschrfo",
+        "createdAt": "2026-09-06T13:07:19.020Z"
+      },
+      {
+        "id": "cmvntu6ov0021uny96cem98rb",
+        "inviterNodeId": "cmtpttiqk0004un7qtohawslw",
+        "name": "Reiner Reiner",
+        "email": null,
+        "phone": null,
+        "message": null,
+        "tokenHash": "scrubbed-cmvntu6ov0021uny96cem98rb",
+        "status": "ACCEPTED",
+        "expiresAt": "2026-09-06T13:07:19.455Z",
+        "acceptedNodeId": "cmtpttjj3000eun7q0ud7jzry",
+        "createdAt": "2026-09-06T13:07:19.455Z"
+      },
+      {
+        "id": "cmvntu6ti0023uny9sxbz4kn0",
+        "inviterNodeId": "cmtpttiqk0004un7qtohawslw",
+        "name": "James James",
+        "email": null,
+        "phone": null,
+        "message": null,
+        "tokenHash": "scrubbed-cmvntu6ti0023uny9sxbz4kn0",
+        "status": "ACCEPTED",
+        "expiresAt": "2026-09-06T13:07:19.827Z",
+        "acceptedNodeId": "cmtpttjtf000hun7qal6h70dl",
+        "createdAt": "2026-09-06T13:07:19.827Z"
+      },
+      {
+        "id": "cmvntu6y50025uny9up7m455k",
+        "inviterNodeId": "cmtpttiqk0004un7qtohawslw",
+        "name": "Thibault Thibault",
+        "email": null,
+        "phone": null,
+        "message": null,
+        "tokenHash": "scrubbed-cmvntu6y50025uny9up7m455k",
+        "status": "ACCEPTED",
+        "expiresAt": "2026-09-06T13:07:20.128Z",
+        "acceptedNodeId": "cmtpttk1s000kun7q4brs42h3",
+        "createdAt": "2026-09-06T13:07:20.128Z"
+      },
+      {
+        "id": "cmvntu73g0027uny99hfx0nvl",
+        "inviterNodeId": "cmtpttiqk0004un7qtohawslw",
+        "name": "Adam Adam",
+        "email": null,
+        "phone": null,
+        "message": null,
+        "tokenHash": "scrubbed-cmvntu73g0027uny99hfx0nvl",
+        "status": "ACCEPTED",
+        "expiresAt": "2026-09-06T13:07:20.447Z",
+        "acceptedNodeId": "cmtpttkan000nun7qg8a2rb40",
+        "createdAt": "2026-09-06T13:07:20.447Z"
+      },
+      {
+        "id": "cmvntu7880029uny929wj0gr9",
+        "inviterNodeId": "cmtpttiqk0004un7qtohawslw",
+        "name": "Pierre Pierre",
+        "email": null,
+        "phone": null,
+        "message": null,
+        "tokenHash": "scrubbed-cmvntu7880029uny929wj0gr9",
+        "status": "ACCEPTED",
+        "expiresAt": "2026-09-06T13:07:20.766Z",
+        "acceptedNodeId": "cmtpttkjh000qun7qtzghog1o",
+        "createdAt": "2026-09-06T13:07:20.766Z"
+      },
+      {
+        "id": "cmvntu7cy002buny99i9p555p",
+        "inviterNodeId": "cmtpttiqk0004un7qtohawslw",
+        "name": "Ryan Ryan",
+        "email": null,
+        "phone": null,
+        "message": null,
+        "tokenHash": "scrubbed-cmvntu7cy002buny99i9p555p",
+        "status": "ACCEPTED",
+        "expiresAt": "2026-09-06T13:07:21.058Z",
+        "acceptedNodeId": "cmtpttkrm000tun7q4midtp5a",
+        "createdAt": "2026-09-06T13:07:21.058Z"
+      },
+      {
+        "id": "cmvz4qi8z000lle08t9wd9mck",
+        "inviterNodeId": "cmtpttjtf000hun7qal6h70dl",
+        "name": "James Two",
+        "email": "invitee-10@example.org",
+        "phone": null,
+        "message": "...",
+        "tokenHash": "scrubbed-cmvz4qi8z000lle08t9wd9mck",
+        "status": "ACCEPTED",
+        "expiresAt": "2026-11-16T10:42:13.858Z",
+        "acceptedNodeId": "cmvz4rrl5000nle08u3e0z9gu",
+        "createdAt": "2026-11-02T10:42:13.859Z"
+      }
+    ],
+    "Node": [
+      {
+        "id": "cmtpttiir0000un7q3g2btgus",
+        "kind": "INDIVIDUAL",
+        "status": "ACTIVE",
+        "name": "Nimesh Ranjan-DEV",
+        "firstName": "Nimesh",
+        "lastName": "Ranjan-DEV",
+        "description": null,
+        "photoUrl": null,
+        "username": "Nimesh",
+        "passwordHash": "$2b$10$7CGIsqg1q6Ul7/Zl/N2rtuStj/t2DcPURRDT/Jvj7VRg6hHx4VSqi",
+        "email": "member-01@example.org",
+        "phone": "+00 000 000 0001",
+        "createdAt": "2026-09-06T13:07:18.147Z",
+        "country": "CH",
+        "homeCurrencyId": "cmvnttkwp0001unp9e0plgwuk"
+      },
+      {
+        "id": "cmtpttiqk0004un7qtohawslw",
+        "kind": "INDIVIDUAL",
+        "status": "ACTIVE",
+        "name": "Theo Helfenstein",
+        "firstName": "Theo",
+        "lastName": "Helfenstein",
+        "description": null,
+        "photoUrl": null,
+        "username": "Theo",
+        "passwordHash": "$2b$10$7CGIsqg1q6Ul7/Zl/N2rtuStj/t2DcPURRDT/Jvj7VRg6hHx4VSqi",
+        "email": null,
+        "phone": null,
+        "createdAt": "2026-09-06T13:07:18.428Z",
+        "country": "CH",
+        "homeCurrencyId": "cmw0w1zrk0002l808zl2vyo4b"
+      },
+      {
+        "id": "cmtpttiz90007un7qgs7e8dac",
+        "kind": "INDIVIDUAL",
+        "status": "ACTIVE",
+        "name": "Richard Richard",
+        "firstName": "Richard",
+        "lastName": "Richard",
+        "description": null,
+        "photoUrl": null,
+        "username": "Richard",
+        "passwordHash": "$2b$10$7CGIsqg1q6Ul7/Zl/N2rtuStj/t2DcPURRDT/Jvj7VRg6hHx4VSqi",
+        "email": null,
+        "phone": null,
+        "createdAt": "2026-09-06T13:07:18.741Z",
+        "country": "CH",
+        "homeCurrencyId": "cmvnttkwp0001unp9e0plgwuk"
+      },
+      {
+        "id": "cmtpttj70000aun7qysschrfo",
+        "kind": "INDIVIDUAL",
+        "status": "ACTIVE",
+        "name": "Annie Annie",
+        "firstName": "Annie",
+        "lastName": "Annie",
+        "description": null,
+        "photoUrl": null,
+        "username": "Annie",
+        "passwordHash": "$2b$10$7CGIsqg1q6Ul7/Zl/N2rtuStj/t2DcPURRDT/Jvj7VRg6hHx4VSqi",
+        "email": null,
+        "phone": null,
+        "createdAt": "2026-09-06T13:07:19.020Z",
+        "country": "CH",
+        "homeCurrencyId": "cmvnttkwp0001unp9e0plgwuk"
+      },
+      {
+        "id": "cmtpttjj3000eun7q0ud7jzry",
+        "kind": "INDIVIDUAL",
+        "status": "ACTIVE",
+        "name": "Reiner Kautt",
+        "firstName": "Reiner",
+        "lastName": "Kautt",
+        "description": null,
+        "photoUrl": null,
+        "username": "Reiner",
+        "passwordHash": "$2b$10$7CGIsqg1q6Ul7/Zl/N2rtuStj/t2DcPURRDT/Jvj7VRg6hHx4VSqi",
+        "email": "member-05@example.org",
+        "phone": "+00 000 000 0005",
+        "createdAt": "2026-09-06T13:07:19.455Z",
+        "country": "DE",
+        "homeCurrencyId": "cmvnttkwp0001unp9e0plgwuk"
+      },
+      {
+        "id": "cmtpttjtf000hun7qal6h70dl",
+        "kind": "INDIVIDUAL",
+        "status": "ACTIVE",
+        "name": "James Glattfelder",
+        "firstName": "James",
+        "lastName": "Glattfelder",
+        "description": null,
+        "photoUrl": null,
+        "username": "James",
+        "passwordHash": "$2b$10$7CGIsqg1q6Ul7/Zl/N2rtuStj/t2DcPURRDT/Jvj7VRg6hHx4VSqi",
+        "email": "member-06@example.org",
+        "phone": null,
+        "createdAt": "2026-09-06T13:07:19.827Z",
+        "country": "CH",
+        "homeCurrencyId": "cmvnttkwp0001unp9e0plgwuk"
+      },
+      {
+        "id": "cmtpttk1s000kun7q4brs42h3",
+        "kind": "INDIVIDUAL",
+        "status": "ACTIVE",
+        "name": "Thibault Thibault",
+        "firstName": "Thibault",
+        "lastName": "Thibault",
+        "description": null,
+        "photoUrl": null,
+        "username": "Thibault",
+        "passwordHash": "$2b$10$7CGIsqg1q6Ul7/Zl/N2rtuStj/t2DcPURRDT/Jvj7VRg6hHx4VSqi",
+        "email": null,
+        "phone": null,
+        "createdAt": "2026-09-06T13:07:20.128Z",
+        "country": "CH",
+        "homeCurrencyId": "cmvnttkwp0001unp9e0plgwuk"
+      },
+      {
+        "id": "cmtpttkan000nun7qg8a2rb40",
+        "kind": "INDIVIDUAL",
+        "status": "ACTIVE",
+        "name": "Adam Adam",
+        "firstName": "Adam",
+        "lastName": "Adam",
+        "description": null,
+        "photoUrl": null,
+        "username": "Adam",
+        "passwordHash": "$2b$10$7CGIsqg1q6Ul7/Zl/N2rtuStj/t2DcPURRDT/Jvj7VRg6hHx4VSqi",
+        "email": null,
+        "phone": null,
+        "createdAt": "2026-09-06T13:07:20.447Z",
+        "country": "CH",
+        "homeCurrencyId": "cmvnttkwp0001unp9e0plgwuk"
+      },
+      {
+        "id": "cmtpttkjh000qun7qtzghog1o",
+        "kind": "INDIVIDUAL",
+        "status": "ACTIVE",
+        "name": "Pierre Pierre",
+        "firstName": "Pierre",
+        "lastName": "Pierre",
+        "description": null,
+        "photoUrl": null,
+        "username": "Pierre",
+        "passwordHash": "$2b$10$7CGIsqg1q6Ul7/Zl/N2rtuStj/t2DcPURRDT/Jvj7VRg6hHx4VSqi",
+        "email": null,
+        "phone": null,
+        "createdAt": "2026-09-06T13:07:20.766Z",
+        "country": "CH",
+        "homeCurrencyId": "cmvnttkwp0001unp9e0plgwuk"
+      },
+      {
+        "id": "cmtpttkrm000tun7q4midtp5a",
+        "kind": "INDIVIDUAL",
+        "status": "ACTIVE",
+        "name": "Ryan Ryan",
+        "firstName": "Ryan",
+        "lastName": "Ryan",
+        "description": null,
+        "photoUrl": null,
+        "username": "Ryan",
+        "passwordHash": "$2b$10$7CGIsqg1q6Ul7/Zl/N2rtuStj/t2DcPURRDT/Jvj7VRg6hHx4VSqi",
+        "email": null,
+        "phone": null,
+        "createdAt": "2026-09-06T13:07:21.058Z",
+        "country": "CH",
+        "homeCurrencyId": "cmvnttkwp0001unp9e0plgwuk"
+      },
+      {
+        "id": "cmvntu7i0002cuny9bjveqjou",
+        "kind": "COLLECTION",
+        "status": "ACTIVE",
+        "name": "ROSE Org",
+        "firstName": null,
+        "lastName": null,
+        "description": null,
+        "photoUrl": null,
+        "username": null,
+        "passwordHash": null,
+        "email": null,
+        "phone": null,
+        "createdAt": "2026-10-25T12:51:42.841Z",
+        "country": "CH",
+        "homeCurrencyId": "cmvnttkwp0001unp9e0plgwuk"
+      },
+      {
+        "id": "cmvz4rrl5000nle08u3e0z9gu",
+        "kind": "INDIVIDUAL",
+        "status": "ACTIVE",
+        "name": "James Two",
+        "firstName": "James",
+        "lastName": "Two",
+        "description": null,
+        "photoUrl": null,
+        "username": "member-11",
+        "passwordHash": "$2b$10$7CGIsqg1q6Ul7/Zl/N2rtuStj/t2DcPURRDT/Jvj7VRg6hHx4VSqi",
+        "email": "member-11@example.org",
+        "phone": null,
+        "createdAt": "2026-11-02T10:43:12.617Z",
+        "country": "CH",
+        "homeCurrencyId": "cmvnttkkx0000unp9l2ckpdf0"
+      }
+    ],
+    "NodeRuleValue": [],
+    "PasswordResetToken": [],
+    "Proposal": [
+      {
+        "id": "cmvnutybn0007i908gue6928p",
+        "kind": "INTERACTION",
+        "status": "APPROVED",
+        "proposerNodeId": "cmtpttiir0000un7q3g2btgus",
+        "proposedByPersonId": "cmtpttiir0000un7q3g2btgus",
+        "interactionId": "cmvnutyb40003i908jz5sy3fc",
+        "subjectNodeId": null,
+        "payload": "{\"termsVersion\":1}",
+        "comment": null,
+        "createdAt": "2026-10-25T13:19:30.564Z",
+        "decidedAt": "2026-10-25T13:20:45.826Z"
+      },
+      {
+        "id": "cmvnxqflp0007i408459l5d31",
+        "kind": "INTERACTION",
+        "status": "APPROVED",
+        "proposerNodeId": "cmtpttiir0000un7q3g2btgus",
+        "proposedByPersonId": "cmtpttiir0000un7q3g2btgus",
+        "interactionId": "cmvnxqfkt0003i408vrbpow3p",
+        "subjectNodeId": null,
+        "payload": "{\"termsVersion\":1}",
+        "comment": null,
+        "createdAt": "2026-10-25T14:40:45.182Z",
+        "decidedAt": "2026-10-29T09:10:36.025Z"
+      },
+      {
+        "id": "cmvv6kl690000gw082an854n1",
+        "kind": "CURRENCY_CHANGE",
+        "status": "APPROVED",
+        "proposerNodeId": "cmtpttiir0000un7q3g2btgus",
+        "proposedByPersonId": "cmtpttiir0000un7q3g2btgus",
+        "interactionId": null,
+        "subjectNodeId": "cmtpttiir0000un7q3g2btgus",
+        "payload": "{\"action\":\"CREATE\",\"fields\":{\"name\":\"GaiaCoins\",\"code\":\"GAIA\",\"description\":\"Heal money\",\"decimals\":2,\"reserveRatio\":\"1\",\"policy\":\"reserve\"},\"approval\":{\"ruleIds\":[\"R-FIN-11\",\"R-GOV-06\"],\"needed\":0,\"declines\":\"unreachable\",\"deciders\":{\"cmtpttiir0000un7q3g2btgus\":\"VIEW\"},\"main\":[],\"oneOf\":[[\"cmtpttiir0000un7q3g2btgus\"],[\"cmtpttiir0000un7q3g2btgus\"]]}}",
+        "comment": null,
+        "createdAt": "2026-10-30T16:22:32.242Z",
+        "decidedAt": "2026-10-30T16:22:32.285Z"
+      },
+      {
+        "id": "cmvz4bgha000pjm08pd5ileyw",
+        "kind": "CURRENCY_CHANGE",
+        "status": "APPROVED",
+        "proposerNodeId": "cmtpttjtf000hun7qal6h70dl",
+        "proposedByPersonId": "cmtpttjtf000hun7qal6h70dl",
+        "interactionId": null,
+        "subjectNodeId": "cmtpttjtf000hun7qal6h70dl",
+        "payload": "{\"action\":\"CREATE\",\"fields\":{\"name\":\"jcoin\",\"code\":\"JCN\",\"description\":\"Lorem ipsum\",\"decimals\":6,\"reserveRatio\":\"0.13\",\"policy\":\"reserve\"},\"approval\":{\"ruleIds\":[\"R-FIN-11\",\"R-GOV-06\"],\"needed\":0,\"declines\":\"unreachable\",\"deciders\":{\"cmtpttjtf000hun7qal6h70dl\":\"VIEW\"},\"main\":[],\"oneOf\":[[\"cmtpttjtf000hun7qal6h70dl\"],[\"cmtpttjtf000hun7qal6h70dl\"]]}}",
+        "comment": null,
+        "createdAt": "2026-11-02T10:30:31.726Z",
+        "decidedAt": "2026-11-02T10:30:31.750Z"
+      },
+      {
+        "id": "cmvz4onfs0007le08uo5rtw9m",
+        "kind": "INTERACTION",
+        "status": "APPROVED",
+        "proposerNodeId": "cmtpttjtf000hun7qal6h70dl",
+        "proposedByPersonId": "cmtpttjtf000hun7qal6h70dl",
+        "interactionId": "cmvz4onfa0003le08cr3ab34i",
+        "subjectNodeId": null,
+        "payload": "{\"termsVersion\":1}",
+        "comment": null,
+        "createdAt": "2026-11-02T10:40:47.272Z",
+        "decidedAt": "2026-11-04T09:02:18.065Z"
+      },
+      {
+        "id": "cmvz4pfxc000hle08cdmxxs96",
+        "kind": "INTERACTION",
+        "status": "APPROVED",
+        "proposerNodeId": "cmtpttjtf000hun7qal6h70dl",
+        "proposedByPersonId": "cmtpttjtf000hun7qal6h70dl",
+        "interactionId": "cmvz4pfww000dle08omm4wfkw",
+        "subjectNodeId": null,
+        "payload": "{\"termsVersion\":1}",
+        "comment": null,
+        "createdAt": "2026-11-02T10:41:24.192Z",
+        "decidedAt": "2026-11-02T10:56:27.966Z"
+      },
+      {
+        "id": "cmvz4v5ze0012le08er7my8oh",
+        "kind": "INTERACTION",
+        "status": "OPEN",
+        "proposerNodeId": "cmtpttjtf000hun7qal6h70dl",
+        "proposedByPersonId": "cmtpttjtf000hun7qal6h70dl",
+        "interactionId": "cmvz4v5yu000yle085cwnldki",
+        "subjectNodeId": null,
+        "payload": "{\"termsVersion\":1}",
+        "comment": null,
+        "createdAt": "2026-11-02T10:45:51.242Z",
+        "decidedAt": null
+      },
+      {
+        "id": "cmvz4w4ab001cle08tf7nvqe0",
+        "kind": "INTERACTION",
+        "status": "APPROVED",
+        "proposerNodeId": "cmtpttjtf000hun7qal6h70dl",
+        "proposedByPersonId": "cmtpttjtf000hun7qal6h70dl",
+        "interactionId": "cmvz4w49x0018le087tedwqfm",
+        "subjectNodeId": null,
+        "payload": "{\"termsVersion\":1}",
+        "comment": null,
+        "createdAt": "2026-11-02T10:46:35.700Z",
+        "decidedAt": "2026-11-04T09:01:42.665Z"
+      },
+      {
+        "id": "cmw0w1zpw0000l808t96vmtm3",
+        "kind": "CURRENCY_CHANGE",
+        "status": "APPROVED",
+        "proposerNodeId": "cmtpttiqk0004un7qtohawslw",
+        "proposedByPersonId": "cmtpttiqk0004un7qtohawslw",
+        "interactionId": null,
+        "subjectNodeId": "cmtpttiqk0004un7qtohawslw",
+        "payload": "{\"action\":\"CREATE\",\"makeHome\":true,\"fields\":{\"name\":\"TheoCoin\",\"code\":\"THC\",\"description\":\"prototype\",\"decimals\":2,\"reserveRatio\":\"3\",\"policy\":\"open\"},\"approval\":{\"ruleIds\":[\"R-FIN-11\",\"R-GOV-06\"],\"needed\":0,\"declines\":\"unreachable\",\"deciders\":{\"cmtpttiqk0004un7qtohawslw\":\"VIEW\"},\"main\":[],\"oneOf\":[[\"cmtpttiqk0004un7qtohawslw\"],[\"cmtpttiqk0004un7qtohawslw\"]]}}",
+        "comment": null,
+        "createdAt": "2026-11-03T16:14:45.525Z",
+        "decidedAt": "2026-11-03T16:14:45.551Z"
+      },
+      {
+        "id": "cmw0wbbi2000jl808lmc5y0lk",
+        "kind": "INTERACTION",
+        "status": "APPROVED",
+        "proposerNodeId": "cmtpttiqk0004un7qtohawslw",
+        "proposedByPersonId": "cmtpttiqk0004un7qtohawslw",
+        "interactionId": "cmw0wbbgq000fl808c4ygy985",
+        "subjectNodeId": null,
+        "payload": "{\"termsVersion\":1}",
+        "comment": null,
+        "createdAt": "2026-11-03T16:22:00.698Z",
+        "decidedAt": "2026-11-04T09:00:54.591Z"
+      },
+      {
+        "id": "cmw1vzme4001ci508cd3rehk8",
+        "kind": "INTERACTION",
+        "status": "APPROVED",
+        "proposerNodeId": "cmtpttj70000aun7qysschrfo",
+        "proposedByPersonId": "cmtpttj70000aun7qysschrfo",
+        "interactionId": "cmw1vzmdg0018i5082pdukvwe",
+        "subjectNodeId": null,
+        "payload": "{\"termsVersion\":1}",
+        "comment": null,
+        "createdAt": "2026-11-04T09:00:41.116Z",
+        "decidedAt": "2026-11-04T09:02:40.073Z"
+      },
+      {
+        "id": "cmw1w130c001xi508dlf5447c",
+        "kind": "CURRENCY_CHANGE",
+        "status": "APPROVED",
+        "proposerNodeId": "cmtpttjj3000eun7q0ud7jzry",
+        "proposedByPersonId": "cmtpttjj3000eun7q0ud7jzry",
+        "interactionId": null,
+        "subjectNodeId": "cmtpttjj3000eun7q0ud7jzry",
+        "payload": "{\"action\":\"CREATE\",\"fields\":{\"name\":\"Reiner Contribution Rubel\",\"code\":\"RCR\",\"description\":null,\"decimals\":2,\"reserveRatio\":\"3\",\"policy\":\"reserve\"},\"approval\":{\"ruleIds\":[\"R-FIN-11\",\"R-GOV-06\"],\"needed\":0,\"declines\":\"unreachable\",\"deciders\":{\"cmtpttjj3000eun7q0ud7jzry\":\"VIEW\"},\"main\":[],\"oneOf\":[[\"cmtpttjj3000eun7q0ud7jzry\"],[\"cmtpttjj3000eun7q0ud7jzry\"]]}}",
+        "comment": null,
+        "createdAt": "2026-11-04T09:01:49.309Z",
+        "decidedAt": "2026-11-04T09:01:49.334Z"
+      },
+      {
+        "id": "cmw1w1b5l0023i5080uugbfos",
+        "kind": "CURRENCY_CHANGE",
+        "status": "APPROVED",
+        "proposerNodeId": "cmtpttiz90007un7qgs7e8dac",
+        "proposedByPersonId": "cmtpttiz90007un7qgs7e8dac",
+        "interactionId": null,
+        "subjectNodeId": "cmtpttiz90007un7qgs7e8dac",
+        "payload": "{\"action\":\"CREATE\",\"fields\":{\"name\":\"Richard\",\"code\":\"RBO\",\"description\":\"Richard‘s personal currency\",\"decimals\":4,\"reserveRatio\":\"100\",\"policy\":\"reserve\"},\"approval\":{\"ruleIds\":[\"R-FIN-11\",\"R-GOV-06\"],\"needed\":0,\"declines\":\"unreachable\",\"deciders\":{\"cmtpttiz90007un7qgs7e8dac\":\"VIEW\"},\"main\":[],\"oneOf\":[[\"cmtpttiz90007un7qgs7e8dac\"],[\"cmtpttiz90007un7qgs7e8dac\"]]}}",
+        "comment": null,
+        "createdAt": "2026-11-04T09:01:59.865Z",
+        "decidedAt": "2026-11-04T09:01:59.886Z"
+      },
+      {
+        "id": "cmw1w21dy002oi508k96pa4gk",
+        "kind": "INTERACTION",
+        "status": "OPEN",
+        "proposerNodeId": "cmtpttkan000nun7qg8a2rb40",
+        "proposedByPersonId": "cmtpttkan000nun7qg8a2rb40",
+        "interactionId": "cmw1w21d7002ki5080wxklm5w",
+        "subjectNodeId": null,
+        "payload": "{\"termsVersion\":1}",
+        "comment": null,
+        "createdAt": "2026-11-04T09:02:33.863Z",
+        "decidedAt": null
+      },
+      {
+        "id": "cmw1w68d9003li508ai6ujxab",
+        "kind": "INTERACTION",
+        "status": "OPEN",
+        "proposerNodeId": "cmtpttjj3000eun7q0ud7jzry",
+        "proposedByPersonId": "cmtpttjj3000eun7q0ud7jzry",
+        "interactionId": "cmw1w68ce003hi508oriihkpn",
+        "subjectNodeId": null,
+        "payload": "{\"termsVersion\":1}",
+        "comment": null,
+        "createdAt": "2026-11-04T09:05:49.533Z",
+        "decidedAt": null
+      },
+      {
+        "id": "cmw1w8ugk0046i508k8b48pod",
+        "kind": "INTERACTION",
+        "status": "APPROVED",
+        "proposerNodeId": "cmtpttiz90007un7qgs7e8dac",
+        "proposedByPersonId": "cmtpttiz90007un7qgs7e8dac",
+        "interactionId": "cmw1w8ug40042i508cqict6qt",
+        "subjectNodeId": null,
+        "payload": "{\"termsVersion\":1}",
+        "comment": null,
+        "createdAt": "2026-11-04T09:07:51.477Z",
+        "decidedAt": "2026-11-04T09:15:01.112Z"
+      },
+      {
+        "id": "cmw1wepac004ki508p99gbddt",
+        "kind": "INTERACTION",
+        "status": "OPEN",
+        "proposerNodeId": "cmtpttjj3000eun7q0ud7jzry",
+        "proposedByPersonId": "cmtpttjj3000eun7q0ud7jzry",
+        "interactionId": "cmw1wep97004gi508kj3lwh0s",
+        "subjectNodeId": null,
+        "payload": "{\"termsVersion\":1}",
+        "comment": null,
+        "createdAt": "2026-11-04T09:12:24.708Z",
+        "decidedAt": null
+      },
+      {
+        "id": "cmw1whc1u0057i5084ezjvtsl",
+        "kind": "INTERACTION",
+        "status": "OPEN",
+        "proposerNodeId": "cmtpttiz90007un7qgs7e8dac",
+        "proposedByPersonId": "cmtpttiz90007un7qgs7e8dac",
+        "interactionId": "cmw1whc1g0053i508lh0pqgoh",
+        "subjectNodeId": null,
+        "payload": "{\"termsVersion\":1}",
+        "comment": null,
+        "createdAt": "2026-11-04T09:14:27.523Z",
+        "decidedAt": null
+      },
+      {
+        "id": "cmw1wk5a5005ri508opltc9t1",
+        "kind": "INTERACTION",
+        "status": "OPEN",
+        "proposerNodeId": "cmtpttjj3000eun7q0ud7jzry",
+        "proposedByPersonId": "cmtpttjj3000eun7q0ud7jzry",
+        "interactionId": "cmw1wk58o005ni508q6766bez",
+        "subjectNodeId": null,
+        "payload": "{\"termsVersion\":1}",
+        "comment": null,
+        "createdAt": "2026-11-04T09:16:38.718Z",
+        "decidedAt": null
+      }
+    ],
+    "ProposalApprover": [
+      {
+        "proposalId": "cmvnutybn0007i908gue6928p",
+        "approverNodeId": "cmvntu7i0002cuny9bjveqjou",
+        "decision": true,
+        "decidedByPersonId": "cmtpttiir0000un7q3g2btgus",
+        "decidedAt": "2026-10-25T13:20:45.808Z",
+        "comment": null
+      },
+      {
+        "proposalId": "cmvnutybn0007i908gue6928p",
+        "approverNodeId": "cmtpttiir0000un7q3g2btgus",
+        "decision": true,
+        "decidedByPersonId": "cmtpttiir0000un7q3g2btgus",
+        "decidedAt": "2026-10-25T13:19:30.562Z",
+        "comment": null
+      },
+      {
+        "proposalId": "cmvnxqflp0007i408459l5d31",
+        "approverNodeId": "cmtpttiir0000un7q3g2btgus",
+        "decision": true,
+        "decidedByPersonId": "cmtpttiir0000un7q3g2btgus",
+        "decidedAt": "2026-10-25T14:40:45.180Z",
+        "comment": null
+      },
+      {
+        "proposalId": "cmvnxqflp0007i408459l5d31",
+        "approverNodeId": "cmtpttiqk0004un7qtohawslw",
+        "decision": true,
+        "decidedByPersonId": "cmtpttiqk0004un7qtohawslw",
+        "decidedAt": "2026-10-29T09:10:36.008Z",
+        "comment": null
+      },
+      {
+        "proposalId": "cmvv6kl690000gw082an854n1",
+        "approverNodeId": "cmtpttiir0000un7q3g2btgus",
+        "decision": true,
+        "decidedByPersonId": "cmtpttiir0000un7q3g2btgus",
+        "decidedAt": "2026-10-30T16:22:32.241Z",
+        "comment": null
+      },
+      {
+        "proposalId": "cmvz4bgha000pjm08pd5ileyw",
+        "approverNodeId": "cmtpttjtf000hun7qal6h70dl",
+        "decision": true,
+        "decidedByPersonId": "cmtpttjtf000hun7qal6h70dl",
+        "decidedAt": "2026-11-02T10:30:31.725Z",
+        "comment": null
+      },
+      {
+        "proposalId": "cmvz4onfs0007le08uo5rtw9m",
+        "approverNodeId": "cmtpttjtf000hun7qal6h70dl",
+        "decision": true,
+        "decidedByPersonId": "cmtpttjtf000hun7qal6h70dl",
+        "decidedAt": "2026-11-02T10:40:47.271Z",
+        "comment": null
+      },
+      {
+        "proposalId": "cmvz4onfs0007le08uo5rtw9m",
+        "approverNodeId": "cmtpttiir0000un7q3g2btgus",
+        "decision": true,
+        "decidedByPersonId": "cmtpttiir0000un7q3g2btgus",
+        "decidedAt": "2026-11-04T09:02:18.054Z",
+        "comment": null
+      },
+      {
+        "proposalId": "cmvz4pfxc000hle08cdmxxs96",
+        "approverNodeId": "cmtpttjtf000hun7qal6h70dl",
+        "decision": true,
+        "decidedByPersonId": "cmtpttjtf000hun7qal6h70dl",
+        "decidedAt": "2026-11-02T10:41:24.191Z",
+        "comment": null
+      },
+      {
+        "proposalId": "cmvz4pfxc000hle08cdmxxs96",
+        "approverNodeId": "cmvntu7i0002cuny9bjveqjou",
+        "decision": true,
+        "decidedByPersonId": "cmtpttjtf000hun7qal6h70dl",
+        "decidedAt": "2026-11-02T10:56:27.957Z",
+        "comment": null
+      },
+      {
+        "proposalId": "cmvz4v5ze0012le08er7my8oh",
+        "approverNodeId": "cmtpttjtf000hun7qal6h70dl",
+        "decision": true,
+        "decidedByPersonId": "cmtpttjtf000hun7qal6h70dl",
+        "decidedAt": "2026-11-02T10:45:51.241Z",
+        "comment": null
+      },
+      {
+        "proposalId": "cmvz4v5ze0012le08er7my8oh",
+        "approverNodeId": "cmtpttiir0000un7q3g2btgus",
+        "decision": null,
+        "decidedByPersonId": null,
+        "decidedAt": null,
+        "comment": null
+      },
+      {
+        "proposalId": "cmvz4w4ab001cle08tf7nvqe0",
+        "approverNodeId": "cmtpttiir0000un7q3g2btgus",
+        "decision": true,
+        "decidedByPersonId": "cmtpttiir0000un7q3g2btgus",
+        "decidedAt": "2026-11-04T09:01:42.656Z",
+        "comment": "Lorem Ipsum again"
+      },
+      {
+        "proposalId": "cmvz4w4ab001cle08tf7nvqe0",
+        "approverNodeId": "cmtpttjtf000hun7qal6h70dl",
+        "decision": true,
+        "decidedByPersonId": "cmtpttjtf000hun7qal6h70dl",
+        "decidedAt": "2026-11-02T10:46:35.699Z",
+        "comment": null
+      },
+      {
+        "proposalId": "cmw0w1zpw0000l808t96vmtm3",
+        "approverNodeId": "cmtpttiqk0004un7qtohawslw",
+        "decision": true,
+        "decidedByPersonId": "cmtpttiqk0004un7qtohawslw",
+        "decidedAt": "2026-11-03T16:14:45.523Z",
+        "comment": null
+      },
+      {
+        "proposalId": "cmw0wbbi2000jl808lmc5y0lk",
+        "approverNodeId": "cmtpttiir0000un7q3g2btgus",
+        "decision": true,
+        "decidedByPersonId": "cmtpttiir0000un7q3g2btgus",
+        "decidedAt": "2026-11-04T09:00:54.575Z",
+        "comment": null
+      },
+      {
+        "proposalId": "cmw0wbbi2000jl808lmc5y0lk",
+        "approverNodeId": "cmtpttiqk0004un7qtohawslw",
+        "decision": true,
+        "decidedByPersonId": "cmtpttiqk0004un7qtohawslw",
+        "decidedAt": "2026-11-03T16:22:00.697Z",
+        "comment": null
+      },
+      {
+        "proposalId": "cmw1vzme4001ci508cd3rehk8",
+        "approverNodeId": "cmtpttj70000aun7qysschrfo",
+        "decision": true,
+        "decidedByPersonId": "cmtpttj70000aun7qysschrfo",
+        "decidedAt": "2026-11-04T09:00:41.115Z",
+        "comment": null
+      },
+      {
+        "proposalId": "cmw1vzme4001ci508cd3rehk8",
+        "approverNodeId": "cmtpttjj3000eun7q0ud7jzry",
+        "decision": true,
+        "decidedByPersonId": "cmtpttjj3000eun7q0ud7jzry",
+        "decidedAt": "2026-11-04T09:02:40.052Z",
+        "comment": null
+      },
+      {
+        "proposalId": "cmw1w130c001xi508dlf5447c",
+        "approverNodeId": "cmtpttjj3000eun7q0ud7jzry",
+        "decision": true,
+        "decidedByPersonId": "cmtpttjj3000eun7q0ud7jzry",
+        "decidedAt": "2026-11-04T09:01:49.308Z",
+        "comment": null
+      },
+      {
+        "proposalId": "cmw1w1b5l0023i5080uugbfos",
+        "approverNodeId": "cmtpttiz90007un7qgs7e8dac",
+        "decision": true,
+        "decidedByPersonId": "cmtpttiz90007un7qgs7e8dac",
+        "decidedAt": "2026-11-04T09:01:59.864Z",
+        "comment": null
+      },
+      {
+        "proposalId": "cmw1w21dy002oi508k96pa4gk",
+        "approverNodeId": "cmtpttiir0000un7q3g2btgus",
+        "decision": null,
+        "decidedByPersonId": null,
+        "decidedAt": null,
+        "comment": null
+      },
+      {
+        "proposalId": "cmw1w21dy002oi508k96pa4gk",
+        "approverNodeId": "cmtpttkan000nun7qg8a2rb40",
+        "decision": true,
+        "decidedByPersonId": "cmtpttkan000nun7qg8a2rb40",
+        "decidedAt": "2026-11-04T09:02:33.862Z",
+        "comment": null
+      },
+      {
+        "proposalId": "cmw1w68d9003li508ai6ujxab",
+        "approverNodeId": "cmtpttjj3000eun7q0ud7jzry",
+        "decision": true,
+        "decidedByPersonId": "cmtpttjj3000eun7q0ud7jzry",
+        "decidedAt": "2026-11-04T09:05:49.532Z",
+        "comment": null
+      },
+      {
+        "proposalId": "cmw1w68d9003li508ai6ujxab",
+        "approverNodeId": "cmtpttiqk0004un7qtohawslw",
+        "decision": null,
+        "decidedByPersonId": null,
+        "decidedAt": null,
+        "comment": null
+      },
+      {
+        "proposalId": "cmw1w8ugk0046i508k8b48pod",
+        "approverNodeId": "cmtpttiz90007un7qgs7e8dac",
+        "decision": true,
+        "decidedByPersonId": "cmtpttiz90007un7qgs7e8dac",
+        "decidedAt": "2026-11-04T09:07:51.476Z",
+        "comment": null
+      },
+      {
+        "proposalId": "cmw1w8ugk0046i508k8b48pod",
+        "approverNodeId": "cmtpttj70000aun7qysschrfo",
+        "decision": true,
+        "decidedByPersonId": "cmtpttj70000aun7qysschrfo",
+        "decidedAt": "2026-11-04T09:15:01.103Z",
+        "comment": null
+      },
+      {
+        "proposalId": "cmw1wepac004ki508p99gbddt",
+        "approverNodeId": "cmtpttiqk0004un7qtohawslw",
+        "decision": null,
+        "decidedByPersonId": null,
+        "decidedAt": null,
+        "comment": null
+      },
+      {
+        "proposalId": "cmw1wepac004ki508p99gbddt",
+        "approverNodeId": "cmtpttjj3000eun7q0ud7jzry",
+        "decision": true,
+        "decidedByPersonId": "cmtpttjj3000eun7q0ud7jzry",
+        "decidedAt": "2026-11-04T09:12:24.707Z",
+        "comment": null
+      },
+      {
+        "proposalId": "cmw1whc1u0057i5084ezjvtsl",
+        "approverNodeId": "cmtpttiz90007un7qgs7e8dac",
+        "decision": true,
+        "decidedByPersonId": "cmtpttiz90007un7qgs7e8dac",
+        "decidedAt": "2026-11-04T09:14:27.522Z",
+        "comment": null
+      },
+      {
+        "proposalId": "cmw1whc1u0057i5084ezjvtsl",
+        "approverNodeId": "cmvntu7i0002cuny9bjveqjou",
+        "decision": null,
+        "decidedByPersonId": null,
+        "decidedAt": null,
+        "comment": null
+      },
+      {
+        "proposalId": "cmw1wk5a5005ri508opltc9t1",
+        "approverNodeId": "cmtpttkan000nun7qg8a2rb40",
+        "decision": null,
+        "decidedByPersonId": null,
+        "decidedAt": null,
+        "comment": null
+      },
+      {
+        "proposalId": "cmw1wk5a5005ri508opltc9t1",
+        "approverNodeId": "cmtpttjj3000eun7q0ud7jzry",
+        "decision": true,
+        "decidedByPersonId": "cmtpttjj3000eun7q0ud7jzry",
+        "decidedAt": "2026-11-04T09:16:38.717Z",
+        "comment": null
+      }
+    ],
+    "Relationship": [
+      {
+        "id": "cmvntudui004wuny9vsl62613",
+        "nodeAId": "cmtpttiir0000un7q3g2btgus",
+        "nodeBId": "cmtpttjj3000eun7q0ud7jzry",
+        "status": "ACTIVE",
+        "createdAt": "2026-09-06T13:07:21.481Z",
+        "formedAt": "2026-09-06T13:07:21.481Z"
+      },
+      {
+        "id": "cmvntuenf0052uny9422xhgno",
+        "nodeAId": "cmtpttiir0000un7q3g2btgus",
+        "nodeBId": "cmtpttiqk0004un7qtohawslw",
+        "status": "ACTIVE",
+        "createdAt": "2026-09-06T13:07:21.543Z",
+        "formedAt": "2026-09-06T13:07:21.543Z"
+      },
+      {
+        "id": "cmvntufg10058uny9kvltpuci",
+        "nodeAId": "cmtpttiir0000un7q3g2btgus",
+        "nodeBId": "cmtpttj70000aun7qysschrfo",
+        "status": "ACTIVE",
+        "createdAt": "2026-09-06T13:07:21.617Z",
+        "formedAt": "2026-09-06T13:07:21.617Z"
+      },
+      {
+        "id": "cmvntug9f005euny9jrb4gmqm",
+        "nodeAId": "cmtpttiir0000un7q3g2btgus",
+        "nodeBId": "cmtpttkan000nun7qg8a2rb40",
+        "status": "ACTIVE",
+        "createdAt": "2026-09-09T07:04:46.346Z",
+        "formedAt": "2026-09-09T07:04:46.346Z"
+      },
+      {
+        "id": "cmvntuh27005kuny9bkaapups",
+        "nodeAId": "cmtpttj70000aun7qysschrfo",
+        "nodeBId": "cmtpttjj3000eun7q0ud7jzry",
+        "status": "ACTIVE",
+        "createdAt": "2026-09-09T07:05:18.720Z",
+        "formedAt": "2026-09-09T07:05:18.720Z"
+      },
+      {
+        "id": "cmvntuhvl005quny9qkw5vaie",
+        "nodeAId": "cmtpttiqk0004un7qtohawslw",
+        "nodeBId": "cmtpttkan000nun7qg8a2rb40",
+        "status": "ACTIVE",
+        "createdAt": "2026-09-09T07:05:19.069Z",
+        "formedAt": "2026-09-09T07:05:19.069Z"
+      },
+      {
+        "id": "cmvnutyam0001i908d6qxh3yn",
+        "nodeAId": "cmtpttiir0000un7q3g2btgus",
+        "nodeBId": "cmvntu7i0002cuny9bjveqjou",
+        "status": "ACTIVE",
+        "createdAt": "2026-10-25T13:19:30.526Z",
+        "formedAt": "2026-10-25T13:20:45.840Z"
+      },
+      {
+        "id": "cmvz4oneq0001le08n946b077",
+        "nodeAId": "cmtpttiir0000un7q3g2btgus",
+        "nodeBId": "cmtpttjtf000hun7qal6h70dl",
+        "status": "ACTIVE",
+        "createdAt": "2026-11-02T10:40:47.234Z",
+        "formedAt": "2026-11-04T09:01:42.686Z"
+      },
+      {
+        "id": "cmvz4pfwi000ble08txz7zt38",
+        "nodeAId": "cmtpttjtf000hun7qal6h70dl",
+        "nodeBId": "cmvntu7i0002cuny9bjveqjou",
+        "status": "ACTIVE",
+        "createdAt": "2026-11-02T10:41:24.162Z",
+        "formedAt": "2026-11-02T10:56:27.986Z"
+      },
+      {
+        "id": "cmw1w68bb003fi508hn0wsk1a",
+        "nodeAId": "cmtpttiqk0004un7qtohawslw",
+        "nodeBId": "cmtpttjj3000eun7q0ud7jzry",
+        "status": "PENDING",
+        "createdAt": "2026-11-04T09:05:49.463Z",
+        "formedAt": null
+      },
+      {
+        "id": "cmw1w8ufp0040i508fli7djws",
+        "nodeAId": "cmtpttiz90007un7qgs7e8dac",
+        "nodeBId": "cmtpttj70000aun7qysschrfo",
+        "status": "ACTIVE",
+        "createdAt": "2026-11-04T09:07:51.445Z",
+        "formedAt": "2026-11-04T09:15:01.130Z"
+      },
+      {
+        "id": "cmw1whc0t0051i5082gwhn9wd",
+        "nodeAId": "cmtpttiz90007un7qgs7e8dac",
+        "nodeBId": "cmvntu7i0002cuny9bjveqjou",
+        "status": "PENDING",
+        "createdAt": "2026-11-04T09:14:27.485Z",
+        "formedAt": null
+      },
+      {
+        "id": "cmw1wk57p005li508rtz03xov",
+        "nodeAId": "cmtpttjj3000eun7q0ud7jzry",
+        "nodeBId": "cmtpttkan000nun7qg8a2rb40",
+        "status": "PENDING",
+        "createdAt": "2026-11-04T09:16:38.629Z",
+        "formedAt": null
+      }
+    ],
+    "Role": [
+      {
+        "key": "MEMBER",
+        "label": "Member",
+        "native": true
+      },
+      {
+        "key": "OWNER",
+        "label": "Owner",
+        "native": true
+      },
+      {
+        "key": "TREASURER",
+        "label": "Treasurer",
+        "native": true
+      },
+      {
+        "key": "CURATOR",
+        "label": "Curator",
+        "native": false
+      },
+      {
+        "key": "COLLABORATOR",
+        "label": "Collaborator",
+        "native": false
+      },
+      {
+        "key": "APPROVER",
+        "label": "Approver",
+        "native": false
+      },
+      {
+        "key": "PROJECT_OWNER",
+        "label": "Project owner",
+        "native": false
+      }
+    ],
+    "RoleAssignment": [
+      {
+        "id": "cmvntu0hx0001uny9ctejdulo",
+        "scopeNodeId": "cmtpttiir0000un7q3g2btgus",
+        "holderNodeId": "cmtpttiir0000un7q3g2btgus",
+        "roleKey": "MEMBER",
+        "createdAt": "2026-09-06T13:07:18.147Z",
+        "endedAt": null
+      },
+      {
+        "id": "cmvntu0mk0003uny9ygpvvwg7",
+        "scopeNodeId": "cmtpttiir0000un7q3g2btgus",
+        "holderNodeId": "cmtpttiir0000un7q3g2btgus",
+        "roleKey": "OWNER",
+        "createdAt": "2026-09-06T13:07:18.147Z",
+        "endedAt": null
+      },
+      {
+        "id": "cmvntu0r80005uny9f6ulipd2",
+        "scopeNodeId": "cmtpttiir0000un7q3g2btgus",
+        "holderNodeId": "cmtpttiir0000un7q3g2btgus",
+        "roleKey": "TREASURER",
+        "createdAt": "2026-09-06T13:07:18.147Z",
+        "endedAt": null
+      },
+      {
+        "id": "cmvntu1110007uny9ssrmnic6",
+        "scopeNodeId": "cmtpttiqk0004un7qtohawslw",
+        "holderNodeId": "cmtpttiqk0004un7qtohawslw",
+        "roleKey": "MEMBER",
+        "createdAt": "2026-09-06T13:07:18.428Z",
+        "endedAt": null
+      },
+      {
+        "id": "cmvntu15l0009uny90t4gjacm",
+        "scopeNodeId": "cmtpttiqk0004un7qtohawslw",
+        "holderNodeId": "cmtpttiqk0004un7qtohawslw",
+        "roleKey": "OWNER",
+        "createdAt": "2026-09-06T13:07:18.428Z",
+        "endedAt": null
+      },
+      {
+        "id": "cmvntu1ak000buny9wem9h2do",
+        "scopeNodeId": "cmtpttiqk0004un7qtohawslw",
+        "holderNodeId": "cmtpttiqk0004un7qtohawslw",
+        "roleKey": "TREASURER",
+        "createdAt": "2026-09-06T13:07:18.428Z",
+        "endedAt": null
+      },
+      {
+        "id": "cmvntu1k7000duny9hcq0d5wl",
+        "scopeNodeId": "cmtpttiz90007un7qgs7e8dac",
+        "holderNodeId": "cmtpttiz90007un7qgs7e8dac",
+        "roleKey": "MEMBER",
+        "createdAt": "2026-09-06T13:07:18.741Z",
+        "endedAt": null
+      },
+      {
+        "id": "cmvntu1ox000funy9vnem6jn5",
+        "scopeNodeId": "cmtpttiz90007un7qgs7e8dac",
+        "holderNodeId": "cmtpttiz90007un7qgs7e8dac",
+        "roleKey": "OWNER",
+        "createdAt": "2026-09-06T13:07:18.741Z",
+        "endedAt": null
+      },
+      {
+        "id": "cmvntu1u3000huny902nezanp",
+        "scopeNodeId": "cmtpttiz90007un7qgs7e8dac",
+        "holderNodeId": "cmtpttiz90007un7qgs7e8dac",
+        "roleKey": "TREASURER",
+        "createdAt": "2026-09-06T13:07:18.741Z",
+        "endedAt": null
+      },
+      {
+        "id": "cmvntu1yt000juny9cuxx1k5z",
+        "scopeNodeId": "cmtpttiz90007un7qgs7e8dac",
+        "holderNodeId": "cmtpttiz90007un7qgs7e8dac",
+        "roleKey": "CURATOR",
+        "createdAt": "2026-09-06T13:07:18.741Z",
+        "endedAt": null
+      },
+      {
+        "id": "cmvntu28n000luny9u3aon3fa",
+        "scopeNodeId": "cmtpttj70000aun7qysschrfo",
+        "holderNodeId": "cmtpttj70000aun7qysschrfo",
+        "roleKey": "MEMBER",
+        "createdAt": "2026-09-06T13:07:19.020Z",
+        "endedAt": null
+      },
+      {
+        "id": "cmvntu2dc000nuny9t4619x53",
+        "scopeNodeId": "cmtpttj70000aun7qysschrfo",
+        "holderNodeId": "cmtpttj70000aun7qysschrfo",
+        "roleKey": "OWNER",
+        "createdAt": "2026-09-06T13:07:19.020Z",
+        "endedAt": null
+      },
+      {
+        "id": "cmvntu2i0000puny9ok50znrk",
+        "scopeNodeId": "cmtpttj70000aun7qysschrfo",
+        "holderNodeId": "cmtpttj70000aun7qysschrfo",
+        "roleKey": "TREASURER",
+        "createdAt": "2026-09-06T13:07:19.020Z",
+        "endedAt": null
+      },
+      {
+        "id": "cmvntu2n8000runy9zh16ec1s",
+        "scopeNodeId": "cmtpttj70000aun7qysschrfo",
+        "holderNodeId": "cmtpttj70000aun7qysschrfo",
+        "roleKey": "CURATOR",
+        "createdAt": "2026-09-06T13:07:19.020Z",
+        "endedAt": null
+      },
+      {
+        "id": "cmvntu2wj000tuny95al4mvhc",
+        "scopeNodeId": "cmtpttjj3000eun7q0ud7jzry",
+        "holderNodeId": "cmtpttjj3000eun7q0ud7jzry",
+        "roleKey": "MEMBER",
+        "createdAt": "2026-09-06T13:07:19.455Z",
+        "endedAt": null
+      },
+      {
+        "id": "cmvntu31v000vuny93waz3cg8",
+        "scopeNodeId": "cmtpttjj3000eun7q0ud7jzry",
+        "holderNodeId": "cmtpttjj3000eun7q0ud7jzry",
+        "roleKey": "OWNER",
+        "createdAt": "2026-09-06T13:07:19.455Z",
+        "endedAt": null
+      },
+      {
+        "id": "cmvntu36i000xuny9q9wzmrgm",
+        "scopeNodeId": "cmtpttjj3000eun7q0ud7jzry",
+        "holderNodeId": "cmtpttjj3000eun7q0ud7jzry",
+        "roleKey": "TREASURER",
+        "createdAt": "2026-09-06T13:07:19.455Z",
+        "endedAt": null
+      },
+      {
+        "id": "cmvntu3ge000zuny9pn7rdwoc",
+        "scopeNodeId": "cmtpttjtf000hun7qal6h70dl",
+        "holderNodeId": "cmtpttjtf000hun7qal6h70dl",
+        "roleKey": "MEMBER",
+        "createdAt": "2026-09-06T13:07:19.827Z",
+        "endedAt": null
+      },
+      {
+        "id": "cmvntu3l50011uny99t8cr38e",
+        "scopeNodeId": "cmtpttjtf000hun7qal6h70dl",
+        "holderNodeId": "cmtpttjtf000hun7qal6h70dl",
+        "roleKey": "OWNER",
+        "createdAt": "2026-09-06T13:07:19.827Z",
+        "endedAt": null
+      },
+      {
+        "id": "cmvntu3pt0013uny95932tt2p",
+        "scopeNodeId": "cmtpttjtf000hun7qal6h70dl",
+        "holderNodeId": "cmtpttjtf000hun7qal6h70dl",
+        "roleKey": "TREASURER",
+        "createdAt": "2026-09-06T13:07:19.827Z",
+        "endedAt": null
+      },
+      {
+        "id": "cmvntu3zl0015uny9bduubyxf",
+        "scopeNodeId": "cmtpttk1s000kun7q4brs42h3",
+        "holderNodeId": "cmtpttk1s000kun7q4brs42h3",
+        "roleKey": "MEMBER",
+        "createdAt": "2026-09-06T13:07:20.128Z",
+        "endedAt": null
+      },
+      {
+        "id": "cmvntu44f0017uny9ie42qdas",
+        "scopeNodeId": "cmtpttk1s000kun7q4brs42h3",
+        "holderNodeId": "cmtpttk1s000kun7q4brs42h3",
+        "roleKey": "OWNER",
+        "createdAt": "2026-09-06T13:07:20.128Z",
+        "endedAt": null
+      },
+      {
+        "id": "cmvntu49j0019uny9c2u2u2pk",
+        "scopeNodeId": "cmtpttk1s000kun7q4brs42h3",
+        "holderNodeId": "cmtpttk1s000kun7q4brs42h3",
+        "roleKey": "TREASURER",
+        "createdAt": "2026-09-06T13:07:20.128Z",
+        "endedAt": null
+      },
+      {
+        "id": "cmvntu4e8001buny9my3zfl4n",
+        "scopeNodeId": "cmtpttk1s000kun7q4brs42h3",
+        "holderNodeId": "cmtpttk1s000kun7q4brs42h3",
+        "roleKey": "CURATOR",
+        "createdAt": "2026-09-06T13:07:20.128Z",
+        "endedAt": null
+      },
+      {
+        "id": "cmvntu4o0001duny9chh27c77",
+        "scopeNodeId": "cmtpttkan000nun7qg8a2rb40",
+        "holderNodeId": "cmtpttkan000nun7qg8a2rb40",
+        "roleKey": "MEMBER",
+        "createdAt": "2026-09-06T13:07:20.447Z",
+        "endedAt": null
+      },
+      {
+        "id": "cmvntu4uh001funy9bo4cnpql",
+        "scopeNodeId": "cmtpttkan000nun7qg8a2rb40",
+        "holderNodeId": "cmtpttkan000nun7qg8a2rb40",
+        "roleKey": "OWNER",
+        "createdAt": "2026-09-06T13:07:20.447Z",
+        "endedAt": null
+      },
+      {
+        "id": "cmvntu50b001huny9jbv3fykx",
+        "scopeNodeId": "cmtpttkan000nun7qg8a2rb40",
+        "holderNodeId": "cmtpttkan000nun7qg8a2rb40",
+        "roleKey": "TREASURER",
+        "createdAt": "2026-09-06T13:07:20.447Z",
+        "endedAt": null
+      },
+      {
+        "id": "cmvntu5c6001juny9l1s0g19h",
+        "scopeNodeId": "cmtpttkjh000qun7qtzghog1o",
+        "holderNodeId": "cmtpttkjh000qun7qtzghog1o",
+        "roleKey": "MEMBER",
+        "createdAt": "2026-09-06T13:07:20.766Z",
+        "endedAt": null
+      },
+      {
+        "id": "cmvntu5h5001luny9iu0r43q7",
+        "scopeNodeId": "cmtpttkjh000qun7qtzghog1o",
+        "holderNodeId": "cmtpttkjh000qun7qtzghog1o",
+        "roleKey": "OWNER",
+        "createdAt": "2026-09-06T13:07:20.766Z",
+        "endedAt": null
+      },
+      {
+        "id": "cmvntu5lw001nuny9ee8e7pij",
+        "scopeNodeId": "cmtpttkjh000qun7qtzghog1o",
+        "holderNodeId": "cmtpttkjh000qun7qtzghog1o",
+        "roleKey": "TREASURER",
+        "createdAt": "2026-09-06T13:07:20.766Z",
+        "endedAt": null
+      },
+      {
+        "id": "cmvntu5vq001puny9tmaggue8",
+        "scopeNodeId": "cmtpttkrm000tun7q4midtp5a",
+        "holderNodeId": "cmtpttkrm000tun7q4midtp5a",
+        "roleKey": "MEMBER",
+        "createdAt": "2026-09-06T13:07:21.058Z",
+        "endedAt": null
+      },
+      {
+        "id": "cmvntu60f001runy9qklvb0po",
+        "scopeNodeId": "cmtpttkrm000tun7q4midtp5a",
+        "holderNodeId": "cmtpttkrm000tun7q4midtp5a",
+        "roleKey": "OWNER",
+        "createdAt": "2026-09-06T13:07:21.058Z",
+        "endedAt": null
+      },
+      {
+        "id": "cmvntu658001tuny99hff9zx6",
+        "scopeNodeId": "cmtpttkrm000tun7q4midtp5a",
+        "holderNodeId": "cmtpttkrm000tun7q4midtp5a",
+        "roleKey": "TREASURER",
+        "createdAt": "2026-09-06T13:07:21.058Z",
+        "endedAt": null
+      },
+      {
+        "id": "cmvntu7ms002euny9145nswnb",
+        "scopeNodeId": "cmvntu7i0002cuny9bjveqjou",
+        "holderNodeId": "cmtpttiir0000un7q3g2btgus",
+        "roleKey": "MEMBER",
+        "createdAt": "2026-10-25T12:51:43.013Z",
+        "endedAt": null
+      },
+      {
+        "id": "cmvntu7rc002guny9yptwdcxn",
+        "scopeNodeId": "cmvntu7i0002cuny9bjveqjou",
+        "holderNodeId": "cmtpttiqk0004un7qtohawslw",
+        "roleKey": "MEMBER",
+        "createdAt": "2026-10-25T12:51:43.176Z",
+        "endedAt": null
+      },
+      {
+        "id": "cmvntu7wo002iuny9644f25si",
+        "scopeNodeId": "cmvntu7i0002cuny9bjveqjou",
+        "holderNodeId": "cmtpttiz90007un7qgs7e8dac",
+        "roleKey": "MEMBER",
+        "createdAt": "2026-10-25T12:51:43.368Z",
+        "endedAt": null
+      },
+      {
+        "id": "cmvntu81e002kuny9jh6vgvfv",
+        "scopeNodeId": "cmvntu7i0002cuny9bjveqjou",
+        "holderNodeId": "cmtpttj70000aun7qysschrfo",
+        "roleKey": "MEMBER",
+        "createdAt": "2026-10-25T12:51:43.539Z",
+        "endedAt": null
+      },
+      {
+        "id": "cmvntu862002muny96q9cwmbs",
+        "scopeNodeId": "cmvntu7i0002cuny9bjveqjou",
+        "holderNodeId": "cmtpttjj3000eun7q0ud7jzry",
+        "roleKey": "MEMBER",
+        "createdAt": "2026-10-25T12:51:43.707Z",
+        "endedAt": null
+      },
+      {
+        "id": "cmvntu8b4002ouny9e6h9x3e3",
+        "scopeNodeId": "cmvntu7i0002cuny9bjveqjou",
+        "holderNodeId": "cmtpttjtf000hun7qal6h70dl",
+        "roleKey": "MEMBER",
+        "createdAt": "2026-10-25T12:51:43.888Z",
+        "endedAt": null
+      },
+      {
+        "id": "cmvntu8fs002quny9on3cgc2q",
+        "scopeNodeId": "cmvntu7i0002cuny9bjveqjou",
+        "holderNodeId": "cmtpttk1s000kun7q4brs42h3",
+        "roleKey": "MEMBER",
+        "createdAt": "2026-10-25T12:51:44.057Z",
+        "endedAt": null
+      },
+      {
+        "id": "cmvntu8kh002suny9wo6vl0qo",
+        "scopeNodeId": "cmvntu7i0002cuny9bjveqjou",
+        "holderNodeId": "cmtpttkan000nun7qg8a2rb40",
+        "roleKey": "MEMBER",
+        "createdAt": "2026-10-25T12:51:44.225Z",
+        "endedAt": null
+      },
+      {
+        "id": "cmvntu8pp002uuny9an2xqlff",
+        "scopeNodeId": "cmvntu7i0002cuny9bjveqjou",
+        "holderNodeId": "cmtpttkjh000qun7qtzghog1o",
+        "roleKey": "MEMBER",
+        "createdAt": "2026-10-25T12:51:44.413Z",
+        "endedAt": null
+      },
+      {
+        "id": "cmvntu8ua002wuny9f4xp05hh",
+        "scopeNodeId": "cmvntu7i0002cuny9bjveqjou",
+        "holderNodeId": "cmtpttkrm000tun7q4midtp5a",
+        "roleKey": "MEMBER",
+        "createdAt": "2026-10-25T12:51:44.579Z",
+        "endedAt": null
+      },
+      {
+        "id": "cmvntu8yx002yuny9l6c4gj20",
+        "scopeNodeId": "cmvntu7i0002cuny9bjveqjou",
+        "holderNodeId": "cmtpttiir0000un7q3g2btgus",
+        "roleKey": "OWNER",
+        "createdAt": "2026-10-25T12:51:44.746Z",
+        "endedAt": null
+      },
+      {
+        "id": "cmvntu9480030uny9bfn7mxon",
+        "scopeNodeId": "cmvntu7i0002cuny9bjveqjou",
+        "holderNodeId": "cmtpttj70000aun7qysschrfo",
+        "roleKey": "OWNER",
+        "createdAt": "2026-10-25T12:51:44.936Z",
+        "endedAt": null
+      },
+      {
+        "id": "cmvntu98z0032uny9b6s6271o",
+        "scopeNodeId": "cmvntu7i0002cuny9bjveqjou",
+        "holderNodeId": "cmtpttiqk0004un7qtohawslw",
+        "roleKey": "OWNER",
+        "createdAt": "2026-10-25T12:51:45.107Z",
+        "endedAt": null
+      },
+      {
+        "id": "cmvntu9dn0034uny9st18tpj5",
+        "scopeNodeId": "cmvntu7i0002cuny9bjveqjou",
+        "holderNodeId": "cmtpttiir0000un7q3g2btgus",
+        "roleKey": "TREASURER",
+        "createdAt": "2026-10-25T12:51:45.276Z",
+        "endedAt": null
+      },
+      {
+        "id": "cmvntu9it0036uny9u74exz5j",
+        "scopeNodeId": "cmvntu7i0002cuny9bjveqjou",
+        "holderNodeId": "cmtpttiqk0004un7qtohawslw",
+        "roleKey": "TREASURER",
+        "createdAt": "2026-10-25T12:51:45.461Z",
+        "endedAt": null
+      },
+      {
+        "id": "cmvz4rrlb000ole08tkag8oxp",
+        "scopeNodeId": "cmvz4rrl5000nle08u3e0z9gu",
+        "holderNodeId": "cmvz4rrl5000nle08u3e0z9gu",
+        "roleKey": "MEMBER",
+        "createdAt": "2026-11-02T10:43:12.624Z",
+        "endedAt": null
+      },
+      {
+        "id": "cmvz4rrlb000ple08ackfz4gz",
+        "scopeNodeId": "cmvz4rrl5000nle08u3e0z9gu",
+        "holderNodeId": "cmvz4rrl5000nle08u3e0z9gu",
+        "roleKey": "OWNER",
+        "createdAt": "2026-11-02T10:43:12.624Z",
+        "endedAt": null
+      },
+      {
+        "id": "cmvz4rrlb000qle08gfu9z2hw",
+        "scopeNodeId": "cmvz4rrl5000nle08u3e0z9gu",
+        "holderNodeId": "cmvz4rrl5000nle08u3e0z9gu",
+        "roleKey": "TREASURER",
+        "createdAt": "2026-11-02T10:43:12.624Z",
+        "endedAt": null
+      }
+    ],
+    "RoleCapability": [
+      {
+        "roleKey": "MEMBER",
+        "capabilityKey": "INTERACT"
+      },
+      {
+        "roleKey": "MEMBER",
+        "capabilityKey": "INVITE"
+      },
+      {
+        "roleKey": "MEMBER",
+        "capabilityKey": "VIEW"
+      },
+      {
+        "roleKey": "MEMBER",
+        "capabilityKey": "PROPOSE_REMOVAL"
+      },
+      {
+        "roleKey": "TREASURER",
+        "capabilityKey": "PAY"
+      },
+      {
+        "roleKey": "TREASURER",
+        "capabilityKey": "ADD_FUNDS"
+      },
+      {
+        "roleKey": "TREASURER",
+        "capabilityKey": "MINT"
+      },
+      {
+        "roleKey": "TREASURER",
+        "capabilityKey": "EXCHANGE"
+      },
+      {
+        "roleKey": "TREASURER",
+        "capabilityKey": "WITHDRAW"
+      },
+      {
+        "roleKey": "TREASURER",
+        "capabilityKey": "SET_UP_CURRENCY"
+      },
+      {
+        "roleKey": "TREASURER",
+        "capabilityKey": "VIEW_BALANCES"
+      },
+      {
+        "roleKey": "OWNER",
+        "capabilityKey": "EDIT_IDENTITY"
+      },
+      {
+        "roleKey": "OWNER",
+        "capabilityKey": "EDIT_GOVERNANCE"
+      },
+      {
+        "roleKey": "OWNER",
+        "capabilityKey": "ADD_MEMBERS"
+      },
+      {
+        "roleKey": "CURATOR",
+        "capabilityKey": "VERIFY_WORK"
+      }
+    ],
+    "Transaction": [
+      {
+        "id": "cmvntuchh004cuny9xyj2zjgk",
+        "kind": "OPENING_BALANCE",
+        "fromAccountId": null,
+        "toAccountId": "cmvntu9s90038uny9zqfgdtvo",
+        "amount": 31000,
+        "toAmount": null,
+        "rate": null,
+        "comment": "Opening balance from Phase 1",
+        "interactionId": null,
+        "groupId": null,
+        "effectiveDate": null,
+        "actedByPersonId": "cmtpttiir0000un7q3g2btgus",
+        "createdAt": "2026-09-06T13:07:17.147Z"
+      },
+      {
+        "id": "cmvntucmc004euny9ljxs2bfy",
+        "kind": "OPENING_BALANCE",
+        "fromAccountId": null,
+        "toAccountId": "cmvntua1x003cuny9i6zw8uyp",
+        "amount": 32000,
+        "toAmount": null,
+        "rate": null,
+        "comment": "Opening balance from Phase 1",
+        "interactionId": null,
+        "groupId": null,
+        "effectiveDate": null,
+        "actedByPersonId": "cmtpttiqk0004un7qtohawslw",
+        "createdAt": "2026-09-06T13:07:17.428Z"
+      },
+      {
+        "id": "cmvntucrd004guny9k15z2xkb",
+        "kind": "OPENING_BALANCE",
+        "fromAccountId": null,
+        "toAccountId": "cmvntuabx003guny9aeeyduqk",
+        "amount": 9000,
+        "toAmount": null,
+        "rate": null,
+        "comment": "Opening balance from Phase 1",
+        "interactionId": null,
+        "groupId": null,
+        "effectiveDate": null,
+        "actedByPersonId": "cmtpttiz90007un7qgs7e8dac",
+        "createdAt": "2026-09-06T13:07:17.741Z"
+      },
+      {
+        "id": "cmvntucvy004iuny94kqp2ldj",
+        "kind": "OPENING_BALANCE",
+        "fromAccountId": null,
+        "toAccountId": "cmvntualc003kuny9vtd0u6j3",
+        "amount": 4000,
+        "toAmount": null,
+        "rate": null,
+        "comment": "Opening balance from Phase 1",
+        "interactionId": null,
+        "groupId": null,
+        "effectiveDate": null,
+        "actedByPersonId": "cmtpttj70000aun7qysschrfo",
+        "createdAt": "2026-09-06T13:07:18.020Z"
+      },
+      {
+        "id": "cmvntud0q004kuny98oibuz9i",
+        "kind": "OPENING_BALANCE",
+        "fromAccountId": "cmvntuavf003ouny9k8lhe9za",
+        "toAccountId": null,
+        "amount": 3500,
+        "toAmount": null,
+        "rate": null,
+        "comment": "Opening balance from Phase 1",
+        "interactionId": null,
+        "groupId": null,
+        "effectiveDate": null,
+        "actedByPersonId": "cmtpttjj3000eun7q0ud7jzry",
+        "createdAt": "2026-09-06T13:07:18.455Z"
+      },
+      {
+        "id": "cmvntud5w004muny9mizabami",
+        "kind": "OPENING_BALANCE",
+        "fromAccountId": null,
+        "toAccountId": "cmvntub52003suny9qwmwxrkd",
+        "amount": 18000,
+        "toAmount": null,
+        "rate": null,
+        "comment": "Opening balance from Phase 1",
+        "interactionId": null,
+        "groupId": null,
+        "effectiveDate": null,
+        "actedByPersonId": "cmtpttjtf000hun7qal6h70dl",
+        "createdAt": "2026-09-06T13:07:18.827Z"
+      },
+      {
+        "id": "cmvntudal004ouny9q5qrg8ph",
+        "kind": "OPENING_BALANCE",
+        "fromAccountId": null,
+        "toAccountId": "cmvntubee003wuny9evtfisun",
+        "amount": 7500,
+        "toAmount": null,
+        "rate": null,
+        "comment": "Opening balance from Phase 1",
+        "interactionId": null,
+        "groupId": null,
+        "effectiveDate": null,
+        "actedByPersonId": "cmtpttk1s000kun7q4brs42h3",
+        "createdAt": "2026-09-06T13:07:19.128Z"
+      },
+      {
+        "id": "cmvntudf9004quny9s5rqh0ez",
+        "kind": "OPENING_BALANCE",
+        "fromAccountId": null,
+        "toAccountId": "cmvntubo80040uny9ns752y0y",
+        "amount": 0,
+        "toAmount": null,
+        "rate": null,
+        "comment": "Opening balance from Phase 1",
+        "interactionId": null,
+        "groupId": null,
+        "effectiveDate": null,
+        "actedByPersonId": "cmtpttkan000nun7qg8a2rb40",
+        "createdAt": "2026-09-06T13:07:19.447Z"
+      },
+      {
+        "id": "cmvntudkg004suny92sklci58",
+        "kind": "OPENING_BALANCE",
+        "fromAccountId": null,
+        "toAccountId": "cmvntuby60044uny9cvxm15b2",
+        "amount": 15000,
+        "toAmount": null,
+        "rate": null,
+        "comment": "Opening balance from Phase 1",
+        "interactionId": null,
+        "groupId": null,
+        "effectiveDate": null,
+        "actedByPersonId": "cmtpttkjh000qun7qtzghog1o",
+        "createdAt": "2026-09-06T13:07:19.766Z"
+      },
+      {
+        "id": "cmvntudp5004uuny9errvms2s",
+        "kind": "OPENING_BALANCE",
+        "fromAccountId": null,
+        "toAccountId": "cmvntuc7o0048uny9qakwfha2",
+        "amount": 3000,
+        "toAmount": null,
+        "rate": null,
+        "comment": "Opening balance from Phase 1",
+        "interactionId": null,
+        "groupId": null,
+        "effectiveDate": null,
+        "actedByPersonId": "cmtpttkrm000tun7q4midtp5a",
+        "createdAt": "2026-09-06T13:07:20.058Z"
+      },
+      {
+        "id": "cmtpttl3d000xun7qrvopjkrx",
+        "kind": "PAYMENT",
+        "fromAccountId": "cmvntu9s90038uny9zqfgdtvo",
+        "toAccountId": "cmvntuavf003ouny9k8lhe9za",
+        "amount": 5000,
+        "toAmount": null,
+        "rate": null,
+        "comment": "Nursery fencing materials",
+        "interactionId": "cmvntue43004yuny9xyp299cw",
+        "groupId": null,
+        "effectiveDate": null,
+        "actedByPersonId": "cmtpttiir0000un7q3g2btgus",
+        "createdAt": "2026-09-06T13:07:21.481Z"
+      },
+      {
+        "id": "cmtpttl52000zun7qljl46ur0",
+        "kind": "PAYMENT",
+        "fromAccountId": "cmvntua1x003cuny9i6zw8uyp",
+        "toAccountId": "cmvntu9s90038uny9zqfgdtvo",
+        "amount": 10000,
+        "toAmount": null,
+        "rate": null,
+        "comment": "Funding round 2",
+        "interactionId": "cmvntuewt0054uny9zsjp5thp",
+        "groupId": null,
+        "effectiveDate": null,
+        "actedByPersonId": "cmtpttiqk0004un7qtohawslw",
+        "createdAt": "2026-09-06T13:07:21.543Z"
+      },
+      {
+        "id": "cmtpttl750011un7q044okt2b",
+        "kind": "GIFT",
+        "fromAccountId": "cmvntu9s90038uny9zqfgdtvo",
+        "toAccountId": "cmvntualc003kuny9vtd0u6j3",
+        "amount": 2000,
+        "toAmount": null,
+        "rate": null,
+        "comment": "Great writeup on the pilot",
+        "interactionId": "cmvntufpx005auny9uljgtm9e",
+        "groupId": null,
+        "effectiveDate": null,
+        "actedByPersonId": "cmtpttiir0000un7q3g2btgus",
+        "createdAt": "2026-09-06T13:07:21.617Z"
+      },
+      {
+        "id": "cmttr6uq20001jj04836495yz",
+        "kind": "GIFT",
+        "fromAccountId": "cmvntu9s90038uny9zqfgdtvo",
+        "toAccountId": "cmvntubo80040uny9ns752y0y",
+        "amount": 10000,
+        "toAmount": null,
+        "rate": null,
+        "comment": "",
+        "interactionId": "cmvntugj4005guny9cz85lnoj",
+        "groupId": null,
+        "effectiveDate": null,
+        "actedByPersonId": "cmtpttiir0000un7q3g2btgus",
+        "createdAt": "2026-09-09T07:04:46.346Z"
+      },
+      {
+        "id": "cmttr7jpc0009jj04axw9f89m",
+        "kind": "PAYMENT",
+        "fromAccountId": "cmvntualc003kuny9vtd0u6j3",
+        "toAccountId": "cmvntuavf003ouny9k8lhe9za",
+        "amount": 500,
+        "toAmount": null,
+        "rate": null,
+        "comment": "❤️",
+        "interactionId": "cmvntuhc5005muny9mervupit",
+        "groupId": null,
+        "effectiveDate": null,
+        "actedByPersonId": "cmtpttj70000aun7qysschrfo",
+        "createdAt": "2026-09-09T07:05:18.720Z"
+      },
+      {
+        "id": "cmttr7jz1000hjj04od9jxjnt",
+        "kind": "GIFT",
+        "fromAccountId": "cmvntua1x003cuny9i6zw8uyp",
+        "toAccountId": "cmvntubo80040uny9ns752y0y",
+        "amount": 1000,
+        "toAmount": null,
+        "rate": null,
+        "comment": "poetry in motion",
+        "interactionId": "cmvntui5d005suny9npl8dhfj",
+        "groupId": null,
+        "effectiveDate": null,
+        "actedByPersonId": "cmtpttiqk0004un7qtohawslw",
+        "createdAt": "2026-09-09T07:05:19.069Z"
+      },
+      {
+        "id": "cmttr87en000jjj04scvzbr9t",
+        "kind": "GIFT",
+        "fromAccountId": "cmvntuavf003ouny9k8lhe9za",
+        "toAccountId": "cmvntu9s90038uny9zqfgdtvo",
+        "amount": 4000,
+        "toAmount": null,
+        "rate": null,
+        "comment": "APP",
+        "interactionId": "cmvntuiop005wuny9qb9l923w",
+        "groupId": null,
+        "effectiveDate": null,
+        "actedByPersonId": "cmtpttjj3000eun7q0ud7jzry",
+        "createdAt": "2026-09-09T07:05:49.439Z"
+      },
+      {
+        "id": "cmttr9cqp000hl1047pmvaco3",
+        "kind": "PAYMENT",
+        "fromAccountId": "cmvntuavf003ouny9k8lhe9za",
+        "toAccountId": "cmvntualc003kuny9vtd0u6j3",
+        "amount": 1000,
+        "toAmount": null,
+        "rate": null,
+        "comment": "❤️",
+        "interactionId": "cmvntuj8d0060uny9dfbjp9k5",
+        "groupId": null,
+        "effectiveDate": null,
+        "actedByPersonId": "cmtpttjj3000eun7q0ud7jzry",
+        "createdAt": "2026-09-09T07:06:43.009Z"
+      },
+      {
+        "id": "cmttrbnph000pl104yu36rbmf",
+        "kind": "GIFT",
+        "fromAccountId": "cmvntuavf003ouny9k8lhe9za",
+        "toAccountId": "cmvntualc003kuny9vtd0u6j3",
+        "amount": 3000,
+        "toAmount": null,
+        "rate": null,
+        "comment": "INTERDEPENDISM",
+        "interactionId": "cmvntujro0064uny9r5w469w2",
+        "groupId": null,
+        "effectiveDate": null,
+        "actedByPersonId": "cmtpttjj3000eun7q0ud7jzry",
+        "createdAt": "2026-09-09T07:08:30.534Z"
+      },
+      {
+        "id": "cmvimks9m0001jm04br8x7v5m",
+        "kind": "PAYMENT",
+        "fromAccountId": "cmvntu9s90038uny9zqfgdtvo",
+        "toAccountId": "cmvntualc003kuny9vtd0u6j3",
+        "amount": 2000,
+        "toAmount": null,
+        "rate": null,
+        "comment": "Songs and Prayers",
+        "interactionId": "cmvntukao0068uny9oov1blwn",
+        "groupId": null,
+        "effectiveDate": null,
+        "actedByPersonId": "cmtpttiir0000un7q3g2btgus",
+        "createdAt": "2026-10-21T21:29:35.002Z"
+      },
+      {
+        "id": "cmvnymczh0001kx07r9b4fxvo",
+        "kind": "DEPOSIT",
+        "fromAccountId": null,
+        "toAccountId": "cmvntu9xe003auny9hybeb2cq",
+        "amount": 100000,
+        "toAmount": null,
+        "rate": null,
+        "comment": "Deposit Test deposit - funds not added",
+        "interactionId": null,
+        "groupId": null,
+        "effectiveDate": "2026-10-24T22:00:00.000Z",
+        "actedByPersonId": "cmtpttiir0000un7q3g2btgus",
+        "createdAt": "2026-10-25T15:05:34.781Z"
+      },
+      {
+        "id": "cmvtbp9gy0003js08bz18o6vf",
+        "kind": "PAYMENT",
+        "fromAccountId": "cmvntu9s90038uny9zqfgdtvo",
+        "toAccountId": "cmvntua1x003cuny9i6zw8uyp",
+        "amount": 100,
+        "toAmount": null,
+        "rate": null,
+        "comment": "Hello New World!",
+        "interactionId": "cmvnxqfkt0003i408vrbpow3p",
+        "groupId": null,
+        "effectiveDate": null,
+        "actedByPersonId": "cmtpttiqk0004un7qtohawslw",
+        "createdAt": "2026-10-29T09:10:36.082Z"
+      },
+      {
+        "id": "cmvuxoad60003jo08ach055vh",
+        "kind": "EXCHANGE",
+        "fromAccountId": "cmvntu9xe003auny9hybeb2cq",
+        "toAccountId": "cmvuxoac10001jo08uu47esfo",
+        "amount": 100,
+        "toAmount": null,
+        "rate": null,
+        "comment": "Convert 1.00 CHF → 1.00 RCC",
+        "interactionId": null,
+        "groupId": "bb2936b2-9e36-4296-bc0e-a45602af622e",
+        "effectiveDate": null,
+        "actedByPersonId": "cmtpttiir0000un7q3g2btgus",
+        "createdAt": "2026-10-30T12:13:28.315Z"
+      },
+      {
+        "id": "cmvuxoaen0009jo08o7kcyd3y",
+        "kind": "EXCHANGE",
+        "fromAccountId": null,
+        "toAccountId": "cmvntu9s90038uny9zqfgdtvo",
+        "amount": 100,
+        "toAmount": null,
+        "rate": "1",
+        "comment": "Convert 1.00 CHF → 1.00 RCC",
+        "interactionId": null,
+        "groupId": "bb2936b2-9e36-4296-bc0e-a45602af622e",
+        "effectiveDate": null,
+        "actedByPersonId": "cmtpttiir0000un7q3g2btgus",
+        "createdAt": "2026-10-30T12:13:28.368Z"
+      },
+      {
+        "id": "cmvz46i430001jm089swkjy35",
+        "kind": "EXCHANGE",
+        "fromAccountId": "cmvntub52003suny9qwmwxrkd",
+        "toAccountId": null,
+        "amount": 100,
+        "toAmount": null,
+        "rate": "1",
+        "comment": "Convert 1.00 RCC → 1.00 CHF",
+        "interactionId": null,
+        "groupId": "3fafbd92-ce71-4f94-927f-58ac2141d526",
+        "effectiveDate": null,
+        "actedByPersonId": "cmtpttjtf000hun7qal6h70dl",
+        "createdAt": "2026-11-02T10:26:40.563Z"
+      },
+      {
+        "id": "cmvz46i6t0008jm08c910vv9v",
+        "kind": "EXCHANGE",
+        "fromAccountId": "cmvuxoac10001jo08uu47esfo",
+        "toAccountId": "cmvntub9r003uuny9xzj1nd28",
+        "amount": 100,
+        "toAmount": null,
+        "rate": null,
+        "comment": "Convert 1.00 RCC → 1.00 CHF",
+        "interactionId": null,
+        "groupId": "3fafbd92-ce71-4f94-927f-58ac2141d526",
+        "effectiveDate": null,
+        "actedByPersonId": "cmtpttjtf000hun7qal6h70dl",
+        "createdAt": "2026-11-02T10:26:40.662Z"
+      },
+      {
+        "id": "cmvz47qfi000cjm08a5q83orr",
+        "kind": "DEPOSIT",
+        "fromAccountId": null,
+        "toAccountId": "cmvntub9r003uuny9xzj1nd28",
+        "amount": 100000,
+        "toAmount": null,
+        "rate": null,
+        "comment": "Deposit xyz",
+        "interactionId": null,
+        "groupId": null,
+        "effectiveDate": "2026-11-01T23:00:00.000Z",
+        "actedByPersonId": "cmtpttjtf000hun7qal6h70dl",
+        "createdAt": "2026-11-02T10:27:37.998Z"
+      },
+      {
+        "id": "cmvz48hqk000hjm08tb8nvn3q",
+        "kind": "EXCHANGE",
+        "fromAccountId": "cmvntub9r003uuny9xzj1nd28",
+        "toAccountId": "cmvz48hp1000fjm083lwdn7iz",
+        "amount": 5000,
+        "toAmount": null,
+        "rate": null,
+        "comment": "Convert 50.00 CHF → 50.00 GAIA",
+        "interactionId": null,
+        "groupId": "d5508c42-b478-4971-9cbd-ecd0641edd37",
+        "effectiveDate": null,
+        "actedByPersonId": "cmtpttjtf000hun7qal6h70dl",
+        "createdAt": "2026-11-02T10:28:13.388Z"
+      },
+      {
+        "id": "cmvz48hsh000njm08g929salo",
+        "kind": "EXCHANGE",
+        "fromAccountId": null,
+        "toAccountId": "cmvz48hri000ljm08c7bep8jm",
+        "amount": 5000,
+        "toAmount": null,
+        "rate": "1",
+        "comment": "Convert 50.00 CHF → 50.00 GAIA",
+        "interactionId": null,
+        "groupId": "d5508c42-b478-4971-9cbd-ecd0641edd37",
+        "effectiveDate": null,
+        "actedByPersonId": "cmtpttjtf000hun7qal6h70dl",
+        "createdAt": "2026-11-02T10:28:13.457Z"
+      },
+      {
+        "id": "cmvz4e5i6001bjm08pobryz5s",
+        "kind": "MINT",
+        "fromAccountId": "cmvntub9r003uuny9xzj1nd28",
+        "toAccountId": "cmvz4e5gq0017jm08p3f21cor",
+        "amount": 1000,
+        "toAmount": null,
+        "rate": "100/13",
+        "comment": "Mint: 10.00 CHF locked in reserve → 76.923076 JCN minted",
+        "interactionId": null,
+        "groupId": "69ac73b6-9645-477c-9c50-a9c39d963057",
+        "effectiveDate": null,
+        "actedByPersonId": "cmtpttjtf000hun7qal6h70dl",
+        "createdAt": "2026-11-02T10:32:37.471Z"
+      },
+      {
+        "id": "cmvz4e5ji001ejm08ekvkac3h",
+        "kind": "MINT",
+        "fromAccountId": null,
+        "toAccountId": "cmvz4e5h30019jm08oiakk81o",
+        "amount": 76923076,
+        "toAmount": null,
+        "rate": "100/13",
+        "comment": "Mint: 10.00 CHF locked in reserve → 76.923076 JCN minted",
+        "interactionId": null,
+        "groupId": "69ac73b6-9645-477c-9c50-a9c39d963057",
+        "effectiveDate": null,
+        "actedByPersonId": "cmtpttjtf000hun7qal6h70dl",
+        "createdAt": "2026-11-02T10:32:37.518Z"
+      },
+      {
+        "id": "cmvz4fif3001ljm08t0zm9mvr",
+        "kind": "MINT",
+        "fromAccountId": "cmvntub9r003uuny9xzj1nd28",
+        "toAccountId": "cmvz4e5gq0017jm08p3f21cor",
+        "amount": 5000,
+        "toAmount": null,
+        "rate": "100/13",
+        "comment": "Mint: 50.00 CHF locked in reserve → 384.615384 JCN minted",
+        "interactionId": null,
+        "groupId": "17b70de6-6bff-40ae-974e-0856a2fb95cf",
+        "effectiveDate": null,
+        "actedByPersonId": "cmtpttjtf000hun7qal6h70dl",
+        "createdAt": "2026-11-02T10:33:40.863Z"
+      },
+      {
+        "id": "cmvz4figp001ojm08wo2f6jgt",
+        "kind": "MINT",
+        "fromAccountId": null,
+        "toAccountId": "cmvz4e5h30019jm08oiakk81o",
+        "amount": 384615384,
+        "toAmount": null,
+        "rate": "100/13",
+        "comment": "Mint: 50.00 CHF locked in reserve → 384.615384 JCN minted",
+        "interactionId": null,
+        "groupId": "17b70de6-6bff-40ae-974e-0856a2fb95cf",
+        "effectiveDate": null,
+        "actedByPersonId": "cmtpttjtf000hun7qal6h70dl",
+        "createdAt": "2026-11-02T10:33:40.921Z"
+      },
+      {
+        "id": "cmvz4ynr1001kle08rwz6kr9n",
+        "kind": "MINT",
+        "fromAccountId": "cmvntub9r003uuny9xzj1nd28",
+        "toAccountId": "cmvz4e5gq0017jm08p3f21cor",
+        "amount": 10000,
+        "toAmount": null,
+        "rate": "100/13",
+        "comment": "Mint: 100.00 CHF locked in reserve → 769.230769 JCN minted",
+        "interactionId": null,
+        "groupId": "6b5a441c-bec4-434e-8fae-87134c5214a2",
+        "effectiveDate": null,
+        "actedByPersonId": "cmtpttjtf000hun7qal6h70dl",
+        "createdAt": "2026-11-02T10:48:34.237Z"
+      },
+      {
+        "id": "cmvz4yns0001nle080rlwzem1",
+        "kind": "MINT",
+        "fromAccountId": null,
+        "toAccountId": "cmvz4e5h30019jm08oiakk81o",
+        "amount": 769230769,
+        "toAmount": null,
+        "rate": "100/13",
+        "comment": "Mint: 100.00 CHF locked in reserve → 769.230769 JCN minted",
+        "interactionId": null,
+        "groupId": "6b5a441c-bec4-434e-8fae-87134c5214a2",
+        "effectiveDate": null,
+        "actedByPersonId": "cmtpttjtf000hun7qal6h70dl",
+        "createdAt": "2026-11-02T10:48:34.272Z"
+      },
+      {
+        "id": "cmvz58tca0005jt07oaqk1lil",
+        "kind": "PAYMENT",
+        "fromAccountId": "cmvntub9r003uuny9xzj1nd28",
+        "toAccountId": "cmvz58tbb0003jt07d2dk1vvs",
+        "amount": 5000,
+        "toAmount": null,
+        "rate": null,
+        "comment": "text",
+        "interactionId": "cmvz4pfww000dle08omm4wfkw",
+        "groupId": null,
+        "effectiveDate": null,
+        "actedByPersonId": "cmtpttjtf000hun7qal6h70dl",
+        "createdAt": "2026-11-02T10:56:28.043Z"
+      },
+      {
+        "id": "cmw1vpdt00005i508fdrye62z",
+        "kind": "MINT",
+        "fromAccountId": "cmvz58tbb0003jt07d2dk1vvs",
+        "toAccountId": "cmvuxoac10001jo08uu47esfo",
+        "amount": 100,
+        "toAmount": null,
+        "rate": "1",
+        "comment": "Mint: 1.00 CHF locked in reserve → 1.00 RCC minted",
+        "interactionId": null,
+        "groupId": "66aee804-6d45-4523-84a2-f6ada83b74ac",
+        "effectiveDate": null,
+        "actedByPersonId": "cmtpttiqk0004un7qtohawslw",
+        "createdAt": "2026-11-04T08:52:43.428Z"
+      },
+      {
+        "id": "cmw1vpdu50008i508ci3vrims",
+        "kind": "MINT",
+        "fromAccountId": null,
+        "toAccountId": "cmw1vpdrv0003i508tm0f722i",
+        "amount": 100,
+        "toAmount": null,
+        "rate": "1",
+        "comment": "Mint: 1.00 CHF locked in reserve → 1.00 RCC minted",
+        "interactionId": null,
+        "groupId": "66aee804-6d45-4523-84a2-f6ada83b74ac",
+        "effectiveDate": null,
+        "actedByPersonId": "cmtpttiqk0004un7qtohawslw",
+        "createdAt": "2026-11-04T08:52:43.468Z"
+      },
+      {
+        "id": "cmw1vugiy000bi508sgqehvit",
+        "kind": "EXCHANGE",
+        "fromAccountId": "cmvntua1x003cuny9i6zw8uyp",
+        "toAccountId": null,
+        "amount": 100,
+        "toAmount": null,
+        "rate": "1",
+        "comment": "Convert 1.00 RCC → 1.00 CHF",
+        "interactionId": null,
+        "groupId": "9b5645df-e2ce-44f4-a60f-6ee2fc865e7c",
+        "effectiveDate": null,
+        "actedByPersonId": "cmtpttiqk0004un7qtohawslw",
+        "createdAt": "2026-11-04T08:56:40.234Z"
+      },
+      {
+        "id": "cmw1vugkz000ii508f4zlqsf0",
+        "kind": "EXCHANGE",
+        "fromAccountId": "cmvuxoac10001jo08uu47esfo",
+        "toAccountId": "cmvntua6i003euny934imj3ie",
+        "amount": 100,
+        "toAmount": null,
+        "rate": null,
+        "comment": "Convert 1.00 RCC → 1.00 CHF",
+        "interactionId": null,
+        "groupId": "9b5645df-e2ce-44f4-a60f-6ee2fc865e7c",
+        "effectiveDate": null,
+        "actedByPersonId": "cmtpttiqk0004un7qtohawslw",
+        "createdAt": "2026-11-04T08:56:40.307Z"
+      },
+      {
+        "id": "cmw1vwki2000mi5087lsoa7fn",
+        "kind": "DEPOSIT",
+        "fromAccountId": null,
+        "toAccountId": "cmvntuagm003iuny9nag38clx",
+        "amount": 100000,
+        "toAmount": null,
+        "rate": null,
+        "comment": "Deposit ZKB",
+        "interactionId": null,
+        "groupId": null,
+        "effectiveDate": "2026-11-03T23:00:00.000Z",
+        "actedByPersonId": "cmtpttiz90007un7qgs7e8dac",
+        "createdAt": "2026-11-04T08:58:18.698Z"
+      },
+      {
+        "id": "cmw1vwm9l000pi508ztu8o5sn",
+        "kind": "DEPOSIT",
+        "fromAccountId": null,
+        "toAccountId": "cmvntub02003quny9oks93enq",
+        "amount": 100000,
+        "toAmount": null,
+        "rate": null,
+        "comment": "Deposit Re",
+        "interactionId": null,
+        "groupId": null,
+        "effectiveDate": "2026-11-03T23:00:00.000Z",
+        "actedByPersonId": "cmtpttjj3000eun7q0ud7jzry",
+        "createdAt": "2026-11-04T08:58:20.985Z"
+      },
+      {
+        "id": "cmw1vxep6000si5081taitipx",
+        "kind": "DEPOSIT",
+        "fromAccountId": null,
+        "toAccountId": "cmvntu9xe003auny9hybeb2cq",
+        "amount": 50000,
+        "toAmount": null,
+        "rate": null,
+        "comment": "Deposit 500paidfromUBS",
+        "interactionId": null,
+        "groupId": null,
+        "effectiveDate": "2026-11-03T23:00:00.000Z",
+        "actedByPersonId": "cmtpttiir0000un7q3g2btgus",
+        "createdAt": "2026-11-04T08:58:57.835Z"
+      },
+      {
+        "id": "cmw1vzkjg000xi50836kt43q8",
+        "kind": "EXCHANGE",
+        "fromAccountId": "cmvntu9xe003auny9hybeb2cq",
+        "toAccountId": "cmw1vzkhj000vi508nbf2b3y5",
+        "amount": 1500,
+        "toAmount": null,
+        "rate": null,
+        "comment": "Convert 15.00 CHF → 5.00 THC",
+        "interactionId": null,
+        "groupId": "861c2cc5-36ce-42a5-b861-b6c923d1b843",
+        "effectiveDate": null,
+        "actedByPersonId": "cmtpttiir0000un7q3g2btgus",
+        "createdAt": "2026-11-04T09:00:38.716Z"
+      },
+      {
+        "id": "cmw1vzkkx0013i508s24ccb5b",
+        "kind": "EXCHANGE",
+        "fromAccountId": null,
+        "toAccountId": "cmw1vzkk80011i508wf9ppsjm",
+        "amount": 500,
+        "toAmount": null,
+        "rate": "1/3",
+        "comment": "Convert 15.00 CHF → 5.00 THC",
+        "interactionId": null,
+        "groupId": "861c2cc5-36ce-42a5-b861-b6c923d1b843",
+        "effectiveDate": null,
+        "actedByPersonId": "cmtpttiir0000un7q3g2btgus",
+        "createdAt": "2026-11-04T09:00:38.770Z"
+      },
+      {
+        "id": "cmw1vzwua001ii508lxrtn9ze",
+        "kind": "PAYMENT",
+        "fromAccountId": "cmw1vzkk80011i508wf9ppsjm",
+        "toAccountId": "cmw1vzwt6001gi508az20vf41",
+        "amount": 100,
+        "toAmount": null,
+        "rate": null,
+        "comment": "trial",
+        "interactionId": "cmw0wbbgq000fl808c4ygy985",
+        "groupId": null,
+        "effectiveDate": null,
+        "actedByPersonId": "cmtpttiir0000un7q3g2btgus",
+        "createdAt": "2026-11-04T09:00:54.658Z"
+      },
+      {
+        "id": "cmw1w0xys001si508o79oxh1o",
+        "kind": "PAYMENT",
+        "fromAccountId": "cmvntu9s90038uny9zqfgdtvo",
+        "toAccountId": "cmvntub52003suny9qwmwxrkd",
+        "amount": 1500,
+        "toAmount": null,
+        "rate": null,
+        "comment": "Lorem ipsum",
+        "interactionId": "cmvz4w49x0018le087tedwqfm",
+        "groupId": null,
+        "effectiveDate": null,
+        "actedByPersonId": "cmtpttiir0000un7q3g2btgus",
+        "createdAt": "2026-11-04T09:01:42.773Z"
+      },
+      {
+        "id": "cmw1w1p95002ci508vebkre9h",
+        "kind": "GIFT",
+        "fromAccountId": "cmvz4e5h30019jm08oiakk81o",
+        "toAccountId": "cmw1w1p7u002ai508kqwih643",
+        "amount": 1000000,
+        "toAmount": null,
+        "rate": null,
+        "comment": "text",
+        "interactionId": "cmvz4onfa0003le08cr3ab34i",
+        "groupId": null,
+        "effectiveDate": null,
+        "actedByPersonId": "cmtpttiir0000un7q3g2btgus",
+        "createdAt": "2026-11-04T09:02:18.137Z"
+      },
+      {
+        "id": "cmw1w4g5z002wi508ujhp526y",
+        "kind": "EXCHANGE",
+        "fromAccountId": "cmvntub02003quny9oks93enq",
+        "toAccountId": "cmvuxoac10001jo08uu47esfo",
+        "amount": 10000,
+        "toAmount": null,
+        "rate": null,
+        "comment": "Convert 100.00 CHF → 100.00 RCC",
+        "interactionId": null,
+        "groupId": "d9f81e8e-4f36-4bc1-9200-ee49d2d6489b",
+        "effectiveDate": null,
+        "actedByPersonId": "cmtpttjj3000eun7q0ud7jzry",
+        "createdAt": "2026-11-04T09:04:26.327Z"
+      },
+      {
+        "id": "cmw1w4g7q0032i5081gxlziyq",
+        "kind": "EXCHANGE",
+        "fromAccountId": null,
+        "toAccountId": "cmvntuavf003ouny9k8lhe9za",
+        "amount": 10000,
+        "toAmount": null,
+        "rate": "1",
+        "comment": "Convert 100.00 CHF → 100.00 RCC",
+        "interactionId": null,
+        "groupId": "d9f81e8e-4f36-4bc1-9200-ee49d2d6489b",
+        "effectiveDate": null,
+        "actedByPersonId": "cmtpttjj3000eun7q0ud7jzry",
+        "createdAt": "2026-11-04T09:04:26.390Z"
+      },
+      {
+        "id": "cmw1w4ug00039i508ls64pltv",
+        "kind": "MINT",
+        "fromAccountId": "cmvntub02003quny9oks93enq",
+        "toAccountId": "cmw1w4uei0035i5085v37ya7g",
+        "amount": 20000,
+        "toAmount": null,
+        "rate": "1/3",
+        "comment": "Mint: 200.00 CHF locked in reserve → 66.66 RCR minted",
+        "interactionId": null,
+        "groupId": "476050a2-1952-4532-a714-4786f09fb62e",
+        "effectiveDate": null,
+        "actedByPersonId": "cmtpttjj3000eun7q0ud7jzry",
+        "createdAt": "2026-11-04T09:04:44.832Z"
+      },
+      {
+        "id": "cmw1w4uhb003ci50857x72suh",
+        "kind": "MINT",
+        "fromAccountId": null,
+        "toAccountId": "cmw1w4uex0037i508gu43mmsx",
+        "amount": 6666,
+        "toAmount": null,
+        "rate": "1/3",
+        "comment": "Mint: 200.00 CHF locked in reserve → 66.66 RCR minted",
+        "interactionId": null,
+        "groupId": "476050a2-1952-4532-a714-4786f09fb62e",
+        "effectiveDate": null,
+        "actedByPersonId": "cmtpttjj3000eun7q0ud7jzry",
+        "createdAt": "2026-11-04T09:04:44.879Z"
+      },
+      {
+        "id": "cmw1w6rnb003ri508j5ww3503",
+        "kind": "EXCHANGE",
+        "fromAccountId": "cmvntuagm003iuny9nag38clx",
+        "toAccountId": "cmvuxoac10001jo08uu47esfo",
+        "amount": 20000,
+        "toAmount": null,
+        "rate": null,
+        "comment": "Convert 200.00 CHF → 200.00 RCC",
+        "interactionId": null,
+        "groupId": "a9c9d196-c807-4db9-b0e0-010ae449ae29",
+        "effectiveDate": null,
+        "actedByPersonId": "cmtpttiz90007un7qgs7e8dac",
+        "createdAt": "2026-11-04T09:06:14.520Z"
+      },
+      {
+        "id": "cmw1w6roz003xi508gk89woub",
+        "kind": "EXCHANGE",
+        "fromAccountId": null,
+        "toAccountId": "cmvntuabx003guny9aeeyduqk",
+        "amount": 20000,
+        "toAmount": null,
+        "rate": "1",
+        "comment": "Convert 200.00 CHF → 200.00 RCC",
+        "interactionId": null,
+        "groupId": "a9c9d196-c807-4db9-b0e0-010ae449ae29",
+        "effectiveDate": null,
+        "actedByPersonId": "cmtpttiz90007un7qgs7e8dac",
+        "createdAt": "2026-11-04T09:06:14.579Z"
+      },
+      {
+        "id": "cmw1wf94s004si508u85ak1ce",
+        "kind": "MINT",
+        "fromAccountId": "cmvz58tbb0003jt07d2dk1vvs",
+        "toAccountId": "cmvuxoac10001jo08uu47esfo",
+        "amount": 400,
+        "toAmount": null,
+        "rate": "1",
+        "comment": "Mint: 4.00 CHF locked in reserve → 4.00 RCC minted",
+        "interactionId": null,
+        "groupId": "29033b77-19c9-4ad1-b210-1b3f41f4b7a4",
+        "effectiveDate": null,
+        "actedByPersonId": "cmtpttiqk0004un7qtohawslw",
+        "createdAt": "2026-11-04T09:12:50.428Z"
+      },
+      {
+        "id": "cmw1wf95u004vi50800o82r35",
+        "kind": "MINT",
+        "fromAccountId": null,
+        "toAccountId": "cmw1vpdrv0003i508tm0f722i",
+        "amount": 400,
+        "toAmount": null,
+        "rate": "1",
+        "comment": "Mint: 4.00 CHF locked in reserve → 4.00 RCC minted",
+        "interactionId": null,
+        "groupId": "29033b77-19c9-4ad1-b210-1b3f41f4b7a4",
+        "effectiveDate": null,
+        "actedByPersonId": "cmtpttiqk0004un7qtohawslw",
+        "createdAt": "2026-11-04T09:12:50.467Z"
+      },
+      {
+        "id": "cmw1wi21b005fi5086bcys3qh",
+        "kind": "PAYMENT",
+        "fromAccountId": "cmvntuabx003guny9aeeyduqk",
+        "toAccountId": "cmvntualc003kuny9vtd0u6j3",
+        "amount": 12000,
+        "toAmount": null,
+        "rate": null,
+        "comment": "Thank you for the session",
+        "interactionId": "cmw1w8ug40042i508cqict6qt",
+        "groupId": null,
+        "effectiveDate": null,
+        "actedByPersonId": "cmtpttj70000aun7qysschrfo",
+        "createdAt": "2026-11-04T09:15:01.199Z"
+      }
+    ],
+    "TrustScore": [
+      {
+        "relationshipId": "cmvntudui004wuny9vsl62613",
+        "value": 0.75,
+        "updatedAt": "2026-10-25T12:51:51.235Z"
+      },
+      {
+        "relationshipId": "cmvntuenf0052uny9422xhgno",
+        "value": 0.7975,
+        "updatedAt": "2026-11-04T09:00:54.702Z"
+      },
+      {
+        "relationshipId": "cmvntufg10058uny9kvltpuci",
+        "value": 0.75,
+        "updatedAt": "2026-10-25T12:51:53.324Z"
+      },
+      {
+        "relationshipId": "cmvntug9f005euny9jrb4gmqm",
+        "value": 0.75,
+        "updatedAt": "2026-10-25T12:51:54.374Z"
+      },
+      {
+        "relationshipId": "cmvntuh27005kuny9bkaapups",
+        "value": 0.75,
+        "updatedAt": "2026-10-25T12:51:55.423Z"
+      },
+      {
+        "relationshipId": "cmvntuhvl005quny9qkw5vaie",
+        "value": 0.75,
+        "updatedAt": "2026-10-25T12:51:56.470Z"
+      },
+      {
+        "relationshipId": "cmvz4pfwi000ble08txz7zt38",
+        "value": 0.775,
+        "updatedAt": "2026-11-02T10:56:28.070Z"
+      },
+      {
+        "relationshipId": "cmvz4oneq0001le08n946b077",
+        "value": 0.775,
+        "updatedAt": "2026-11-04T09:01:42.805Z"
+      },
+      {
+        "relationshipId": "cmw1w8ufp0040i508fli7djws",
+        "value": 0.775,
+        "updatedAt": "2026-11-04T09:15:01.236Z"
+      }
+    ],
+    "Verification": []
+  },
+  "seedCandidate": {
+    "date": "2026-11-04",
+    "source": "dev",
+    "scrubbed": "emails, phones, email-like usernames, password hashes, invitation and reset tokens"
+  }
+}
