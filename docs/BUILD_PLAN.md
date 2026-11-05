@@ -397,6 +397,14 @@ Extend the browser tests (`npm run test:e2e`) to cover: create free and backed, 
 
 ### 11c. Move dev
 
+**Status: done** (5 Nov), dev pushed (`c6781c0`). Production untouched.
+
+- Dev backed up first: `backups/backup-dev-2026-11-05T12-55-07-113Z.json` (34 accounts, 57 transactions, 8 currencies).
+- Rehearsed on a scratch local copy of that backup, through the libSQL adapter with `intMode: "bigint"`: both SQL files, then `migrateV11`, with a balance check after each. Same result as below.
+- On dev, one at a time with a balance check after each: `v11-free-currencies.sql`, `v11-amounts-64bit.sql` (with `executeMultiple`, statement by statement; all went through), then `scripts/migrate-v11.ts`: GAIA, JCN, THC and RCR fiat-backed with their ratios; RBO and RCC free; 2 reserve-ratio rows closed; RBO's ratio and the 5 R-FIN-10 values removed; RCC's INITIAL rate of 1 CHF from 2026-10-25T12:51:42.841Z; RCC's 304.00 CHF reserve left untouched. 57 transactions before and after; all 34 balances unchanged and equal to their ledger.
+- Read back through the app's `src/server/db.ts`: every balance, transaction amount and interaction-terms amount comes back as a bigint equal to the backup; Turso returns 2^53+1 and 2^63−1 exactly.
+- Added `--atomic` to `scripts/apply-sql.mjs` (`885f7f1`): sends a SQL file as one `batch(..., "write")`, all or nothing. Use it for production.
+
 Back up dev; show the SQL, then apply `v11-free-currencies.sql` and `v11-amounts-64bit.sql` to dev (DB_TARGET=dev) after I say yes; run `scripts/migrate-v11.ts` on dev after I say yes and show its report; check every balance is unchanged and equals its ledger; push dev and give me a click-through checklist. Never DB_TARGET=production.
 
 **Done when:** the dev site shows free and backed currencies, trading, the decimals fix and the whole-network map, with everyone's balances unchanged.
