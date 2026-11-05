@@ -23,9 +23,10 @@ export const interactionsRouter = createTRPCRouter({
     const interaction = await ctx.db.interaction.findUniqueOrThrow({
       where: { id: input.interactionId },
       include: {
-        terms: { orderBy: { version: "desc" }, include: { currency: true } },
+        terms: { orderBy: { version: "desc" }, include: { currency: true, counterCurrency: true } },
         proposals: { orderBy: { createdAt: "desc" }, include: { approvers: true } },
-        transactions: { orderBy: { createdAt: "desc" } },
+        // A trade's two legs are in different currencies: each row brings its own.
+        transactions: { orderBy: { createdAt: "desc" }, include: { from: { select: { nodeId: true, currency: true } } } },
         curators: true,
         verifications: { orderBy: { createdAt: "desc" } },
       },
@@ -95,6 +96,21 @@ export const interactionsRouter = createTRPCRouter({
       return core.proposeWork(ctx.db, ctx.actor, input);
     }),
 
+  /** UC-FIN-10 (S28): offer `give` of a currency the acting node holds for `get` from another node. Both sides need PAY. */
+  proposeTrade: actingProcedure
+    .input(
+      z.object({
+        toNodeId: z.string().min(1),
+        give: z.object({ amount: minorUnits, currencyId: z.string().min(1) }),
+        get: z.object({ amount: minorUnits, currencyId: z.string().min(1) }),
+        comment: z.string().max(500).optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      await requireCan(ctx, "PAY");
+      return core.proposeTrade(ctx.db, ctx.actor, input);
+    }),
+
   /** UC-INT-04: accept a proposal waiting on the acting node (same as proposals.decide with approve). */
   accept: actingProcedure.input(byProposal).mutation(async ({ ctx, input }) => {
     await requireCan(ctx, await core.capabilityForProposal(ctx.db, input.proposalId, ctx.actor.actingNodeId));
@@ -107,7 +123,7 @@ export const interactionsRouter = createTRPCRouter({
     return core.decline(ctx.db, ctx.actor, input.proposalId, input.comment);
   }),
 
-  /** UC-INT-04 step 4 (work only): answer with changed terms. */
+  /** UC-INT-04 step 4 (work and trades): answer with changed terms. */
   counterPropose: actingProcedure
     .input(byProposal.extend({ changes: termsInput.partial() }))
     .mutation(async ({ ctx, input }) => {

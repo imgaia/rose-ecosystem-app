@@ -5,6 +5,7 @@
 // Add a line here when a new kind of screen is built.
 
 import { ReviewProposal } from "./home/review-proposal";
+import { ProposeTrade } from "./interact/propose-trade";
 import { AmendTerms, CounterPropose, ProposeWork } from "./interact/propose-work";
 import { Invite } from "./invite/invite";
 import { RequestPayment } from "./interact/request-payment";
@@ -32,6 +33,8 @@ export function ScreenView({ screen }: { screen: Screen }) {
       return <RequestPayment fromNodeId={screen.fromNodeId} interactionId={screen.interactionId} />;
     case "propose-work":
       return <ProposeWork otherNodeId={screen.otherNodeId} />;
+    case "trade":
+      return <ProposeTrade otherNodeId={screen.otherNodeId} currencyId={screen.currencyId} />;
     case "counter":
       return <CounterPropose proposalId={screen.proposalId} />;
     case "amend":

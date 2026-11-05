@@ -1,6 +1,6 @@
 // src/app/_components/home/proposal-text.ts
 // The words for one proposal, shared by the inbox card and the review screen:
-// what kind it is ("Work proposal"), a title, and one line of detail.
+// what kind it is ("Work proposal", "Trade"), a title, and one line of detail.
 
 import type { RouterOutputs } from "~/trpc/react";
 import { money, nameOrYou, termsSummary } from "../describe";
@@ -59,6 +59,17 @@ export function proposalText(p: ProposalView, actingNodeId: string) {
 
   const summary = terms ? termsSummary(terms) : "";
   const description = terms?.description ?? "";
+
+  // A trade (S28): what the acting node would give and get.
+  if (interaction?.kind === "TRADE" && terms?.counterCurrency && terms.counterAmount != null) {
+    const payerGives = money(terms.amount, terms.currency);
+    const payeeGives = money(terms.counterAmount, terms.counterCurrency);
+    const mine = interaction.payer?.id === actingNodeId;
+    const detail = `You give ${mine ? payerGives : payeeGives} · you get ${mine ? payeeGives : payerGives}`;
+    return p.kind === "TERMS_CHANGE"
+      ? { label: "Trade · new amounts", title: `${who} proposes new amounts`, detail }
+      : { label: "Trade", title: `${who} offers a trade`, detail };
+  }
 
   if (p.kind === "TERMS_CHANGE") {
     return { label: "Change of terms", title: `${who}: ${description}`, detail: `New terms: ${summary}` };

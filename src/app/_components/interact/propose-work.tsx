@@ -6,6 +6,8 @@
 // - CounterPropose: answer a work proposal with changed terms (UC-INT-04);
 // - AmendTerms: propose new terms for agreed work (UC-INT-05, UC-INT-10).
 // All three wait for the other side's approval; until then nothing changes.
+// A trade (S28) is counter-proposed and changed here too, with its own two
+// amounts (TradeTermsEditor in propose-trade.tsx).
 
 import { useState } from "react";
 
@@ -13,6 +15,7 @@ import { api } from "~/trpc/react";
 import { useActingNode, type Permission } from "../shell/acting-node";
 import { useNav } from "../shell/navigation";
 import { ErrorText, Field, GatedButton, Input, Loading, MainAction, SubScreen, Toggle } from "../ui";
+import { TradeTermsEditor } from "./propose-trade";
 import { NodePicker, TermsFields, draftFromTerms, emptyTerms, termsFromDraft, useCurrencies, type TermsDraft, type TermsInput } from "./fields";
 
 export function ProposeWork({ otherNodeId }: { otherNodeId?: string }) {
@@ -98,7 +101,19 @@ export function CounterPropose({ proposalId }: { proposalId: string }) {
     <SubScreen form title="Counter-propose">
       <ErrorText error={review.error} />
       {review.isLoading && <Loading />}
-      {base && review.data && (
+      {base && review.data?.interaction?.kind === "TRADE" && (
+        <TradeTermsEditor
+          terms={base}
+          actingNodePays={review.data.interaction.payer?.id === actingNodeId}
+          intro={`Change the amounts ${review.data.proposer.name} proposed. Your version then waits for their approval.`}
+          submitLabel="Send counter-proposal"
+          permission={review.data.permission}
+          pending={counter.isPending}
+          error={counter.error}
+          onSubmit={(changes, comment) => counter.mutate({ actingNodeId, proposalId, changes, comment })}
+        />
+      )}
+      {base && review.data && review.data.interaction?.kind !== "TRADE" && (
         <TermsEditor
           initial={draftFromTerms(base)}
           intro={`Change what ${review.data.proposer.name} proposed. Your version then waits for their approval.`}
@@ -119,12 +134,26 @@ export function AmendTerms({ interactionId }: { interactionId: string }) {
   const detail = api.interactions.detail.useQuery({ actingNodeId, interactionId });
   const amend = api.interactions.amend.useMutation({ onSuccess: useSentAndBack(1) });
   const current = detail.data?.currentTerms;
+  // A trade changes only while it waits: its latest offer, not agreed terms.
+  const offer = detail.data?.kind === "TRADE" ? detail.data.terms[0] : undefined;
 
   return (
-    <SubScreen form title="Amend terms">
+    <SubScreen form title={offer ? "Change the offer" : "Amend terms"}>
       <ErrorText error={detail.error} />
       {detail.isLoading && <Loading />}
-      {current && detail.data && (
+      {offer && detail.data && (
+        <TradeTermsEditor
+          terms={offer}
+          actingNodePays={detail.data.actingNodePays}
+          intro="Both sides approve the new amounts again before anything moves."
+          submitLabel="Propose new amounts"
+          permission={detail.data.permission}
+          pending={amend.isPending}
+          error={amend.error}
+          onSubmit={(changes, comment) => amend.mutate({ actingNodeId, interactionId, changes, comment })}
+        />
+      )}
+      {!offer && current && detail.data && (
         <TermsEditor
           initial={draftFromTerms(current)}
           intro="The current terms stay in force until the other side approves the new ones."

@@ -23,6 +23,7 @@ export type Screen =
   | { name: "send"; toNodeId?: string }
   | { name: "request"; fromNodeId?: string; interactionId?: string }
   | { name: "propose-work"; otherNodeId?: string }
+  | { name: "trade"; otherNodeId?: string; currencyId?: string }
   | { name: "counter"; proposalId: string }
   | { name: "amend"; interactionId: string }
   | { name: "add-funds" }

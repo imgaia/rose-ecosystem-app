@@ -2,10 +2,17 @@
 // Turning data into the short phrases screens show: dates, "200.00 RCC
 // monthly", "Work proposal", "Active". Plain functions, no React.
 
-import { formatAmount } from "~/lib/money";
+import { formatAmount, tidyAmounts } from "~/lib/money";
 
 type CurrencyLike = { code: string | null; decimals: number };
-type TermsLike = { amount: bigint; frequency: string; currency: CurrencyLike; description?: string | null };
+type TermsLike = {
+  amount: bigint;
+  frequency: string;
+  currency: CurrencyLike;
+  description?: string | null;
+  counterAmount?: bigint | null; // a trade: what comes back
+  counterCurrency?: CurrencyLike | null;
+};
 
 // Fixed month names, not the browser's language, so a date never reads as
 // 10/09 (October or September?) and looks the same for everyone.
@@ -35,14 +42,20 @@ export function money(amount: bigint, currency: CurrencyLike | null | undefined)
   return currency ? formatAmount(amount, currency.decimals, currency.code) : String(amount);
 }
 
+/** Text stored when it was written (activity, ledger comments), with its amounts as the formatter shows them today. */
+export const storedText = (text: string | null | undefined) => tidyAmounts(text ?? "");
+
 const FREQUENCY: Record<string, string> = { ONCE: "once", WEEKLY: "weekly", MONTHLY: "monthly" };
 
 export function frequencyLabel(frequency: string) {
   return FREQUENCY[frequency] ?? frequency.toLowerCase();
 }
 
-/** "200.00 RCC monthly" */
+/** "200.00 RCC monthly", or for a trade "10.00 TEO for 4.00 RCC" */
 export function termsSummary(terms: TermsLike) {
+  if (terms.counterAmount != null && terms.counterCurrency) {
+    return `${money(terms.amount, terms.currency)} for ${money(terms.counterAmount, terms.counterCurrency)}`;
+  }
   return `${money(terms.amount, terms.currency)} ${frequencyLabel(terms.frequency)}`;
 }
 
@@ -52,7 +65,7 @@ export function titleCase(key: string) {
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
-const KIND: Record<string, string> = { WORK: "Work", PAYMENT: "Payment", GIFT: "Gift" };
+const KIND: Record<string, string> = { WORK: "Work", PAYMENT: "Payment", GIFT: "Gift", TRADE: "Trade" };
 
 export function interactionKindLabel(kind: string) {
   return KIND[kind] ?? titleCase(kind);

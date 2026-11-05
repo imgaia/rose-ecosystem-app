@@ -1,7 +1,8 @@
 // src/server/api/routers/relationships.ts
 // The acting node's relationships (UC-REL-01): one entry per other node,
 // with the trust score and totals each way, and a relationship's detail.
-// Only transactions the two nodes share are shown (R-VIS-01).
+// Only transactions the two nodes share are shown (R-VIS-01). The network
+// map sees every connection, but amounts and trust only on its own (R-VIS-02).
 
 import { z } from "zod";
 import { getRule } from "~/server/rules";
@@ -81,6 +82,42 @@ export const relationshipsRouter = createTRPCRouter({
       }));
     }),
 
+  /**
+   * S16, the whole network (R-VIS-02): every active node and every active
+   * relationship between any two of them. The acting node's own come with
+   * their status and trust score (pending ones too; the kind filter applies
+   * to these only); anyone else's are just the pair, with no amounts or trust.
+   */
+  network: actingProcedure.input(z.object({ interactionKind: interactionKind.optional() })).query(async ({ ctx, input }) => {
+    await requireCan(ctx, "VIEW");
+    const me = ctx.actor.actingNodeId;
+    const mine = { OR: [{ nodeAId: me }, { nodeBId: me }] };
+    const [relationships, ownOfKind] = await Promise.all([
+      ctx.db.relationship.findMany({
+        where: { OR: [{ status: "ACTIVE" }, { ...mine, status: "PENDING" }] },
+        select: { id: true, nodeAId: true, nodeBId: true, status: true, trustScore: { select: { value: true } } },
+        orderBy: { createdAt: "asc" },
+      }),
+      input.interactionKind
+        ? ctx.db.relationship.findMany({ where: { ...mine, interactions: { some: { kind: input.interactionKind } } }, select: { id: true } })
+        : null,
+    ]);
+    const nodes = await ctx.db.node.findMany({
+      where: { OR: [{ status: "ACTIVE" }, { id: { in: relationships.flatMap((r) => [r.nodeAId, r.nodeBId]) } }] },
+      select: publicNode,
+      orderBy: { name: "asc" },
+    });
+    const isMine = (r: { nodeAId: string; nodeBId: string }) => r.nodeAId === me || r.nodeBId === me;
+    return {
+      nodes,
+      own: relationships
+        .filter((r) => isMine(r) && (!ownOfKind || ownOfKind.some((o) => o.id === r.id)))
+        .map((r) => ({ id: r.id, otherNodeId: r.nodeAId === me ? r.nodeBId : r.nodeAId, status: r.status, trustScore: r.trustScore?.value ?? startingTrust })),
+      // Other people's connections: who with whom, nothing more.
+      others: relationships.filter((r) => !isMine(r) && r.status === "ACTIVE").map((r) => ({ id: r.id, nodeAId: r.nodeAId, nodeBId: r.nodeBId })),
+    };
+  }),
+
   /** A relationship's interactions (with their current terms and open proposals) and its transactions. */
   detail: actingProcedure.input(z.object({ relationshipId: z.string().min(1) })).query(async ({ ctx, input }) => {
     await requireCan(ctx, "VIEW");
@@ -94,7 +131,7 @@ export const relationshipsRouter = createTRPCRouter({
         interactions: {
           orderBy: { createdAt: "desc" },
           include: {
-            terms: { orderBy: { version: "desc" }, include: { currency: true } },
+            terms: { orderBy: { version: "desc" }, include: { currency: true, counterCurrency: true } },
             proposals: { where: { status: "OPEN" }, include: { approvers: true } },
           },
         },

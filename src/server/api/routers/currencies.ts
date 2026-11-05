@@ -87,6 +87,17 @@ export const currenciesRouter = createTRPCRouter({
     return Promise.all(currencies.map((c) => listed(ctx, c)));
   }),
 
+  /**
+   * S28: the rate published for a pair (one unit of `from` in `to`), with its
+   * source (R-FIN-05, R-FIN-16), or worked out through other rates; null: none yet.
+   */
+  pairRate: actingProcedure.input(z.object({ fromCurrencyId: z.string().min(1), toCurrencyId: z.string().min(1) })).query(async ({ ctx, input }) => {
+    await requireCan(ctx, "VIEW");
+    if (input.fromCurrencyId === input.toCurrencyId) return null;
+    const found = await core.rateWithSource(ctx.db, input.fromCurrencyId, input.toCurrencyId);
+    return found && { rate: found.rate.text, source: found.source, validFrom: found.validFrom };
+  }),
+
   /** The fiat list (R-FIN-13), for the country picker on Edit identity. */
   fiatList: actingProcedure.query(async ({ ctx }) => {
     await requireCan(ctx, "VIEW");
@@ -116,6 +127,13 @@ export const currenciesRouter = createTRPCRouter({
     );
 
     const home = await core.homeCurrencyOf(ctx.db, ctx.actor.actingNodeId).catch(() => null);
+    // The price's source (R-FIN-05), and the last few trade rates (R-FIN-16), without who traded.
+    const priced = currency.reserveCurrencyId ? await core.rateWithSource(ctx.db, currency.id, currency.reserveCurrencyId) : null;
+    const trades = await core.recentTradeRates(ctx.db, currency.id);
+    const tradedWith = await ctx.db.currency.findMany({
+      where: { id: { in: trades.map((r) => r.otherCurrencyId) } },
+      select: { id: true, code: true, name: true, decimals: true },
+    });
 
     return {
       ...item,
@@ -135,7 +153,10 @@ export const currenciesRouter = createTRPCRouter({
         validTo: r.validTo,
       })),
       fiatRates,
-      reserve: seesBacking && currency.kind === "COMMUNITY" ? await core.currencyBacking(ctx.db, currency.id) : null,
+      priceSource: item.price ? (priced?.source ?? null) : null,
+      recentTrades: trades.map((r) => ({ id: r.id, rate: r.rate.text, validFrom: r.validFrom, other: tradedWith.find((c) => c.id === r.otherCurrencyId)! })),
+      // Only a fiat-backed currency has a reserve to show (R-FIN-02); a free one has none (R-FIN-17).
+      reserve: seesBacking && currency.kind === "COMMUNITY" && currency.backing === "FIAT" ? await core.currencyBacking(ctx.db, currency.id) : null,
     };
   }),
 

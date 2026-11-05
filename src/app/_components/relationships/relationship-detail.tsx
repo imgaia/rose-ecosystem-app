@@ -6,7 +6,7 @@
 // nodes. From here you can pay, request a payment or propose work.
 
 import { api, type RouterOutputs } from "~/trpc/react";
-import { formatDate, interactionKindLabel, money, termsSummary, titleCase } from "../describe";
+import { formatDate, interactionKindLabel, money, storedText, termsSummary, titleCase } from "../describe";
 import { useActingNode } from "../shell/acting-node";
 import { Avatar } from "../shell/header";
 import { useNav } from "../shell/navigation";
@@ -86,7 +86,10 @@ function Body({ detail: r }: { detail: Detail }) {
                 {i.currentTerms?.description ? ` · ${i.currentTerms.description}` : ""}
               </span>
               <span className="text-xs text-rose-muted">
-                {i.currentTerms && termsSummary(i.currentTerms)} · {i.actingNodePays ? `${you} ${you === "you" ? "pay" : "pays"}` : `${other.name} pays`}
+                {i.currentTerms && termsSummary(i.currentTerms)}
+                {i.kind === "TRADE"
+                  ? ` · offered by ${i.actingNodePays ? you : other.name}`
+                  : ` · ${i.actingNodePays ? `${you} ${you === "you" ? "pay" : "pays"}` : `${other.name} pays`}`}
                 {i.openProposals.length > 0 && " · waiting for approval"}
               </span>
             </span>
@@ -103,7 +106,7 @@ function Body({ detail: r }: { detail: Detail }) {
           {r.transactions.map((t, i) => (
             <div key={t.id} className={`flex items-center justify-between gap-3 py-2 ${i > 0 ? "border-t border-rose-border" : ""}`}>
               <span className="flex min-w-0 flex-col">
-                <span>{t.comment}</span>
+                <span>{storedText(t.comment)}</span>
                 <span className="text-xs text-rose-muted">
                   {titleCase(t.kind)} · {formatDate(t.createdAt)}
                 </span>

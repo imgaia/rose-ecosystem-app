@@ -12,6 +12,12 @@
 // - ROSE Org minted 1,000 RCC; Nora deposited 500 CHF and bought 200 RCC
 //   from ROSE Org in a trade, for 200 CHF. Her home currency is RCC.
 // - Nora and Annie agreed work (a relationship with an interaction).
+// - Theo issues TEO, free with 6 decimals like JCN, and minted 500 of it;
+//   Annie issues ANN, free and never traded (no price yet). Annie pays Theo
+//   for work on request: a relationship between two people other than Nora,
+//   for the whole-network map.
+// - One activity line in Annie's history is written as before the shared
+//   formatter ("1.000000 TEO"), as dev's older lines are.
 
 import { createClient } from "@libsql/client";
 import bcrypt from "bcryptjs";
@@ -28,6 +34,7 @@ import {
   proposeCurrencyChange,
   proposeTrade,
   proposeWork,
+  recordActivity,
   respond,
   setHomeCurrency,
   setRate,
@@ -89,7 +96,7 @@ export async function buildFixture(url: string) {
     };
     const annie = await join(asNoraForRose, USERS.annie);
     await db.roleAssignment.create({ data: { scopeNodeId: rose.id, holderNodeId: annie.id, roleKey: "OWNER" } });
-    await join(asNora, USERS.theo);
+    const theo = await join(asNora, USERS.theo);
     // Annie's own fiat-backed currency: something Convert can buy through a reserve.
     await proposeCurrencyChange(db, { personId: annie.id, actingNodeId: annie.id }, {
       action: "CREATE",
@@ -115,6 +122,27 @@ export async function buildFixture(url: string) {
       terms: { description: "Garden design", amount: 5_000n, currencyId: rcc.id },
     });
     await respond(db, { personId: annie.id, actingNodeId: annie.id }, { proposalId: proposal.id, approve: true });
+
+    // Free currencies: Theo's TEO (6 decimals) to trade, Annie's ANN never traded.
+    const asTheo = { personId: theo.id, actingNodeId: theo.id };
+    const asAnnie = { personId: annie.id, actingNodeId: annie.id };
+    await proposeCurrencyChange(db, asTheo, { action: "CREATE", fields: { name: "Theo's hours", code: "TEO", decimals: 6 } });
+    const teo = await db.currency.findFirstOrThrow({ where: { code: "TEO" } });
+    await mint(db, asTheo, { amount: 500_000_000n, currencyId: teo.id });
+    await proposeCurrencyChange(db, asAnnie, { action: "CREATE", fields: { name: "Annie's notes", code: "ANN" } });
+    await mint(db, asAnnie, { amount: 5_000n, currencyId: (await db.currency.findFirstOrThrow({ where: { code: "ANN" } })).id });
+
+    // Annie and Theo: work paid on request, so nothing is due without a request.
+    const work = await proposeWork(db, asTheo, {
+      otherNodeId: annie.id,
+      actingNodePays: false,
+      terms: { description: "Shelves", amount: 3_000n, currencyId: rcc.id, paymentMode: "ON_REQUEST" },
+    });
+    await respond(db, asAnnie, { proposalId: work.proposal.id, approve: true });
+
+    // As dev's older lines read, before amounts went through the shared formatter.
+    // On Annie: little is added to her history later, so it stays on her Home in both test widths.
+    await recordActivity(db, { type: "note", refId: teo.id, nodeIds: [annie.id], summary: "Annie Test noted a tip of 1.000000 TEO" });
   } finally {
     await db.$disconnect();
   }

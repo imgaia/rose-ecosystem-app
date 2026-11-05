@@ -22,6 +22,7 @@ import {
   RelationshipsIcon,
   RequestIcon,
   SendIcon,
+  TradeIcon,
   WalletIcon,
   WorkIcon,
 } from "./icons";
@@ -39,7 +40,8 @@ const QUICK_ACTIONS: { label: string; hint: string; capability: string; Icon: ty
   { label: "Send a payment or gift", hint: "To anyone in your network", capability: "PAY", Icon: SendIcon, screen: { name: "send" } },
   { label: "Request a payment", hint: "Ask someone to pay you", capability: "INTERACT", Icon: RequestIcon, screen: { name: "request" } },
   { label: "Propose work", hint: "Agree work and terms with someone", capability: "INTERACT", Icon: WorkIcon, screen: { name: "propose-work" } },
-  { label: "Convert currencies", hint: "Any currency into another, at their prices", capability: "EXCHANGE", Icon: ExchangeIcon, screen: { name: "convert" } },
+  { label: "Propose a trade", hint: "Swap currencies with another node", capability: "PAY", Icon: TradeIcon, screen: { name: "trade" } },
+  { label: "Convert currencies", hint: "Through reserves, at their ratios", capability: "EXCHANGE", Icon: ExchangeIcon, screen: { name: "convert" } },
   // For a collection, inviting adds a member, so it needs ADD_MEMBERS (see QuickActions).
   { label: "Invite someone", hint: "Bring a new member into ROSE", capability: "INVITE", Icon: InviteIcon, screen: { name: "invite" } },
 ];

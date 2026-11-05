@@ -2,15 +2,16 @@
 
 // src/app/_components/wallet/wallet-tab.tsx
 // The Wallet tab (PRD S10, UC-FIN-02, UC-PAY-02): the acting node's
-// accounts with a total in its home currency (R-FIN-04), the money actions
-// (convert, add funds, mint) and its currencies, and its recent transactions.
+// accounts with a total in its home currency (R-FIN-04; currencies with no
+// price yet are left out and named, R-FIN-17), the money actions (convert,
+// add funds, mint, propose a trade) and its currencies, and its recent transactions.
 //
 // Seeing balances needs VIEW_BALANCES (Treasurer). A member without it
 // still sees the actions, disabled, labelled with the role they need.
 
 import { formatAmount } from "~/lib/money";
 import { api, type RouterOutputs } from "~/trpc/react";
-import { formatDate, money } from "../describe";
+import { formatDate, money, storedText } from "../describe";
 import { needsText, roleList, useActingNode } from "../shell/acting-node";
 import { useNav } from "../shell/navigation";
 import { Card, Empty, ErrorText, GatedButton, Loading, Row, SectionLabel } from "../ui";
@@ -46,9 +47,7 @@ export function WalletTab() {
             <>
               <SectionLabel>Total, in {accounts.data.total.currency.code} (home currency)</SectionLabel>
               <p className="mb-1 text-3xl font-bold text-rose-blush">{money(accounts.data.total.amount, accounts.data.total.currency)}</p>
-              {accounts.data.total.missingRates.length > 0 && (
-                <p className="text-xs text-rose-muted">Not counted (no rate): {accounts.data.total.missingRates.join(", ")}</p>
-              )}
+              {accounts.data.total.missingRates.length > 0 && <Unpriced codes={accounts.data.total.missingRates} />}
             </>
           )}
           {accounts.data.accounts.map((a) => (
@@ -78,6 +77,9 @@ export function WalletTab() {
         <GatedButton className="min-h-14" permission={permissionFor("VIEW")} onClick={() => open({ name: "currencies" })}>
           Currencies
         </GatedButton>
+        <GatedButton className="col-span-2 min-h-14" permission={permissionFor("PAY")} onClick={() => open({ name: "trade" })}>
+          Propose a trade
+        </GatedButton>
       </div>
       {isCollection && <p className="text-xs text-rose-muted">In {acting.node.name} you are {roleList(acting) || "not a role holder"}.</p>}
 
@@ -91,7 +93,7 @@ export function WalletTab() {
               {transactions.data.map((t, i) => (
                 <div key={t.id} className={`flex items-center justify-between gap-3 py-2 ${i > 0 ? "border-t border-rose-border" : ""}`}>
                   <span className="flex min-w-0 flex-col">
-                    <span>{t.comment}</span>
+                    <span>{storedText(t.comment)}</span>
                     <span className="text-xs text-rose-muted">
                       {t.otherNode ? `${t.direction === "out" ? "To" : "From"} ${t.otherNode.name} · ` : ""}
                       {formatDate(t.effectiveDate ?? t.createdAt)}
@@ -115,4 +117,14 @@ function signedAmount(t: Transaction) {
   if (t.direction === "out") return `−${money(t.amount, t.from?.currency)}`;
   // Coming in: in the receiving account's currency (a deposit or mint has no from-account).
   return `+${money(toAmount, t.to?.currency ?? t.from?.currency)}`;
+}
+
+/** "2 currencies have no price yet (TEO, E360), so they aren't in the total." */
+function Unpriced({ codes }: { codes: string[] }) {
+  const n = codes.length;
+  return (
+    <p className="text-xs text-rose-muted">
+      {n === 1 ? "1 currency has" : `${n} currencies have`} no price yet ({codes.join(", ")}), so {n === 1 ? "it isn't" : "they aren't"} in the total.
+    </p>
+  );
 }

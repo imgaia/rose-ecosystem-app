@@ -4,9 +4,10 @@
 // Node currencies (PRD 2.8), opened from the Wallet tab:
 // - CurrenciesScreen (S15): the home currency and primary fiat, each with
 //   Change; the currencies the node issues and holds; Create a currency.
-// - CurrencyDetail (S27): what a currency is, its price and history, backing
-//   and status; the issuer's Treasurers also see what backs it. Edit, Retire
-//   and (only if never held) Delete; Set as home currency.
+// - CurrencyDetail (S27): what a currency is, its price (and where it comes
+//   from) and history, the latest trade rates, backing and status; for a
+//   fiat-backed one the issuer's Treasurers also see what backs it. Edit,
+//   Retire and (only if never held) Delete; Set as home currency; Trade.
 // - CurrencyForm: create or edit one. For a collection it goes out as a
 //   proposal that needs a Treasurer and an Owner, two people (R-FIN-11).
 //   "Make this my home currency" (R-FIN-04) sets it at once on Edit; on
@@ -31,15 +32,25 @@ export const BACKING_TEXT: Record<Backing, { label: string; line: string }> = {
 const FRACTION = /^(\d+)\/(\d+)$/;
 
 /**
- * For display only: "0.5" shown with at least the display currency's decimals: "0.50".
+ * For display only, like amounts (R-FIN-18): at least 2 decimals (fewer only
+ * if the display currency has fewer), more only when they aren't zero:
+ * "0.5" -> "0.50", "2.5" into a 6-decimal currency -> "2.50" (not "2.500000").
  * A fraction like "100/107" (an inverted rate) has no exact decimal, so it is
- * rounded to those decimals: "≈ 0.93". Conversions use the exact rate.
+ * rounded to the display currency's decimals: "≈ 0.93". Conversions use the exact rate.
  */
 export function formatRate(rate: string, decimals = 2) {
+  const shown = Math.min(decimals, 2);
+  const tidy = (whole: string, part: string) => {
+    const kept = part.slice(0, shown).padEnd(shown, "0") + part.slice(shown).replace(/0+$/, "");
+    return kept ? `${whole}.${kept}` : whole;
+  };
   const fraction = FRACTION.exec(rate);
-  if (fraction) return `≈ ${(Number(fraction[1]) / Number(fraction[2])).toFixed(decimals)}`;
+  if (fraction) {
+    const [whole, part = ""] = (Number(fraction[1]) / Number(fraction[2])).toFixed(Math.max(decimals, shown)).split(".");
+    return `≈ ${tidy(whole!, part)}`;
+  }
   const [whole, part = ""] = rate.split(".");
-  return part.length >= decimals ? rate : `${whole}.${part.padEnd(decimals, "0")}`;
+  return tidy(whole!, part);
 }
 
 /** "1 RCC = 1.00 CHF", or "1 EUR ≈ 0.92 CHF" for an approximate (inverted) rate. */
@@ -237,7 +248,14 @@ function ChangeRow({
 
 // ───────────────────────── S27 Currency detail ─────────────────────────
 
-const SOURCE: Record<string, string> = { FEED: "Daily feed", RESERVE_RATIO: "From the reserve ratio", MANUAL: "Set by hand" };
+const SOURCE: Record<string, string> = {
+  TRADE: "From a trade",
+  RESERVE_RATIO: "From the reserve ratio",
+  INITIAL: "Starting rate",
+  FEED: "Daily feed",
+  MANUAL: "Set by hand",
+  CHAIN: "Worked out through other rates",
+};
 
 export function CurrencyDetail({ currencyId }: { currencyId: string }) {
   const { acting } = useActingNode();
@@ -297,7 +315,14 @@ function DetailBody({ c }: { c: RouterOutputs["currencies"]["detail"] }) {
         )}
         {!fiat && (
           <Row label="Price" strong>
-            {priceLine(c) ?? "No price yet"}
+            {priceLine(c) ? (
+              <span className="flex flex-col items-end">
+                <span>{priceLine(c)}</span>
+                {c.priceSource && <span className="text-xs font-normal text-rose-muted">{SOURCE[c.priceSource] ?? c.priceSource}</span>}
+              </span>
+            ) : (
+              "No price yet"
+            )}
           </Row>
         )}
         {!fiat && (
@@ -314,8 +339,8 @@ function DetailBody({ c }: { c: RouterOutputs["currencies"]["detail"] }) {
 
       {!fiat && (
         <>
-          <SectionLabel className="mt-1">Price history</SectionLabel>
-          {c.history.length === 0 && <Empty>No price yet.</Empty>}
+          <SectionLabel className="mt-1">Price history{c.price ? ` in ${c.price.fiat.code}` : ""}</SectionLabel>
+          {c.history.length === 0 && <Empty>{c.price ? `No rate against ${c.price.fiat.code} itself yet: the price above is worked out through other rates.` : "No price yet: it has none until it is traded."}</Empty>}
           {c.history.length > 0 && (
             <Card className="gap-0 py-1">
               {c.history.map((h, i) => (
@@ -333,6 +358,25 @@ function DetailBody({ c }: { c: RouterOutputs["currencies"]["detail"] }) {
               ))}
             </Card>
           )}
+        </>
+      )}
+
+      {!fiat && (
+        <>
+          <SectionLabel className="mt-1">Recent trades</SectionLabel>
+          {c.recentTrades.length === 0 ? (
+            <Empty>Not traded yet.</Empty>
+          ) : (
+            <Card className="gap-0 py-1">
+              {c.recentTrades.map((r, i) => (
+                <div key={r.id} className={`flex items-center justify-between gap-3 py-2 ${i > 0 ? "border-t border-rose-border" : ""}`}>
+                  <span>{rateLine(label(c), r.rate, r.other)}</span>
+                  <span className="text-xs text-rose-muted">{formatDate(r.validFrom)}</span>
+                </div>
+              ))}
+            </Card>
+          )}
+          <p className="text-xs text-rose-muted">Each accepted trade publishes its rate; for a pair, the most recent counts (R-FIN-16). Who traded is not shown.</p>
         </>
       )}
 
@@ -415,10 +459,18 @@ function DetailBody({ c }: { c: RouterOutputs["currencies"]["detail"] }) {
         </div>
       )}
 
-      {!c.actingIsIssuer && c.status === "ACTIVE" && (
-        <GatedButton className="mt-2" permission={permissionFor("EXCHANGE")} onClick={() => open({ name: "convert", toCurrencyId: c.id })}>
-          Convert into {label(c)}
-        </GatedButton>
+      {c.status === "ACTIVE" && (
+        <div className="mt-2 flex flex-col gap-2">
+          <GatedButton variant={fiat ? "secondary" : "primary"} permission={permissionFor("PAY")} onClick={() => open({ name: "trade", currencyId: c.id })}>
+            Trade {label(c)}
+          </GatedButton>
+          {/* Converting goes only through reserves (R-FIN-10): fiat and fiat-backed currencies. */}
+          {!c.actingIsIssuer && (fiat || c.backing === "FIAT") && (
+            <GatedButton permission={permissionFor("EXCHANGE")} onClick={() => open({ name: "convert", toCurrencyId: c.id })}>
+              Convert into {label(c)}
+            </GatedButton>
+          )}
+        </div>
       )}
     </>
   );
@@ -553,7 +605,13 @@ function FormBody({
           onChange={(backing) => set({ backing })}
         />
       </Field>
-      <p className="-mt-1 text-xs text-rose-muted">{BACKING_TEXT[form.backing].line}</p>
+      <ul className="-mt-1 flex flex-col gap-1 text-xs">
+        {(["FREE", "FIAT"] as const).map((b) => (
+          <li key={b} className={form.backing === b ? "text-rose-text" : "text-rose-muted"}>
+            <span className="font-semibold">{BACKING_TEXT[b].label}:</span> {BACKING_TEXT[b].line}
+          </li>
+        ))}
+      </ul>
       {backed && (
         <>
           <Field label="Reserve ratio" hint="One unit costs the ratio in the reserve fiat: its price (R-FIN-01)">

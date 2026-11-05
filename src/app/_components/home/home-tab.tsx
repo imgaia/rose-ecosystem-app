@@ -7,7 +7,7 @@
 // everything else opens the review screen.
 
 import { api } from "~/trpc/react";
-import { formatDate } from "../describe";
+import { formatDate, storedText } from "../describe";
 import { useActingNode } from "../shell/acting-node";
 import { useNav } from "../shell/navigation";
 import { Button, Card, Chip, Empty, ErrorText, GatedButton, Loading, SectionLabel } from "../ui";
@@ -44,7 +44,7 @@ export function HomeTab() {
         <Card className="gap-0 py-1">
           {activity.data.items.map((item, i) => (
             <div key={item.id} className={`flex items-start justify-between gap-3 py-2 ${i > 0 ? "border-t border-rose-border" : ""}`}>
-              <span>{item.summary}</span>
+              <span>{storedText(item.summary)}</span>
               <span className="text-xs whitespace-nowrap text-rose-muted">{formatDate(item.createdAt)}</span>
             </div>
           ))}
@@ -61,10 +61,10 @@ function WaitingCard({ proposal }: { proposal: ProposalView }) {
   const decide = api.proposals.decide.useMutation({ onSuccess: () => utils.invalidate() });
   const text = proposalText(proposal, acting.node.id);
 
-  // A payment or gift sent to the acting node: answer it in place.
+  // A payment or gift sent to the acting node: answer it in place. A trade opens the review (its rate, counter-propose).
   const incoming =
     proposal.kind === "INTERACTION" &&
-    proposal.interaction?.kind !== "WORK" &&
+    (proposal.interaction?.kind === "PAYMENT" || proposal.interaction?.kind === "GIFT") &&
     proposal.interaction?.payer?.id === proposal.proposer.id;
 
   const answer = (approve: boolean) =>

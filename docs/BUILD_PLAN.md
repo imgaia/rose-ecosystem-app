@@ -372,6 +372,15 @@ Status: done (5 Nov), committed locally, not pushed (held with 11a until 11c). L
 
 ### 11b. Screens
 
+**Status: done** (5 Nov), committed locally, not pushed (held with 11a until 11c). Checked with the unit tests (208), type check, lint, build and the browser tests (28, at 360px and 430px, failing on any console error). No schema or data change: the local database is untouched.
+
+- New: `src/app/_components/interact/propose-trade.tsx` (Propose a trade, and the two-amount editor that Counter-propose and Amend use for a trade), `interactions.proposeTrade`, `currencies.pairRate` (the last published rate for a pair, with its source), `relationships.network` (the map), and `rateWithSource` / `recentTradeRates` in `rates.ts` (still the only code that reads rates). `termsInput` takes `counterAmount` / `counterCurrencyId`, so a trade can be counter-proposed through the API.
+- Propose a trade opens from the Wallet (a fifth button), the + menu, a currency's detail ("Trade TEO": given if held, otherwise asked for from its issuer) and a node's page. A trade in the inbox opens the review (no inline Accept as for payments); the review shows what each side gives, the rate, and for new amounts what they replace.
+- Rates now show like amounts too (R-FIN-18): "1 RCC = 2.50 TEO", not "2.500000". Amounts in text stored before the formatter (dev's activity lines say "1.000000 JCN") are tidied when shown (`tidyAmounts` in `money.ts`); the stored text is not changed.
+- Currency detail: the price's source ("From a trade", "Starting rate", or "Worked out through other rates" for a price reached through a chain), the last 5 trade rates, and the reserve section only for fiat-backed currencies. Convert into a currency shows only for fiat and fiat-backed ones.
+- The map: the acting node in the middle, its relationships on an inner ring, everyone else on an outer ring ordered by who they're connected to. The lines are listed for screen readers under the map (the browser test reads that list).
+- Browser fixture additions: Theo issues TEO (free, 6 decimals), Annie issues ANN (free, never traded), Annie and Theo agree work, and one activity line on Annie is written as before the formatter.
+
 From the wireframes:
 - Create / Edit currency: Backing switch Free | Fiat-backed with a one-line explanation of each; reserve ratio and price preview only for Fiat-backed; decimal places up to 8.
 - Mint: free currency → amount only ("nothing is locked; no price until traded"); backed → from fiat into its reserve.

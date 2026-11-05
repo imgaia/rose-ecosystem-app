@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { RuleError } from "./errors";
-import { applyRate, findRate, getRate, parseDecimal, parseRate, publishRate, rateHistory, rateOf, setRate } from "./rates";
+import { applyRate, findRate, getRate, parseDecimal, parseRate, publishRate, rateHistory, rateOf, rateWithSource, recentTradeRates, setRate } from "./rates";
 import { createTestDb, type TestDb } from "./test-helpers";
 
 let t: TestDb;
@@ -109,5 +109,25 @@ describe("rates", () => {
     // A shorter chain wins over a longer one.
     await link(a!, d!, "29");
     expect((await findRate(t.db, a!.id, d!.id))?.text).toBe("29");
+  });
+
+  it("names where a price comes from, and lists recent trade rates without the traders", async () => {
+    const [x, y, z] = await Promise.all(["SX", "SY", "SZ"].map(coin));
+    await setRate(t.db, { fromCurrencyId: x!.id, toCurrencyId: y!.id, rate: "2", validFrom: day("2026-01-01"), source: "INITIAL", setBy: "t" });
+    expect(await rateWithSource(t.db, y!.id, x!.id)).toMatchObject({ rate: { text: "0.5" }, source: "INITIAL" });
+    await publishRate(t.db, { fromCurrencyId: y!.id, toCurrencyId: z!.id, rate: "3", source: "TRADE", setBy: "trade:i1" });
+    expect(await rateWithSource(t.db, x!.id, z!.id)).toMatchObject({ rate: { text: "6" }, source: "CHAIN", validFrom: null }); // 1 SX = 2 SY = 6 SZ;
+    expect(await rateWithSource(t.db, x!.id, (await coin("SW")).id)).toBeNull();
+
+    await publishRate(t.db, { fromCurrencyId: x!.id, toCurrencyId: y!.id, rate: "4", source: "TRADE", setBy: "trade:i2" });
+    const trades = await recentTradeRates(t.db, y!.id);
+    // Both were published this millisecond or the next, so compare without order.
+    expect(trades.map((r) => [r.otherCurrencyId, r.rate.text]).sort()).toEqual(
+      [
+        [x!.id, "0.25"],
+        [z!.id, "3"],
+      ].sort(),
+    );
+    expect(await rateWithSource(t.db, x!.id, y!.id)).toMatchObject({ rate: { text: "4" }, source: "TRADE" });
   });
 });

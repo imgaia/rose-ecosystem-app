@@ -4,7 +4,7 @@
 // Review a proposal (PRD S25, UC-NET-07): what would change, the two sides
 // (or for a collection's role change or removal, who and what), who has
 // approved, and approve / decline (with an optional comment), or
-// counter-propose for work. The node that proposed it can withdraw it.
+// counter-propose for work and trades. The node that proposed it can withdraw it.
 
 import { useState } from "react";
 
@@ -13,6 +13,7 @@ import { formatDate, frequencyLabel, money, nameOrYou, termsSummary, titleCase }
 import { useActingNode } from "../shell/acting-node";
 import { useNav } from "../shell/navigation";
 import { Button, Card, Chip, ErrorText, GatedButton, Loading, Row, SectionLabel, SubScreen, TextArea } from "../ui";
+import { tradeRate } from "../interact/propose-trade";
 import { rateLine } from "../wallet/currencies";
 import { proposalText, type ProposalView } from "./proposal-text";
 
@@ -45,8 +46,9 @@ function ProposalBody({ proposal: p }: { proposal: ProposalView }) {
   const interaction = p.interaction;
   const terms = p.proposedTerms;
   const approvedCount = p.approvers.filter((a) => a.decision === true).length;
+  const isTrade = interaction?.kind === "TRADE";
   const canCounter =
-    interaction?.kind === "WORK" && (p.kind === "INTERACTION" || p.kind === "TERMS_CHANGE");
+    (interaction?.kind === "WORK" || isTrade) && (p.kind === "INTERACTION" || p.kind === "TERMS_CHANGE");
   const isOpen = p.status === "OPEN";
 
   return (
@@ -91,7 +93,9 @@ function ProposalBody({ proposal: p }: { proposal: ProposalView }) {
 
       {p.currencyChange && p.collection && <CurrencyChangeCard change={p.currencyChange} issuer={p.collection.name} />}
 
-      {interaction && (
+      {isTrade && terms && <TradeCard terms={terms} previous={previousOffer(p)} payer={gives(interaction.payer, me)} payee={gives(interaction.payee, me)} />}
+
+      {interaction && !isTrade && (
         <Card className="gap-0">
           <SectionLabel className="mb-1">Sides</SectionLabel>
           <Row label={interaction.kind === "WORK" ? "Does the work" : "Receives"}>{label(interaction.payee, me)}</Row>
@@ -112,7 +116,7 @@ function ProposalBody({ proposal: p }: { proposal: ProposalView }) {
         </Card>
       )}
 
-      {terms && (
+      {terms && !isTrade && (
         <Card className="gap-0">
           <SectionLabel className="mb-1">Terms · version {terms.version}</SectionLabel>
           <TermRow label="Price" now={money(terms.amount, terms.currency)} was={p.currentTerms && money(p.currentTerms.amount, p.currentTerms.currency)} strong />
@@ -163,6 +167,8 @@ function ProposalBody({ proposal: p }: { proposal: ProposalView }) {
                   ? "any decline closes it"
                   : "it closes once too many decline"
               }.${p.roleChange ? " Each native role always keeps a holder." : ""}`
+            : isTrade
+            ? "Both sides must approve. Then both amounts move at once and the rate is published (R-FIN-16); if either side can't cover its amount, nothing moves."
             : `Both sides must approve. ${p.kind === "TERMS_CHANGE" ? "Until then the current terms stay in force." : ""}`}
         </p>
       )}
@@ -178,7 +184,7 @@ function ProposalBody({ proposal: p }: { proposal: ProposalView }) {
             disabled={busy}
             onClick={() => decide.mutate({ actingNodeId: me, proposalId: p.id, approve: true, comment: comment || undefined })}
           >
-            Approve
+            {isTrade ? "Accept trade" : "Approve"}
           </GatedButton>
           <div className="flex gap-2">
             {canCounter && (
@@ -261,6 +267,37 @@ function CurrencyChangeCard({ change, issuer }: { change: NonNullable<ProposalVi
       {makeHome && <Row label="Home currency">Becomes {issuer}&apos;s home currency</Row>}
       {action === "RETIRE" && <Row label="After">No new units; balances stay usable and convertible</Row>}
       {action === "DELETE" && <Row label="After">Removed for good (nobody has held it)</Row>}
+    </Card>
+  );
+}
+
+type Terms = NonNullable<ProposalView["proposedTerms"]>;
+
+/** "You give" or "Theo gives" */
+const gives = (node: { id: string; name: string } | null, me: string) => (node?.id === me ? "You give" : `${node?.name ?? "Someone"} gives`);
+
+/** For new trade amounts: the offer they answer (the version before), to show what changed. */
+function previousOffer(p: ProposalView) {
+  if (p.kind !== "TERMS_CHANGE" || !p.proposedTerms) return null;
+  return p.offerHistory.find((t) => t.version === p.proposedTerms!.version - 1) ?? null;
+}
+
+/** A trade: what each side gives, and the rate it would publish (S28). */
+function TradeCard({ terms, previous, payer, payee }: { terms: Terms; previous: Terms | null; payer: string; payee: string }) {
+  if (!terms.counterCurrency || terms.counterAmount == null) return null;
+  const rateOf = (t: Terms) =>
+    rateLine(t.currency.code ?? t.currency.name, tradeRate(t.amount, t.currency, t.counterAmount!, t.counterCurrency!), t.counterCurrency!);
+  return (
+    <Card className="gap-0">
+      <SectionLabel className="mb-1">Trade · version {terms.version}</SectionLabel>
+      <TermRow label={payer} now={money(terms.amount, terms.currency)} was={previous && money(previous.amount, previous.currency)} strong />
+      <TermRow
+        label={payee}
+        now={money(terms.counterAmount, terms.counterCurrency)}
+        was={previous?.counterCurrency && previous.counterAmount != null ? money(previous.counterAmount, previous.counterCurrency) : null}
+        strong
+      />
+      <TermRow label="Rate" now={rateOf(terms)} was={previous && rateOf(previous)} />
     </Card>
   );
 }

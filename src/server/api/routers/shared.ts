@@ -36,6 +36,9 @@ export const termsInput = z.object({
   description: z.string(),
   amount: minorUnits,
   currencyId: z.string().min(1),
+  // A trade: what comes back (R-FIN-16).
+  counterAmount: minorUnits.nullish(),
+  counterCurrencyId: z.string().min(1).nullish(),
   frequency: z.enum(["ONCE", "WEEKLY", "MONTHLY"]).optional(),
   paymentMode: z.enum(["AUTOMATIC", "ON_REQUEST"]).optional(),
   startDate: z.date().nullish(),

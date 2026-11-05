@@ -101,6 +101,18 @@ export const WorkIcon = (p: IconProps) => (
   </Icon>
 );
 
+/** Two coins changing hands: a trade between two nodes (S28). */
+export const TradeIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <circle cx="7" cy="7" r="3.5" />
+    <circle cx="17" cy="17" r="3.5" />
+    <path d="M13 5h3a3 3 0 0 1 3 3v2" />
+    <path d="m17 8 2 2 2-2" />
+    <path d="M11 19H8a3 3 0 0 1-3-3v-2" />
+    <path d="m7 16-2-2-2 2" />
+  </Icon>
+);
+
 export const ExchangeIcon = (p: IconProps) => (
   <Icon {...p}>
     <path d="M5 8h13" />

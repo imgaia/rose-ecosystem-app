@@ -3,8 +3,8 @@
 // src/app/_components/relationships/relationships-tab.tsx
 // The Relationships tab (PRD S04, UC-REL-01): one card per node the acting
 // node has a relationship with, its trust score and totals each way, filtered
-// by kind of interaction. A Map view draws the same relationships around the
-// acting node.
+// by kind of interaction. A Map view draws the whole network around the
+// acting node (R-VIS-02), with the filter applied to its own relationships.
 
 import { useState } from "react";
 
@@ -30,10 +30,8 @@ export function RelationshipsTab() {
   const { acting } = useActingNode();
   const [view, setView] = useState<"list" | "map">("list");
   const [filter, setFilter] = useState<Filter>("ALL");
-  const list = api.relationships.list.useQuery({
-    actingNodeId: acting.node.id,
-    interactionKind: filter === "ALL" ? undefined : filter,
-  });
+  const interactionKind = filter === "ALL" ? undefined : filter;
+  const list = api.relationships.list.useQuery({ actingNodeId: acting.node.id, interactionKind }, { enabled: view === "list" });
 
   return (
     <>
@@ -62,17 +60,19 @@ export function RelationshipsTab() {
         ))}
       </div>
 
-      <ErrorText error={list.error} />
-      {list.isLoading && <Loading />}
-      {list.data?.length === 0 && (
-        <Empty>{filter === "ALL" ? `${acting.node.name} has no relationships yet.` : "No relationships with this kind of interaction."}</Empty>
+      {view === "map" ? (
+        // The whole network (R-VIS-02); the filter narrows only the acting node's own relationships.
+        <RelationshipMap interactionKind={interactionKind} />
+      ) : (
+        <>
+          <ErrorText error={list.error} />
+          {list.isLoading && <Loading />}
+          {list.data?.length === 0 && (
+            <Empty>{filter === "ALL" ? `${acting.node.name} has no relationships yet.` : "No relationships with this kind of interaction."}</Empty>
+          )}
+          {list.data?.map((r) => <Card key={r.id} relationship={r} />)}
+        </>
       )}
-      {list.data && list.data.length > 0 &&
-        (view === "list" ? (
-          list.data.map((r) => <Card key={r.id} relationship={r} />)
-        ) : (
-          <RelationshipMap relationships={list.data} />
-        ))}
     </>
   );
 }

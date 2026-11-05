@@ -88,6 +88,7 @@ test("8 decimals and millions of units: typed, minted and shown exactly (64-bit 
     await tab(page, "Wallet").click();
     await page.getByRole("button", { name: "Mint", exact: true }).click();
     if (await page.locator("label", { hasText: "Currency" }).count()) await choose(field(page, "Currency"), symbol);
+    await expect(page.getByText(`Mint any amount of ${symbol}. Nothing is locked`)).toBeVisible();
     await field(page, "Amount").fill(typed);
     await expect(page.getByRole("button", { name: `Mint ${shown} ${symbol}` })).toBeVisible();
     await page.getByRole("button", { name: `Mint ${shown} ${symbol}` }).click();
@@ -117,12 +118,17 @@ test("Convert: the currencies table, refusals named, and a conversion through a 
   await expect(row("EUR")).toContainText("Not held");
   await expect(row("EUR")).toContainText("Fiat face value · 1 EUR ≈ 0.93 CHF");
 
-  // CHF into RCC: RCC is free, so it is traded, not converted (R-FIN-10); its starting price still shows.
+  // CHF into RCC: RCC is free, so it is traded, not converted (R-FIN-10); its price (from Nora's trade) still shows.
   await choose(field(page, "Into"), "RCC");
-  await expect(row("CHF")).toContainText("Not available: trade instead");
+  await expect(row("CHF").getByRole("button", { name: "Trade instead" })).toBeVisible();
   await expect(row("CHF")).toContainText("R-FIN-10");
   await expect(row("RCC")).toContainText("Balance:");
   await expect(row("RCC")).toContainText("1 RCC = 1.00 CHF");
+  // Typing an amount: the refusal names the rule and offers a trade instead.
+  await field(page, "Amount").fill("5");
+  await expect(page.locator("main [role=alert]", { hasText: "free currency" })).toContainText("R-FIN-10");
+  await expect(page.getByRole("button", { name: "Propose a trade instead" })).toBeVisible();
+  await field(page, "Amount").fill("");
 
   // CHF into ABK (Annie's, fiat-backed at 1 CHF): the rate, what you receive; converted.
   await choose(field(page, "Into"), "ABK");

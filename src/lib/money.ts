@@ -33,6 +33,20 @@ export function formatAmount(minorUnits: bigint | number, decimals: number, code
 }
 
 /**
+ * Amounts inside text written before the formatter had R-FIN-18's rule
+ * (activity summaries and ledger comments are stored as written), shown as
+ * formatAmount would show them now. Only a number with 3 or more decimals
+ * followed by a currency symbol is touched:
+ *   "a gift of 1.000000 JCN"  -> "a gift of 1.00 JCN"
+ *   "0.12345000 BTC"          -> "0.12345 BTC"
+ */
+export function tidyAmounts(text: string): string {
+  return text.replace(/\b(\d+)\.(\d{3,})(?= [A-Z][A-Z0-9]{1,7}\b)/g, (_, whole: string, fraction: string) => {
+    return `${whole}.${fraction.slice(0, 2)}${fraction.slice(2).replace(/0+$/, "")}`;
+  });
+}
+
+/**
  * What someone typed into an amount field, as whole minor units:
  * parseAmount("25.5", 2) -> 2550n. Spaces, commas and apostrophes between
  * thousands are ignored. Returns null if it isn't a positive-or-zero number

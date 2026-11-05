@@ -40,7 +40,7 @@ test("every screen shows the bar, with its tab lit and the main button above it"
   await quick(page, "Convert currencies");
   await expectScreen(page, "Wallet");
   await tab(page, "Relationships").click();
-  for (const action of ["Request a payment", "Propose work", "Invite someone"]) {
+  for (const action of ["Request a payment", "Propose work", "Propose a trade", "Invite someone"]) {
     await quick(page, action);
     await expectScreen(page, "Relationships");
   }

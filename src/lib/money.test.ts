@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatAmount, parseAmount } from "./money";
+import { formatAmount, parseAmount, tidyAmounts } from "./money";
 
 describe("formatAmount", () => {
   it("puts the point where the currency's decimals say", () => {
@@ -56,5 +56,19 @@ describe("parseAmount", () => {
     expect(parseAmount("-5", 2)).toBeNull();
     expect(parseAmount("1.234", 2)).toBeNull();
     expect(parseAmount("1.5", 0)).toBeNull();
+  });
+});
+
+describe("tidyAmounts", () => {
+  it("shows amounts in stored text as formatAmount would (R-FIN-18)", () => {
+    expect(tidyAmounts("James proposed a gift of 1.000000 JCN from James to Nimesh")).toBe("James proposed a gift of 1.00 JCN from James to Nimesh");
+    expect(tidyAmounts("Mint: 5.000000 JCN minted")).toBe("Mint: 5.00 JCN minted");
+    expect(tidyAmounts("0.12345000 BTC and 1229.769229 JCN")).toBe("0.12345 BTC and 1229.769229 JCN");
+  });
+
+  it("leaves everything else alone", () => {
+    expect(tidyAmounts("Paid 25.50 RCC")).toBe("Paid 25.50 RCC");
+    expect(tidyAmounts("Rate 1.0844 for the day")).toBe("Rate 1.0844 for the day");
+    expect(tidyAmounts("Version 1.000 of the rules")).toBe("Version 1.000 of the rules");
   });
 });

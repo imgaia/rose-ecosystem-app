@@ -371,6 +371,82 @@ describe("currencies (S15, S27)", () => {
   });
 });
 
+describe("trades and the whole-network map (step 11b)", () => {
+  /** A free currency of `node`'s own, `minted` units in its account. */
+  async function freeCurrency(node: { id: string }, code: string, minted: bigint) {
+    await as(node).currencies.propose({
+      actingNodeId: node.id,
+      action: "CREATE",
+      fields: { name: `${code} coin`, code, description: null, decimals: 2, backing: "FREE", reserveRatio: null },
+    });
+    const currency = (await as(node).currencies.overview({ actingNodeId: node.id })).issued.find((c) => c.code === code)!;
+    await as(node).wallet.mint({ actingNodeId: node.id, amount: minted, currencyId: currency.id });
+    return currency;
+  }
+
+  it("proposes, counter-proposes and accepts a trade; the currency shows its rate without names", async () => {
+    const { ana, zed } = await org();
+    const zc = await freeCurrency(zed, "ZC", 10_000n);
+    expect(await as(ana).currencies.pairRate({ actingNodeId: ana.id, fromCurrencyId: zc.id, toCurrencyId: t.rcc.id })).toBeNull();
+
+    const { proposal } = await as(ana).interactions.proposeTrade({
+      actingNodeId: ana.id,
+      toNodeId: zed.id,
+      give: { amount: 100n, currencyId: t.rcc.id },
+      get: { amount: 300n, currencyId: zc.id },
+    });
+    // Zed wants 4.00 ZC for it instead (both sides approve again), and Ana accepts that.
+    const counter = await as(zed).interactions.counterPropose({ actingNodeId: zed.id, proposalId: proposal.id, changes: { counterAmount: 400n } });
+    const view = await as(ana).proposals.review({ actingNodeId: ana.id, proposalId: counter.id });
+    expect(view).toMatchObject({ interaction: { kind: "TRADE" }, proposedTerms: { amount: 100n, counterAmount: 400n, counterCurrency: { code: "ZC" } } });
+    await as(ana).proposals.decide({ actingNodeId: ana.id, proposalId: counter.id, approve: true });
+
+    const detail = await as(ana).interactions.detail({ actingNodeId: ana.id, interactionId: view.interaction!.id });
+    expect(detail.status).toBe("COMPLETED");
+    expect(detail.transactions.map((tx) => [tx.amount, tx.from?.currency.code]).sort()).toEqual([
+      [100n, "RCC"],
+      [400n, "ZC"],
+    ]);
+    expect(await as(ana).currencies.pairRate({ actingNodeId: ana.id, fromCurrencyId: zc.id, toCurrencyId: t.rcc.id })).toMatchObject({ rate: "0.25", source: "TRADE" });
+    const zcDetail = await as(ana).currencies.detail({ actingNodeId: ana.id, currencyId: zc.id });
+    expect(zcDetail.recentTrades.map((r) => [r.rate, r.other.code])).toEqual([["0.25", "RCC"]]);
+    expect(zcDetail.recentTrades[0]).not.toHaveProperty("setBy");
+    expect(zcDetail).toMatchObject({ price: { rate: "0.25" }, priceSource: "CHAIN" }); // ZC -> RCC -> CHF
+  });
+
+  it("refuses a Member trading for the collection (PAY), naming the Treasurer", async () => {
+    const { mo, rose, ana } = await org();
+    const call = as(mo).interactions.proposeTrade({
+      actingNodeId: rose.id,
+      toNodeId: ana.id,
+      give: { amount: 100n, currencyId: t.rcc.id },
+      get: { amount: 100n, currencyId: t.chf.id },
+    });
+    expect((await refused(call)).needsRoles).toEqual(["TREASURER"]);
+  });
+
+  it("shows everyone's connections, but trust only on the viewer's own (R-VIS-02)", async () => {
+    const { ana, zed, mo } = await org();
+    await as(ana).interactions.sendPayment({ actingNodeId: ana.id, toNodeId: zed.id, terms: terms(t.rcc.id, 100n) });
+    const { proposal } = await as(ana).interactions.proposeWork({ actingNodeId: ana.id, otherNodeId: zed.id, actingNodePays: true, terms: terms(t.rcc.id, 100n, "Fence") });
+    await as(zed).proposals.decide({ actingNodeId: zed.id, proposalId: proposal.id, approve: true });
+
+    const theirs = await as(mo).relationships.network({ actingNodeId: mo.id });
+    const pair = theirs.others.find((r) => [r.nodeAId, r.nodeBId].sort().join() === [ana.id, zed.id].sort().join());
+    expect(pair && Object.keys(pair).sort()).toEqual(["id", "nodeAId", "nodeBId"]);
+    expect(theirs.nodes.map((n) => n.id)).toEqual(expect.arrayContaining([ana.id, zed.id, mo.id]));
+    expect(theirs.nodes[0]).not.toHaveProperty("passwordHash");
+
+    const mine = await as(ana).relationships.network({ actingNodeId: ana.id });
+    const withZed = mine.own.find((r) => r.otherNodeId === zed.id);
+    expect(withZed?.status).toBe("ACTIVE");
+    expect(typeof withZed?.trustScore).toBe("number");
+    expect(mine.others.some((r) => r.id === pair!.id)).toBe(false);
+    // The kind filter narrows the viewer's own relationships only.
+    expect((await as(ana).relationships.network({ actingNodeId: ana.id, interactionKind: "GIFT" })).own).toEqual([]);
+  });
+});
+
 describe("invitations", () => {
   it("invites, joins with all native roles, and can't reuse the link", async () => {
     const { ana } = await org();

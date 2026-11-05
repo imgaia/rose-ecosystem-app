@@ -5,15 +5,19 @@
 // their earlier versions, the schedule, open proposals, payments made and any
 // verification, with the actions its status allows: request a payment (the
 // side doing the work), amend, pause or resume, complete, cancel.
+// A trade (S28) shows what each side gives and its rate, the two amounts
+// exchanged, and while it waits, "Change the offer".
 
 import { useState } from "react";
 
 import { api, type RouterOutputs } from "~/trpc/react";
-import { formatDate, frequencyLabel, interactionKindLabel, money, termsSummary, titleCase } from "../describe";
+import { formatDate, frequencyLabel, interactionKindLabel, money, storedText, termsSummary, titleCase } from "../describe";
+import { tradeRate, tradeSides } from "../interact/propose-trade";
 import { useActingNode } from "../shell/acting-node";
 import { Avatar } from "../shell/header";
 import { useNav } from "../shell/navigation";
 import { Card, Chip, Empty, ErrorText, GatedButton, Loading, Row, SectionLabel, SubScreen } from "../ui";
+import { rateLine } from "../wallet/currencies";
 
 type Detail = RouterOutputs["interactions"]["detail"];
 
@@ -53,6 +57,7 @@ function Body({ detail: d }: { detail: Detail }) {
   const earlier = d.terms.filter((t) => t.id !== terms?.id);
   const openProposals = d.proposals.filter((p) => p.status === "OPEN");
   const running = d.status === "ACTIVE" || d.status === "PAUSED";
+  const isTrade = d.kind === "TRADE";
   const args = { actingNodeId: me, interactionId: d.id };
 
   return (
@@ -71,7 +76,9 @@ function Body({ detail: d }: { detail: Detail }) {
         </div>
       </Card>
 
-      {terms && (
+      {terms && isTrade && <TradeTerms detail={d} terms={terms} />}
+
+      {terms && !isTrade && (
         <Card className="gap-0">
           <div className="mb-1 flex items-center justify-between gap-3">
             <SectionLabel>
@@ -131,18 +138,18 @@ function Body({ detail: d }: { detail: Detail }) {
         </Card>
       )}
 
-      <SectionLabel className="mt-1">Payments</SectionLabel>
+      <SectionLabel className="mt-1">{isTrade ? "Exchanged" : "Payments"}</SectionLabel>
       {d.transactions.length === 0 ? (
-        <Empty>No payments yet.</Empty>
+        <Empty>{isTrade ? "Nothing yet: both amounts move when the trade is accepted." : "No payments yet."}</Empty>
       ) : (
         <Card className="gap-0 py-1">
           {d.transactions.map((t, i) => (
             <div key={t.id} className={`flex items-center justify-between gap-3 py-2 ${i > 0 ? "border-t border-rose-border" : ""}`}>
               <span>
-                {formatDate(t.createdAt)} · {t.comment}
+                {formatDate(t.createdAt)} · {isTrade ? (t.from?.nodeId === me ? "You gave" : `${other.name} gave`) : storedText(t.comment)}
               </span>
-              {/* Payments in an interaction are in its terms' currency. */}
-              <span className="font-semibold whitespace-nowrap">{money(t.amount, terms?.currency)}</span>
+              {/* Each row in its own currency: a trade's two legs differ. */}
+              <span className="font-semibold whitespace-nowrap">{money(t.amount, t.from?.currency ?? terms?.currency)}</span>
             </div>
           ))}
         </Card>
@@ -162,6 +169,12 @@ function Body({ detail: d }: { detail: Detail }) {
       )}
 
       <ErrorText error={error} />
+
+      {isTrade && d.status === "PROPOSED" && openProposals.length > 0 && (
+        <GatedButton className="mt-2" permission={d.permission} onClick={() => open({ name: "amend", interactionId: d.id })}>
+          Change the offer
+        </GatedButton>
+      )}
 
       {running && (
         <div className="mt-2 grid grid-cols-2 gap-2">
@@ -199,3 +212,27 @@ function Body({ detail: d }: { detail: Detail }) {
 }
 
 const capital = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+/** A trade's terms from the acting node's side: what it gives, what it gets, and the rate. */
+function TradeTerms({ detail: d, terms }: { detail: Detail; terms: Detail["terms"][number] }) {
+  if (!terms.counterCurrency || terms.counterAmount == null) return null;
+  const other = d.actingNodePays ? d.payee : d.payer;
+  const { give, get } = tradeSides({ ...terms, counterCurrency: terms.counterCurrency }, d.actingNodePays);
+  const code = (c: { code: string | null; name: string }) => c.code ?? c.name;
+  return (
+    <Card className="gap-0">
+      <SectionLabel className="mb-1">
+        {d.status === "COMPLETED" ? "Traded" : "Offer"} · version {terms.version}
+      </SectionLabel>
+      <Row label="You give" strong>
+        {money(give.amount, give.currency)}
+      </Row>
+      <Row label={`${other.name} gives`} strong>
+        {money(get.amount, get.currency)}
+      </Row>
+      <Row label="Rate">{rateLine(code(give.currency), tradeRate(give.amount, give.currency, get.amount, get.currency), get.currency)}</Row>
+      {terms.description && <Row label="Comment">{terms.description}</Row>}
+      {d.terms.length > 1 && <Row label="Offers made">{d.terms.length}</Row>}
+    </Card>
+  );
+}

@@ -76,7 +76,7 @@ function Body({ page }: { page: Page }) {
           ) : (
             <p className="text-sm text-rose-muted">{acting.node.name} has no relationship with {node.name} yet.</p>
           )}
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 gap-2">
             <GatedButton className="px-2 text-xs" permission={permissionFor("PAY")} onClick={() => open({ name: "send", toNodeId: node.id })}>
               Pay
             </GatedButton>
@@ -85,6 +85,9 @@ function Body({ page }: { page: Page }) {
             </GatedButton>
             <GatedButton className="px-2 text-xs" permission={permissionFor("INTERACT")} onClick={() => open({ name: "propose-work", otherNodeId: node.id })}>
               Propose work
+            </GatedButton>
+            <GatedButton className="px-2 text-xs" permission={permissionFor("PAY")} onClick={() => open({ name: "trade", otherNodeId: node.id })}>
+              Propose a trade
             </GatedButton>
           </div>
         </div>

@@ -226,6 +226,45 @@ export async function closeCurrentRates(db: Db, input: { currencyId: string; sou
   return count;
 }
 
+/**
+ * A rate with where it came from (R-FIN-05), for screens: the pair's own
+ * current row (inverted if stored the other way round), or, when the pair has
+ * none, the chain findRate works out, with source "CHAIN". Null: no price yet.
+ */
+export async function rateWithSource(
+  db: Db,
+  fromCurrencyId: string,
+  toCurrencyId: string,
+): Promise<{ rate: Rate; source: RateSource | "CHAIN"; validFrom: Date | null } | null> {
+  // In AND: rowsValidAt has an OR of its own (validTo).
+  const pair = { OR: [{ fromCurrencyId, toCurrencyId }, { fromCurrencyId: toCurrencyId, toCurrencyId: fromCurrencyId }] };
+  const [own] = await rowsValidAt(db, new Date(), { AND: [pair] });
+  if (own) {
+    const rate = parseRate(own.rate);
+    return { rate: own.fromCurrencyId === fromCurrencyId ? rate : inverse(rate), source: own.source, validFrom: own.validFrom };
+  }
+  const chained = await findRate(db, fromCurrencyId, toCurrencyId);
+  return chained && { rate: chained, source: "CHAIN", validFrom: null };
+}
+
+/**
+ * The latest rates published by accepted trades involving a currency
+ * (R-FIN-16), newest first, each as one unit of `currencyId` in the other
+ * currency. Only the rows: never who traded.
+ */
+export async function recentTradeRates(db: Db, currencyId: string, take = 5) {
+  const rows = await db.exchangeRate.findMany({
+    where: { source: "TRADE", OR: [{ fromCurrencyId: currencyId }, { toCurrencyId: currencyId }] },
+    orderBy: [{ validFrom: "desc" }, { createdAt: "desc" }],
+    take,
+  });
+  return rows.map((row) => {
+    const rate = parseRate(row.rate);
+    const forward = row.fromCurrencyId === currencyId;
+    return { id: row.id, otherCurrencyId: forward ? row.toCurrencyId : row.fromCurrencyId, rate: forward ? rate : inverse(rate), validFrom: row.validFrom };
+  });
+}
+
 /** Every row for a pair, newest first, both directions: a currency's price history, say. */
 export async function rateHistory(db: Db, fromCurrencyId: string, toCurrencyId: string) {
   return db.exchangeRate.findMany({

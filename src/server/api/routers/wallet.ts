@@ -96,8 +96,8 @@ export const walletRouter = createTRPCRouter({
     }),
 
   /**
-   * UC-FIN-03: what converting would give and how (through the reserves, or a
-   * straight swap), before confirming. When the rules refuse, the refusal comes
+   * UC-FIN-03: what converting would give and how (through the reserves, or
+   * as a mint of the node's own currency), before confirming. When the rules refuse, the refusal comes
    * back as data with the rules that block it: it is an answer, not an error.
    */
   quoteConvert: actingProcedure
@@ -120,12 +120,13 @@ export const walletRouter = createTRPCRouter({
   convertTable: actingProcedure.input(z.object({ intoCurrencyId: z.string().optional() })).query(async ({ ctx, input }) => {
     await requireCan(ctx, "VIEW_BALANCES");
     const rows = await core.convertTable(ctx.db, ctx.actor.actingNodeId, input.intoCurrencyId ?? null);
-    const pick = (c: { id: string; code: string | null; name: string; decimals: number; kind: string }) => ({
+    const pick = (c: { id: string; code: string | null; name: string; decimals: number; kind: string; backing: string }) => ({
       id: c.id,
       code: c.code,
       name: c.name,
       decimals: c.decimals,
       kind: c.kind,
+      backing: c.backing,
     });
     return rows.map((r) => ({
       currency: pick(r.currency),

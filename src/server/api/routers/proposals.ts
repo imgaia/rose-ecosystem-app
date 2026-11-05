@@ -37,7 +37,7 @@ async function proposalView(ctx: Ctx, proposal: Proposal) {
     proposal.interactionId
       ? ctx.db.interaction.findUniqueOrThrow({
           where: { id: proposal.interactionId },
-          include: { terms: { orderBy: { version: "desc" }, include: { currency: true } } },
+          include: { terms: { orderBy: { version: "desc" }, include: { currency: true, counterCurrency: true } } },
         })
       : null,
   ]);
@@ -88,6 +88,8 @@ async function proposalView(ctx: Ctx, proposal: Proposal) {
     // What would change: the proposed terms next to the ones in force (null for a new interaction).
     proposedTerms: interaction?.terms.find((t) => t.version === payload.termsVersion) ?? null,
     currentTerms: interaction?.terms.find((t) => t.approved) ?? null,
+    // A trade's earlier offers (none is ever approved before it completes), to show what a counter-proposal changed.
+    offerHistory: interaction?.kind === "TRADE" ? interaction.terms : [],
     paymentRequest:
       proposal.kind === "PAYMENT_REQUEST"
         ? {

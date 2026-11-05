@@ -3,8 +3,9 @@
 // src/app/_components/wallet/money-actions.tsx
 // The Treasurer's money screens, opened from the Wallet tab:
 // - AddFunds: record fiat paid into the bank outside the app (S12, UC-FIN-04);
-// - Convert: any currency into any other, through the issuers' reserves
-//   (S11, UC-FIN-03; the rules are in src/server/core/currencies.ts);
+// - Convert: through the issuers' reserves only (S11, UC-FIN-03; the rules
+//   are in src/server/core/currencies.ts); a free currency is traded instead,
+//   so its row and a refusal offer "Trade instead";
 // - Mint: lock fiat in a currency's reserve and create its units (S13, UC-FIN-05).
 // Convert and Mint show a quote from the server before anything moves; when
 // the rules refuse, the message names the rule.
@@ -107,6 +108,7 @@ export function AddFunds() {
 
 export function Convert({ fromAccountId: initialFrom, toCurrencyId: initialTo }: { fromAccountId?: string; toCurrencyId?: string }) {
   const { acting, permissionFor } = useActingNode();
+  const { open } = useNav();
   const actingNodeId = acting.node.id;
   const accounts = api.wallet.accounts.useQuery({ actingNodeId });
   const currencies = api.wallet.currencies.useQuery({ actingNodeId });
@@ -174,6 +176,11 @@ export function Convert({ fromAccountId: initialFrom, toCurrencyId: initialTo }:
       )}
       {own.length === 0 && <p className="text-rose-muted">This node has no account to convert from.</p>}
       <Refusal error={convert.error ?? quote.data?.refused ?? quote.error} />
+      {quote.data?.refused?.data.blockedBy.some((b) => b.ruleId === "R-FIN-10") && to && (
+        <GatedButton permission={permissionFor("PAY")} onClick={() => open({ name: "trade", currencyId: to.kind === "COMMUNITY" && to.backing === "FREE" ? to.id : from?.currencyId })}>
+          Propose a trade instead
+        </GatedButton>
+      )}
       <ErrorText error={accounts.error ?? currencies.error} />
       <MainAction>
         <GatedButton
@@ -200,6 +207,7 @@ const sym = (c: { code: string | null; name: string }) => c.code ?? c.name;
  */
 function CurrenciesTable({ fromCurrencyId, into }: { fromCurrencyId: string | undefined; into: Named | undefined }) {
   const { acting } = useActingNode();
+  const { open } = useNav();
   const table = api.wallet.convertTable.useQuery(
     { actingNodeId: acting.node.id, intoCurrencyId: into?.id },
     { placeholderData: (previous) => previous }, // keep the rows while the Into column reloads
@@ -253,6 +261,18 @@ function CurrenciesTable({ fromCurrencyId, into }: { fromCurrencyId: string | un
                     <span className="text-rose-muted">{into ? "Same currency" : "—"}</span>
                   ) : r.into.rate !== null ? (
                     <span>{rateLine(sym(r.currency), r.into.rate, into)}</span>
+                  ) : r.into.refused.ruleIds.includes("R-FIN-10") ? (
+                    // A free currency on either side: traded, not converted.
+                    <span className="flex flex-col items-start gap-0.5">
+                      <button
+                        type="button"
+                        onClick={() => open({ name: "trade", currencyId: r.currency.kind === "COMMUNITY" && r.currency.backing === "FREE" ? r.currency.id : into.id })}
+                        className="text-sm font-semibold text-rose-accent underline-offset-2 hover:underline"
+                      >
+                        Trade instead
+                      </button>
+                      <span className="text-xs text-rose-muted">R-FIN-10 · free currencies are traded, not converted</span>
+                    </span>
                   ) : (
                     <span title={r.into.refused.message} className="text-rose-muted">
                       Not available: {r.into.refused.reason}
@@ -309,6 +329,16 @@ export function Mint() {
         </Field>
       )}
       {overview.data && mintable.length === 0 && <p className="text-rose-muted">{acting.node.name} issues no active currency. Create one under Currencies.</p>}
+      {currency && (
+        <Card>
+          <SectionLabel>{free ? "Free currency" : "Fiat-backed currency"}</SectionLabel>
+          <p className="text-rose-muted">
+            {free
+              ? `Mint any amount of ${currency.code}. Nothing is locked; it has no price until it is traded (R-FIN-17).`
+              : `The fiat you put in is locked in ${currency.code}'s reserve, and ${currency.code} is created at its reserve ratio${currency.reserveRatio ? ` of ${currency.reserveRatio}` : ""} (R-FIN-01, R-FIN-02).`}
+          </p>
+        </Card>
+      )}
       {!free && (
         <Field label="Convert from">
           <Select value={source?.id ?? ""} onChange={(e) => setSourceAccountId(e.target.value)}>
@@ -333,11 +363,9 @@ export function Mint() {
               {money(quote.data.units, quote.data.currency)}
             </Row>
           </Card>
-          <p className="text-xs text-rose-muted">
-            {quote.data.source
-              ? `${money(units, source?.currency)} moves into the ${code} reserve and stays locked there, backing the new units.`
-              : `${code} is a free currency: nothing is locked, and it has no price until it is traded.`}
-          </p>
+          {quote.data.source && (
+            <p className="text-xs text-rose-muted">{`${money(units, source?.currency)} moves into the ${code} reserve and stays locked there, backing the new units.`}</p>
+          )}
         </>
       )}
       <Refusal error={mint.error ?? quote.error} />
