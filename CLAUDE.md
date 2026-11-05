@@ -44,6 +44,7 @@ to run if `.env.dev.local` points at the production database.
 - Back up: `DB_TARGET=dev npx tsx scripts/backup.ts` (writes to `backups/`)
 - Restore (full replace, wipes the data first): `DB_TARGET=dev npx tsx scripts/restore.ts backups/<file>.json`
 - Apply a SQL file (`DB_TARGET` required): `DB_TARGET=dev node scripts/apply-sql.mjs <file>.sql`
+  (add `--atomic` to send it as one all-or-nothing batch)
 - Seed: `SEED_TARGET=dev npx prisma db seed`
 
 **Schema changes:**
